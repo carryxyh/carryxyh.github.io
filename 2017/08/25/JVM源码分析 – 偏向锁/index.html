@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="JVM源码," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="JVM源码分析 – 偏向锁前言JAVA在内部提供了许多种锁，在虚拟机内部，又会根据虚拟机配置和场景来使用不同种类的锁，比如偏向、轻量级以及重量级等等，这篇文章根据1.8的源码，来看一下JAVA内部实现的锁。提前说明，笔者并非专业的C++开发人员，只了解一些基本的语法，只能通过方法命名、注释来大体了解一下代码的执行过程以及效果。 我们从字节码开始，我们使用synchronized(Object)包裹">
+<meta name="keywords" content="JVM源码">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM源码分析 -- 偏向锁">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2017/08/25/JVM源码分析 – 偏向锁/index.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="JVM源码分析 – 偏向锁前言JAVA在内部提供了许多种锁，在虚拟机内部，又会根据虚拟机配置和场景来使用不同种类的锁，比如偏向、轻量级以及重量级等等，这篇文章根据1.8的源码，来看一下JAVA内部实现的锁。提前说明，笔者并非专业的C++开发人员，只了解一些基本的语法，只能通过方法命名、注释来大体了解一下代码的执行过程以及效果。 我们从字节码开始，我们使用synchronized(Object)包裹">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2017-08-25T08:43:38.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JVM源码分析 -- 偏向锁">
+<meta name="twitter:description" content="JVM源码分析 – 偏向锁前言JAVA在内部提供了许多种锁，在虚拟机内部，又会根据虚拟机配置和场景来使用不同种类的锁，比如偏向、轻量级以及重量级等等，这篇文章根据1.8的源码，来看一下JAVA内部实现的锁。提前说明，笔者并非专业的C++开发人员，只了解一些基本的语法，只能通过方法命名、注释来大体了解一下代码的执行过程以及效果。 我们从字节码开始，我们使用synchronized(Object)包裹">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2017/08/25/JVM源码分析 – 偏向锁/"/>
+
+
+
+
+
+  <title>JVM源码分析 -- 偏向锁 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/08/25/JVM源码分析 – 偏向锁/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">JVM源码分析 -- 偏向锁</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-25T16:41:53+08:00">
+                2017-08-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/JVM源码/" itemprop="url" rel="index">
+                    <span itemprop="name">JVM源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="JVM源码分析-–-偏向锁"><a href="#JVM源码分析-–-偏向锁" class="headerlink" title="JVM源码分析 – 偏向锁"></a>JVM源码分析 – 偏向锁<br></h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言<br></h4><p>JAVA在内部提供了许多种锁，在虚拟机内部，又会根据虚拟机配置和场景来使用不同种类的锁，比如<code>偏向</code>、<code>轻量级</code>以及<code>重量级</code>等等，这篇文章根据1.8的源码，来看一下JAVA内部实现的锁。提前说明，笔者并非专业的C++开发人员，只了解一些基本的语法，只能通过方法命名、注释来大体了解一下代码的执行过程以及效果。<br></p>
+<p>我们从字节码开始，我们使用<code>synchronized(Object)</code>包裹代码块的时候，字节码中会用如下方式包裹：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">monitorenter; lock object in local ...</span><br><span class="line">...</span><br><span class="line">monitorexit; finished with object in local ...</span><br></pre></td></tr></table></figure>
+<p>解释器执行<code>monitorenter</code>的时候，会进入<code>InterpreterRuntime.cpp</code>，我们直接看一下代码：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">//这里这个thread，就是java中的currentThread</span><br><span class="line">IRT_ENTRY_NO_ASYNC(void, InterpreterRuntime::monitorenter(JavaThread* thread, BasicObjectLock* elem))</span><br><span class="line">	#ifdef ASSERT</span><br><span class="line">	  thread-&gt;last_frame().interpreter_frame_verify_monitor(elem);</span><br><span class="line">	#endif</span><br><span class="line">	if (PrintBiasedLockingStatistics) &#123;</span><br><span class="line">		Atomic::inc(BiasedLocking::slow_path_entry_count_addr());</span><br><span class="line">	&#125;</span><br><span class="line">	Handle h_obj(thread, elem-&gt;obj());</span><br><span class="line">	assert(Universe::heap()-&gt;is_in_reserved_or_null(h_obj()), &quot;must be NULL or an object&quot;);</span><br><span class="line"></span><br><span class="line">	//这里这个UseBiasedLocking，是一个全局的运行时配置，标识虚拟机是否开启偏向锁，开启用fast，否则slow</span><br><span class="line">	if (UseBiasedLocking) &#123;</span><br><span class="line">		// Retry fast entry if bias is revoked to avoid unnecessary inflation</span><br><span class="line">	    ObjectSynchronizer::fast_enter(h_obj, elem-&gt;lock(), true, CHECK);</span><br><span class="line">	&#125; else &#123;</span><br><span class="line">		ObjectSynchronizer::slow_enter(h_obj, elem-&gt;lock(), CHECK);</span><br><span class="line">	&#125;</span><br><span class="line">	assert(Universe::heap()-&gt;is_in_reserved_or_null(elem-&gt;obj()), &quot;must be NULL or an object&quot;);</span><br><span class="line">	#ifdef ASSERT</span><br><span class="line">		thread-&gt;last_frame().interpreter_frame_verify_monitor(elem);</span><br><span class="line">	#endif</span><br><span class="line">IRT_END</span><br></pre></td></tr></table></figure>
+<p>有点不明白的地方，在<code>Google</code>上找了一下<code>BasicObjectLock</code>的定义，这就是一个包装类：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">class BasicObjectLock &#123;</span><br><span class="line">  BasicLock _lock; </span><br><span class="line">  // object holds the lock;</span><br><span class="line">  oop  _obj;   </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>持有一个<code>BasicLock</code>和一个对象。这个<code>BasicLock</code>对象找了一顿定义，没有找到，但是从他的方法来看，主要是跟一些地址偏移相关，同样Google一下，找到了其定义：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">class BasicLock &#123;</span><br><span class="line">	//主要用来保存_obj指向Object对象的对象头数据</span><br><span class="line">    volatile markOop _displaced_header;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个<code>Handle</code>类可以理解成一个“句柄”，他被用来在垃圾回收的时候，对象可能移动（地址变化），通过<code>handle</code>访问对象可以让调用方不去关心地址的变化，垃圾回收的细节。</p>
+<h4 id="偏向锁"><a href="#偏向锁" class="headerlink" title="偏向锁"></a>偏向锁<br></h4><p>我们接着看上面的代码，我们发现虚拟机发现开启偏向锁，会优先使用偏向锁，<strong>偏向锁只依赖一次CAS操作来置换ThreadId</strong>。默认开启了偏向锁，我们可以用<code>-XX:-UseBiasedLocking</code>关闭。<br></p>
+<p>我们看一下上面的<code>fast_enter</code>方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">void ObjectSynchronizer::fast_enter(Handle obj, BasicLock* lock, bool attempt_rebias, TRAPS) &#123;</span><br><span class="line">	if (UseBiasedLocking) &#123;</span><br><span class="line">		if (!SafepointSynchronize::is_at_safepoint()) &#123;</span><br><span class="line">			BiasedLocking::Condition cond = BiasedLocking::revoke_and_rebias(obj, attempt_rebias, THREAD);</span><br><span class="line">		if (cond == BiasedLocking::BIAS_REVOKED_AND_REBIASED) &#123;</span><br><span class="line">			return;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; else &#123;</span><br><span class="line">		assert(!attempt_rebias, &quot;can not rebias toward VM thread&quot;);</span><br><span class="line">		BiasedLocking::revoke_at_safepoint(obj);</span><br><span class="line">	&#125;</span><br><span class="line">	assert(!obj-&gt;mark()-&gt;has_bias_pattern(), &quot;biases should be revoked by now&quot;);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	slow_enter (obj, lock, THREAD) ;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里又判断了一次，是怕运行时更新了配置？<br></p>
+<p>我们这里看到了一个新的名词叫<code>SafePoint</code>，这里是个新东西，在Hotspot的垃圾回首时，这个<code>SafePoint</code>也会出现，我们先不考虑，只是发现，如果不在安全点上，我们就进入偏向。我们从<code>revoke_and_rebias</code>这个名字可以看出，<strong>偏向锁就是在没有多线程竞争的情况下，减少不必要的锁执行路径，只是更新了一下线程Id（撤销一个，偏向另外一个）</strong>。<br></p>
+<p>####revoke_and_rebias<br><br>这个方法连带注释，有好多好多逻辑，我们只看一下比较主要的，了解一下偏向锁的实现逻辑，先看代码：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br></pre></td><td class="code"><pre><span class="line">BiasedLocking::Condition BiasedLocking::revoke_and_rebias(Handle obj, bool attempt_rebias, TRAPS) &#123;</span><br><span class="line">  assert(!SafepointSynchronize::is_at_safepoint(), &quot;must not be called while at safepoint&quot;);</span><br><span class="line"></span><br><span class="line">  // We can revoke the biases of anonymously-biased objects</span><br><span class="line">  // efficiently enough that we should not cause these revocations to</span><br><span class="line">  // update the heuristics because doing so may cause unwanted bulk</span><br><span class="line">  // revocations (which are expensive) to occur.</span><br><span class="line">  //获取对象头的Mark Word</span><br><span class="line">  markOop mark = obj-&gt;mark();</span><br><span class="line">  //判断mark是否为可偏向状态</span><br><span class="line">  if (mark-&gt;is_biased_anonymously() &amp;&amp; !attempt_rebias) &#123;</span><br><span class="line">    // We are probably trying to revoke the bias of this object due to</span><br><span class="line">    // an identity hash code computation. Try to revoke the bias</span><br><span class="line">    // without a safepoint. This is possible if we can successfully</span><br><span class="line">    // compare-and-exchange an unbiased header into the mark word of</span><br><span class="line">    // the object, meaning that no other thread has raced to acquire</span><br><span class="line">    // the bias of the object.</span><br><span class="line">    markOop biased_value       = mark;</span><br><span class="line">    markOop unbiased_prototype = markOopDesc::prototype()-&gt;set_age(mark-&gt;age());</span><br><span class="line">    markOop res_mark = (markOop) Atomic::cmpxchg_ptr(unbiased_prototype, obj-&gt;mark_addr(), mark);</span><br><span class="line">    if (res_mark == biased_value) &#123;</span><br><span class="line">      return BIAS_REVOKED;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; else if (mark-&gt;has_bias_pattern()) &#123;</span><br><span class="line">    Klass* k = obj-&gt;klass();</span><br><span class="line">    markOop prototype_header = k-&gt;prototype_header();</span><br><span class="line">    if (!prototype_header-&gt;has_bias_pattern()) &#123;</span><br><span class="line">      // This object has a stale bias from before the bulk revocation</span><br><span class="line">      // for this data type occurred. It&apos;s pointless to update the</span><br><span class="line">      // heuristics at this point so simply update the header with a</span><br><span class="line">      // CAS. If we fail this race, the object&apos;s bias has been revoked</span><br><span class="line">      // by another thread so we simply return and let the caller deal</span><br><span class="line">      // with it.</span><br><span class="line">      markOop biased_value       = mark;</span><br><span class="line">      markOop res_mark = (markOop) Atomic::cmpxchg_ptr(prototype_header, obj-&gt;mark_addr(), mark);</span><br><span class="line">      assert(!(*(obj-&gt;mark_addr()))-&gt;has_bias_pattern(), &quot;even if we raced, should still be revoked&quot;);</span><br><span class="line">      return BIAS_REVOKED;</span><br><span class="line">    &#125; else if (prototype_header-&gt;bias_epoch() != mark-&gt;bias_epoch()) &#123;</span><br><span class="line">      // The epoch of this biasing has expired indicating that the</span><br><span class="line">      // object is effectively unbiased. Depending on whether we need</span><br><span class="line">      // to rebias or revoke the bias of this object we can do it</span><br><span class="line">      // efficiently enough with a CAS that we shouldn&apos;t update the</span><br><span class="line">      // heuristics. This is normally done in the assembly code but we</span><br><span class="line">      // can reach this point due to various points in the runtime</span><br><span class="line">      // needing to revoke biases.</span><br><span class="line">      if (attempt_rebias) &#123;</span><br><span class="line">        assert(THREAD-&gt;is_Java_thread(), &quot;&quot;);</span><br><span class="line">        markOop biased_value       = mark;</span><br><span class="line">        markOop rebiased_prototype = markOopDesc::encode((JavaThread*) THREAD, mark-&gt;age(), prototype_header-&gt;bias_epoch());</span><br><span class="line">        markOop res_mark = (markOop) Atomic::cmpxchg_ptr(rebiased_prototype, obj-&gt;mark_addr(), mark);</span><br><span class="line">        if (res_mark == biased_value) &#123;</span><br><span class="line">          return BIAS_REVOKED_AND_REBIASED;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125; else &#123;</span><br><span class="line">        markOop biased_value       = mark;</span><br><span class="line">        markOop unbiased_prototype = markOopDesc::prototype()-&gt;set_age(mark-&gt;age());</span><br><span class="line">        markOop res_mark = (markOop) Atomic::cmpxchg_ptr(unbiased_prototype, obj-&gt;mark_addr(), mark);</span><br><span class="line">        if (res_mark == biased_value) &#123;</span><br><span class="line">          return BIAS_REVOKED;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  HeuristicsResult heuristics = update_heuristics(obj(), attempt_rebias);</span><br><span class="line">  if (heuristics == HR_NOT_BIASED) &#123;</span><br><span class="line">    return NOT_BIASED;</span><br><span class="line">  &#125; else if (heuristics == HR_SINGLE_REVOKE) &#123;</span><br><span class="line">    Klass *k = obj-&gt;klass();</span><br><span class="line">    markOop prototype_header = k-&gt;prototype_header();</span><br><span class="line">    if (mark-&gt;biased_locker() == THREAD &amp;&amp;</span><br><span class="line">        prototype_header-&gt;bias_epoch() == mark-&gt;bias_epoch()) &#123;</span><br><span class="line">      // A thread is trying to revoke the bias of an object biased</span><br><span class="line">      // toward it, again likely due to an identity hash code</span><br><span class="line">      // computation. We can again avoid a safepoint in this case</span><br><span class="line">      // since we are only going to walk our own stack. There are no</span><br><span class="line">      // races with revocations occurring in other threads because we</span><br><span class="line">      // reach no safepoints in the revocation path.</span><br><span class="line">      // Also check the epoch because even if threads match, another thread</span><br><span class="line">      // can come in with a CAS to steal the bias of an object that has a</span><br><span class="line">      // stale epoch.</span><br><span class="line">      ResourceMark rm;</span><br><span class="line">      if (TraceBiasedLocking) &#123;</span><br><span class="line">        tty-&gt;print_cr(&quot;Revoking bias by walking my own stack:&quot;);</span><br><span class="line">      &#125;</span><br><span class="line">      BiasedLocking::Condition cond = revoke_bias(obj(), false, false, (JavaThread*) THREAD);</span><br><span class="line">      ((JavaThread*) THREAD)-&gt;set_cached_monitor_info(NULL);</span><br><span class="line">      assert(cond == BIAS_REVOKED, &quot;why not?&quot;);</span><br><span class="line">      return cond;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">      VM_RevokeBias revoke(&amp;obj, (JavaThread*) THREAD);</span><br><span class="line">      VMThread::execute(&amp;revoke);</span><br><span class="line">      return revoke.status_code();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  assert((heuristics == HR_BULK_REVOKE) ||</span><br><span class="line">         (heuristics == HR_BULK_REBIAS), &quot;?&quot;);</span><br><span class="line">  VM_BulkRevokeBias bulk_revoke(&amp;obj, (JavaThread*) THREAD,</span><br><span class="line">                                (heuristics == HR_BULK_REBIAS),</span><br><span class="line">                                attempt_rebias);</span><br><span class="line">  VMThread::execute(&amp;bulk_revoke);</span><br><span class="line">  return bulk_revoke.status_code();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>第一段注释我大概理解了一下，应该是在说为什么需要偏向锁，因为竞争少，避免批量的竞争，减少开销。</p>
+<p>判断的时候我们可以看到调用了<code>is_biased_anonymously</code>，这个方法最后会调用如下方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bool has_bias_pattern() const &#123;</span><br><span class="line">	//这里biased_lock_pattern值是5，二级制101</span><br><span class="line">	return (mask_bits(value(), biased_lock_mask_in_place) == biased_lock_pattern);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那我们就知道了，<code>is_biased_anonymously</code>方法判断是否为可偏向状态，而mark的偏向锁标志位为1，锁标识位为01。<br></p>
+<p>第二段注释，我理解了一下，大概是说，使用对象的<code>hashCode</code>计算，如果可以成功的将没有偏向锁的对象头与对象标记进行比较和交换，意味着没有其他线程在获取偏向锁。<br></p>
+<p>说白了，如果没有竞争状态，我们就把mark中的<code>JavaThread</code>设置为当前线程Id，执行成功则执行代码块。<br></p>
+<p>我们看一下，如果这个对象只是有一个偏向锁的头，会怎么样：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">if (!prototype_header-&gt;has_bias_pattern()) &#123;</span><br><span class="line">  // This object has a stale bias from before the bulk revocation</span><br><span class="line">  // for this data type occurred. It&apos;s pointless to update the</span><br><span class="line">  // heuristics at this point so simply update the header with a</span><br><span class="line">  // CAS. If we fail this race, the object&apos;s bias has been revoked</span><br><span class="line">  // by another thread so we simply return and let the caller deal</span><br><span class="line">  // with it.</span><br><span class="line">  markOop biased_value       = mark;</span><br><span class="line">  markOop res_mark = (markOop) Atomic::cmpxchg_ptr(prototype_header, obj-&gt;mark_addr(), mark);</span><br><span class="line">  assert(!(*(obj-&gt;mark_addr()))-&gt;has_bias_pattern(), &quot;even if we raced, should still be revoked&quot;);</span><br><span class="line">  return BIAS_REVOKED;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里是说如果撤销之前有一个过时的偏向锁，更新是没有意义的，会返回并交还给另外的线程去执行。<br></p>
+<p>后面JVM会执行一段代码：<strong>HeuristicsResult heuristics = update_heuristics(obj(), attempt_rebias);</strong>，这段代码看不懂，只能再次去查了一下，笨神给出了比较详尽的解释：<br></p>
+<p><strong><code>update_heuristics</code>的方法真正作用主要是当cas失败达到一定次数之后来决定是否批量偏向或者去偏向</strong>。在我们这段代码中，执行到这里有以下几种情况：<br></p>
+<ol>
+<li>对象不是偏向模式<br></li>
+<li>对象是偏向模式但是epoch过期了，如下两种情况下才会执行到这里<br></li>
+</ol>
+<ul>
+<li>打算重偏向，但是偏向了另外的线程<br></li>
+<li>打算撤销偏向<br></li>
+</ul>
+<p>说白了，我们可能会已经一个偏向锁过期的问题，还可能存在<code>synchronized(object)</code>中这个object被回收的问题！这就很神奇了，按照我的理解，这个object应该不会被回收才对。也有可能是加锁过程中回收了。我找了一下Hotspot的的文档中，关于锁的部分，看到其中有这么一句话：<br></p>
+<p><code>An epoch value in the class acts as a timestamp that indicates the validity of the bias. This value is copied into the header word upon object allocation. Bulk rebiasing can then efficiently be implemented as an increment of the epoch in the appropriate class. The next time an instance of this class is going to be locked, the code detects a different value in the header word and rebiases the object towards the current thread.</code></p>
+<p>上面这段话解释了，对象存在<code>过期</code>的情况，标识符就是<code>epoch</code>。文章最后会附上一份MarkWord的存储状态图，在<code>markOop.cpp</code>中，有兴趣的可以看一下。<br></p>
+<p>再下面的代码就不看了，我们可以在后面看到线程执行了（<code>VMThread::execute(&amp;bulk_revoke);</code>），我们重新回到<code>fast_enter</code>中，如果我们执行失败了会怎么办，这里会撤销偏向锁，执行方法：<strong>BiasedLocking::revoke_at_safepoint(obj);</strong>，再往下，我们执行会进入到<code>slow_enter</code>中，进入之后我们的锁升级为轻量级锁。<br></p>
+<h4 id="偏向锁的撤销"><a href="#偏向锁的撤销" class="headerlink" title="偏向锁的撤销"></a>偏向锁的撤销<br></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">void BiasedLocking::revoke_at_safepoint(Handle h_obj) &#123;</span><br><span class="line">	assert(SafepointSynchronize::is_at_safepoint(), &quot;must only be called while at safepoint&quot;);</span><br><span class="line">	oop obj = h_obj();</span><br><span class="line">	HeuristicsResult heuristics = update_heuristics(obj, false);</span><br><span class="line">	if (heuristics == HR_SINGLE_REVOKE) &#123;</span><br><span class="line">		revoke_bias(obj, false, false, NULL);</span><br><span class="line">	&#125; else if ((heuristics == HR_BULK_REBIAS) ||</span><br><span class="line">             (heuristics == HR_BULK_REVOKE)) &#123;</span><br><span class="line">		bulk_revoke_or_rebias_at_safepoint(obj, (heuristics == HR_BULK_REBIAS), false, NULL);</span><br><span class="line">	&#125;</span><br><span class="line">	clean_up_cached_monitor_info();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>撤销偏向锁我们又看到了<code>SafePoint</code>，我们的撤销动作，需要等待一个安全点。这是我们需要暂停一下拥有偏向锁的线程，判断对象是否处于被锁定的状态，然后撤销锁，恢复到无锁或轻量级锁的状态（<code>bulk_revoke_or_rebias_at_safepoint</code>）。<br></p>
+<h4 id="小Tips："><a href="#小Tips：" class="headerlink" title="小Tips："></a>小Tips：<br></h4><p>偏向锁在Java 1.6之后是默认启用的，但在应用程序启动几秒钟之后才激活，可以使用<code>-XX:BiasedLockingStartupDelay=0</code>参数关闭延迟，如果确定应用程序中所有锁通常情况下处于竞争状态，可以通过<code>XX:-UseBiasedLocking=false</code>参数关闭偏向锁，我们根据上面的代码可以知道，关闭偏向锁可以节省一部分开销，绕过很多操作直接进入到轻量级锁处理中。<br></p>
+<p>感谢笨神和小狼大神的分享和解答。</p>
+<h5 id="附："><a href="#附：" class="headerlink" title="附："></a>附：<br></h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">// Bit-format of an object header (most significant first, big endian layout below):  </span><br><span class="line">//  </span><br><span class="line">//  32 bits:  </span><br><span class="line">//  --------  </span><br><span class="line">//  hash:25 ------------&gt;| age:4    biased_lock:1 lock:2 (normal object)  </span><br><span class="line">//  JavaThread*:23 epoch:2 age:4    biased_lock:1 lock:2 (biased object)  </span><br><span class="line">//  size:32 ------------------------------------------&gt;| (CMS free block)  </span><br><span class="line">//  PromotedObject*:29 ----------&gt;| promo_bits:3 -----&gt;| (CMS promoted object)</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/JVM源码/" rel="tag"># JVM源码</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/07/26/记一次Disruptor排坑/" rel="next" title="记一次Disruptor排坑">
+                <i class="fa fa-chevron-left"></i> 记一次Disruptor排坑
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/08/31/Go语言中的锁实现/" rel="prev" title="Go语言中的互斥锁">
+                Go语言中的互斥锁 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:ziyuan@2dfire.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">23</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">37</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#JVM源码分析-–-偏向锁"><span class="nav-number">1.</span> <span class="nav-text">JVM源码分析 – 偏向锁</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#偏向锁"><span class="nav-number">1.2.</span> <span class="nav-text">偏向锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#偏向锁的撤销"><span class="nav-number">1.3.</span> <span class="nav-text">偏向锁的撤销</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#小Tips："><span class="nav-number">1.4.</span> <span class="nav-text">小Tips：</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#附："><span class="nav-number">1.4.1.</span> <span class="nav-text">附：</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="全链路监控," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Perspective – 全链路监控系统 解决的问题：最初版本，只解决购物车以下的链路监控。后面考虑适用在二维火其他系统。 相比于CAT、ZIPKIN：更加轻量级。 处理异步线程的全局ID传递：在进行线程操作的时候，使用统一提供的线程模型。包装一个线程类，创建之前从中央IDFactory中申请一个（没有则创建）全局ID，然后自己生成一个当前Branch的ID。线程池执行的其实只是一个代理类，fi">
+<meta name="keywords" content="全链路监控">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Perspective -- 全链路监控系统">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2017/02/25/Perspective – 全链路监控系统/index.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Perspective – 全链路监控系统 解决的问题：最初版本，只解决购物车以下的链路监控。后面考虑适用在二维火其他系统。 相比于CAT、ZIPKIN：更加轻量级。 处理异步线程的全局ID传递：在进行线程操作的时候，使用统一提供的线程模型。包装一个线程类，创建之前从中央IDFactory中申请一个（没有则创建）全局ID，然后自己生成一个当前Branch的ID。线程池执行的其实只是一个代理类，fi">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/1487902722812.png">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/1487734359116.png">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/1487734409331.png">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/1487734439166.png">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/1487748943013.png">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/1487748979996.png">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/1487836239876.png">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/1487836274071.png">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/1487836364929.png">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/1487836474198.png">
+<meta property="og:updated_time" content="2017-03-02T08:11:29.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Perspective -- 全链路监控系统">
+<meta name="twitter:description" content="Perspective – 全链路监控系统 解决的问题：最初版本，只解决购物车以下的链路监控。后面考虑适用在二维火其他系统。 相比于CAT、ZIPKIN：更加轻量级。 处理异步线程的全局ID传递：在进行线程操作的时候，使用统一提供的线程模型。包装一个线程类，创建之前从中央IDFactory中申请一个（没有则创建）全局ID，然后自己生成一个当前Branch的ID。线程池执行的其实只是一个代理类，fi">
+<meta name="twitter:image" content="http://wyj.shiwuliang.com/images/1487902722812.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2017/02/25/Perspective – 全链路监控系统/"/>
+
+
+
+
+
+  <title>Perspective -- 全链路监控系统 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Perspective – 全链路监控系统/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Perspective -- 全链路监控系统</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-02-25T11:37:53+08:00">
+                2017-02-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/全链路监控/" itemprop="url" rel="index">
+                    <span itemprop="name">全链路监控</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Perspective-–-全链路监控系统"><a href="#Perspective-–-全链路监控系统" class="headerlink" title="Perspective – 全链路监控系统"></a>Perspective – 全链路监控系统</h2><hr>
+<p><strong>解决的问题</strong>：最初版本，只解决购物车以下的链路监控。后面考虑适用在二维火其他系统。<br></p>
+<p><strong>相比于CAT、ZIPKIN</strong>：更加轻量级。<br></p>
+<p><strong>处理异步线程的全局ID传递</strong>：在进行线程操作的时候，使用统一提供的线程模型。包装一个线程类，创建之前从中央IDFactory中申请一个（没有则创建）全局ID，然后自己生成一个当前Branch的ID。线程池执行的其实只是一个代理类，finally中将全局ID和BranchID回传，用于绑定一个Trace和Branch。<br></p>
+<p><strong>进程间全局ID传递</strong>：第一版本只针对Dubbo做扩展，使用类似CAT的方式，增加过滤器，同样把invoker.invoke包起来，finally中回传全局ID和BranchID<br></p>
+<p><strong>信息收集</strong>：策略模式，暂定策略：<br></p>
+<ol>
+<li>Fetch：Collector从Storage中主动取回<br></li>
+<li>Receive：等待Storage主动来放入（这里设置一个阈值，比如Storage中Trace数量超过1000就放）。<br></li>
+<li>Higher：高吞吐的情况下使用的策略，结合以上两种一起使用。<br></li>
+</ol>
+<p><strong>信息存储</strong>：同样策略模式，暂定策略：<br></p>
+<ol>
+<li>OnlyError：只存储失败的Trace。<br></li>
+<li>All：全部存储。<br></li>
+</ol>
+<hr>
+<p>链路部分设计图：<br><br><img src="/images/1487902722812.png" alt="Alt text"><br><br></p>
+<p>策略部分设计图：<br><br><img src="/images/1487734359116.png" alt="Alt text"><br><br></p>
+<p>中央存储部分设计图：<br><br><img src="/images/1487734409331.png" alt="Alt text"><br><br></p>
+<p>现阶段目录结构：<br><br><img src="/images/1487734439166.png" alt="Alt text"><br><br></p>
+<hr>
+<p>第一版本经过了最简单的测试环节，后面会模拟一个RPC调用，下面是测试的结果图：<br><br><img src="/images/1487748943013.png" alt="Alt text"><br><br></p>
+<p>测试代码如下：<br><br><img src="/images/1487748979996.png" alt="Alt text"><br><br></p>
+<p>这个版本调整了相应的逻辑，之前的逻辑：<br><br>一个Trace中任何一个branch出现异常，直接从Storage中移除Trace，并且把该Trace放到有问题的Trace集合中。<br></p>
+<p>现在调整为：<br><br>一个Trace中出现异常，会保存当前状态，但是等待后面的ender，什么时候ender数量和子branch数量相等，什么时候移除trace（逻辑同上），一直不结束的Trace（比如超时）会由checker去移除该Trace。<br></p>
+<hr>
+<p>今天继续完善了Perspective的Checker和Storage，更改了目录结构，并且进行了新一轮的测试，问题比之前已经少了很多，完善了trace的信息打印，真正开始有点全链路监控的模样了，看图：<br><br><img src="/images/1487836239876.png" alt="Alt text"><br><br></p>
+<p>测试代码：<br><br><img src="/images/1487836274071.png" alt="Alt text"><br><br></p>
+<p>这里相比上一个测试还有点变化，这次使用的模型是branch嵌套branch的结构，没有添加节点。<br></p>
+<p>继上一次调整目录结构之后，这次又一次调整了目录结构：<br><br><img src="/images/1487836364929.png" alt="Alt text"><br><br></p>
+<p>眼看着一个屏幕已经装不下了，哇，说不出来的欣慰。今天顺便看了一下git的提交记录：<br><br><img src="/images/1487836474198.png" alt="Alt text"><br><br></p>
+<p>从第一天开始设计、构思到写到现在已经过去了一个多周了，期待Perspective的诞生！<br></p>
+<hr>
+<p>三月的第一天开始设计dubbo的过滤器，调整了以下几个逻辑：<br></p>
+<ol>
+<li>第一次初始化Trace的时候，要在LocalManager中放入Trace的main branch。在所有未来的切面中，<strong>如果是一个InvokeNode级别的Inovke，则在LocalManager放入这个Node的main branch，如果是一个Branch级别的invoke，放入他自己</strong>。这里将来考虑把LocalManager废除掉，整个ThreadLocal放到Trace中，这样做的目的：<strong><em>防止超时的线程无法通过finally块中的ThreadLocal.remove移除</em></strong>。放到Trace中可以直接把整个ThreadLocal = null。<br></li>
+<li>线程工厂里要注意的地方：<strong><em>新增线程时，要在线程开始时，把当前线程的Branch放入到ThreadLocal中</em></strong>。</li>
+</ol>
+<p>总结一下：<br><br>可以看到，真个架构模型有点像cat了，而且是越来越像，这不是我期望看到的，因为cat太成熟了，如果说Perspective只是一个把存储和输出轻量化到内存的框架，那么是有点点违背初衷的。<br></p>
+<p>以后Perspective的性质可能变成：嵌入式的分布式系统全链路监控系统。<br></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/全链路监控/" rel="tag"># 全链路监控</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/02/25/Dubbo源码解析 — 服务注册/" rel="next" title=" Dubbo源码解析 --- 服务注册">
+                <i class="fa fa-chevron-left"></i>  Dubbo源码解析 --- 服务注册
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/02/25/Dubbo源码解析 — Invoker和Exchanger/" rel="prev" title=" Dubbo源码解析 --- Invoker和Exchanger">
+                 Dubbo源码解析 --- Invoker和Exchanger <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:ziyuan@2dfire.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">23</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">37</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Perspective-–-全链路监控系统"><span class="nav-number">1.</span> <span class="nav-text">Perspective – 全链路监控系统</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

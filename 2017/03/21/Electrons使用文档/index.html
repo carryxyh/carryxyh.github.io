@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="java,异步,sub/pub,生产者消费者模型," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Electrons使用指南前言Electrons是一个异步事件分发器，也是一个通道，结合了生产者消费者模型和SUB/PUB模式。传统的SUB/PUB模型，在publish事件的时候是直接同步执行所有的监听器，是同步阻塞的。现在结合RINGBUFFER的无锁的急速体验，设计了Electrons，意味电路，事件就相当于跑在电路中的电子，电子在电路中的传递速度非常之快，这也是这个插件的寓意。publis">
+<meta name="keywords" content="java,异步,sub&#x2F;pub,生产者消费者模型">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Electrons使用指南">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2017/03/21/Electrons使用文档/index.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Electrons使用指南前言Electrons是一个异步事件分发器，也是一个通道，结合了生产者消费者模型和SUB/PUB模式。传统的SUB/PUB模型，在publish事件的时候是直接同步执行所有的监听器，是同步阻塞的。现在结合RINGBUFFER的无锁的急速体验，设计了Electrons，意味电路，事件就相当于跑在电路中的电子，电子在电路中的传递速度非常之快，这也是这个插件的寓意。publis">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/监听器模型图.png">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/electrons架构图.png">
+<meta property="og:updated_time" content="2017-03-24T04:24:46.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Electrons使用指南">
+<meta name="twitter:description" content="Electrons使用指南前言Electrons是一个异步事件分发器，也是一个通道，结合了生产者消费者模型和SUB/PUB模式。传统的SUB/PUB模型，在publish事件的时候是直接同步执行所有的监听器，是同步阻塞的。现在结合RINGBUFFER的无锁的急速体验，设计了Electrons，意味电路，事件就相当于跑在电路中的电子，电子在电路中的传递速度非常之快，这也是这个插件的寓意。publis">
+<meta name="twitter:image" content="http://wyj.shiwuliang.com/images/监听器模型图.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2017/03/21/Electrons使用文档/"/>
+
+
+
+
+
+  <title>Electrons使用指南 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/03/21/Electrons使用文档/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Electrons使用指南</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-03-21T10:33:53+08:00">
+                2017-03-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java插件/" itemprop="url" rel="index">
+                    <span itemprop="name">java插件</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Electrons使用指南"><a href="#Electrons使用指南" class="headerlink" title="Electrons使用指南"></a>Electrons使用指南</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言<br></h4><p>Electrons是一个异步事件分发器，也是一个通道，结合了生产者消费者模型和SUB/PUB模式。传统的SUB/PUB模型，在publish事件的时候是直接同步执行所有的监听器，是<strong>同步阻塞</strong>的。现在结合RINGBUFFER的无锁的急速体验，设计了Electrons，意味电路，事件就相当于跑在电路中的电子，电子在电路中的传递速度非常之快，这也是这个插件的寓意。publish的事件会放到容器中等待消费者消费，消费者就是SUB方的listener，这里有个设计上的小缺陷，由于种种愿意，listener的注册是通过注解 + 接口的方式实现，后面会提到。下面进入主题<br></p>
+<h4 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用<br></h4><p>废话不说直接上代码：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">EleCircuit eleCircuit = new EleCircuit();</span><br><span class="line">eleCircuit.start();</span><br><span class="line">boolean ok1 = eleCircuit.publish(&quot;tag1&quot;, new LongEvent(1));</span><br><span class="line">boolean ok2 = eleCircuit.publish(&quot;tag1&quot;, new LongEvent(2));</span><br><span class="line">System.out.println(ok1);</span><br><span class="line">System.out.println(ok2);</span><br><span class="line">eleCircuit.stop();</span><br></pre></td></tr></table></figure>
+<p>具体的限流熔断以及电路相关配置放在<code>Config</code>类中，创建实例的时候也可以使用：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Config config = new Config();</span><br><span class="line">config.set...</span><br><span class="line">config.set...</span><br><span class="line">/*省略配置信息*/</span><br><span class="line"></span><br><span class="line">EleCircuit eleCircuit = new EleCircuit(config);</span><br></pre></td></tr></table></figure>
+<p>Event需要继承<code>Electron</code>抽象类，举个例子：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">public class LongEvent extends Electron &#123;</span><br><span class="line"></span><br><span class="line">    @Getter</span><br><span class="line">    private String name;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * Constructs a prototypical Event.</span><br><span class="line">     *</span><br><span class="line">     * @param source The object on which the Event initially occurred.</span><br><span class="line">     * @throws IllegalArgumentException if source is null.</span><br><span class="line">     */</span><br><span class="line">    public LongEvent(Object source) &#123;</span><br><span class="line">        super(source);</span><br><span class="line">        this.name = &quot;LongEvent&quot; + source;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其他例如事件的权重，可以在event中设置，方法是：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">setWeight(int weight) &#123;</span><br><span class="line">    this.weight = weight;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个属性仅仅在限流开启的时候有效，否则设置了也不生效，可以根据事件的大小来划定权重。<br></p>
+<p>再看看监听器，这个比较重要，先举个例子：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Listener(subscribe = &quot;tag1&quot;)</span><br><span class="line">public class LongEventListener implements ElectronsListener&lt;LongEvent&gt; &#123;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onEvent(LongEvent electrons) throws Exception &#123;</span><br><span class="line">        System.out.println(&quot;ele name : &quot; + electrons.getName() + &quot;Source : &quot; + electrons.getSource());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>@Listener</code>注解用来标注监听器，类需要实现ElectronsListener接口，并且<strong><em>切记加上泛型的限制</em></strong>，否则会出问题！在OnEvent方法中实现处理事件的方法即可。<br></p>
+<p>再看一下<code>@Listener</code>注解，这个注解主要限定了一些Listener的属性值，先看一下<code>@Listener</code>：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">@Documented</span><br><span class="line">@Target(ElementType.TYPE)</span><br><span class="line">@Retention(RetentionPolicy.RUNTIME)</span><br><span class="line">public @interface Listener &#123;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 标识一个唯一的listener</span><br><span class="line">     *</span><br><span class="line">     * @return 这个listener的id</span><br><span class="line">     */</span><br><span class="line">    String id() default &quot;&quot;;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * after标识这个listener在某个listener之后执行，返回一个string，是id的集合，用【,】分割</span><br><span class="line">     *</span><br><span class="line">     * @return 要在该listener之前执行的listener的id的集合</span><br><span class="line">     */</span><br><span class="line">    String after() default &quot;&quot;;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 优先级</span><br><span class="line">     *</span><br><span class="line">     * @return listener的优先级</span><br><span class="line">     */</span><br><span class="line">    int priority() default Byte.MIN_VALUE;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 订阅的类型</span><br><span class="line">     *</span><br><span class="line">     * @return 订阅的事件类型</span><br><span class="line">     */</span><br><span class="line">    String subscribe() default &quot;&quot;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>先看一下<code>subscribe</code>属性，这个属性规定了订阅的事件的<code>tag</code>，<strong>最好不好为默认值</strong>。<br></li>
+<li>再看一下<code>priority</code>属性，这个属性规定了监听器的<strong>优先级</strong>，<strong>优先级高的监听器优先执行，但不保证优先完成！</strong>而且在<code>after</code>属性存在的情况下，priority可能会失效！<br></li>
+<li>下面一起来说<code>id</code>属性和<code>after</code>属性，这两个属性大部分情况下要配合使用。我们来先看一种场景：事件A需要被监听器L1和L2订阅，但是<em>L2的执行依赖L1的结果或者L2需要L1执行之后再执行</em>。这是就需要使用我们的这两个属性类配合使用，我们先把L1的<code>id</code>设置为<strong>L1</strong>，再在L2的<code>after</code>属性中，写入<code>L1</code>，即规定L2监听器需要在id = “L1”的执行器执行之后执行。<br></li>
+</ol>
+<p><strong><em>注意：如果L2为尾节点，则L2不能存在<code>id</code>属性！</em></strong><br></p>
+<p>这里举一个复杂的例子：公有监听器A、B、C、D、E：<br></p>
+<ul>
+<li>B、C必须在A之后执行<br></li>
+<li>D必须在B之后执行<br></li>
+<li>E必须在D、C之后执行<br></li>
+<li>（<strong>执行之后的意思就是执行完了之后</strong>）<br></li>
+</ul>
+<p>这种情况下的<code>id</code>和<code>after</code>属性：<br></p>
+<ul>
+<li>A的<code>id</code> -&gt; 1，<strong>没有<code>after</code>属性</strong><br></li>
+<li>B的<code>id</code> -&gt; 2，<code>after</code>属性为 -&gt; “1”<br></li>
+<li>C的<code>id</code> -&gt; 3，<code>after</code>属性为 -&gt; “1”<br></li>
+<li>D的<code>id</code> -&gt; 4，<code>after</code>属性为 -&gt; “2”<br></li>
+<li><strong>E的<code>id</code> 不能存在</strong>！<code>after</code>属性为 -&gt; “3,4”（如果在多个监听器执行之后执行，<code>after</code>中的id用 <strong>[ , ]</strong> 隔开）<br></li>
+</ul>
+<p>模式图应该为下面这种情况：<br><br><img src="/images/监听器模型图.png" alt="Alt text"><br><br></p>
+<h4 id="其他使用注意事项"><a href="#其他使用注意事项" class="headerlink" title="其他使用注意事项"></a>其他使用注意事项<br></h4><ol>
+<li>代理类的使用：提供了两种代理发布器，生产者消费者模型也存在容器满了的情况，这种情况如果直接使用<code>publish</code>方法需要用户自己处理异常，比较麻烦，现在提供了：<strong>重发代理类</strong>和<strong>丢弃代理类</strong>。作用：<br></li>
+</ol>
+<ul>
+<li>重发：先发布一次事件，如果容器满了，休息500ms再发一次，如果继续满，使用同步发送。<br></li>
+<li>丢弃：只发布一次事件，如果容器满了，直接记录日志并返回，事件丢弃（不推荐，只在小部分场景使用）。<br></li>
+</ul>
+<ol>
+<li>同步发布事件的说明：提供了同步发送的传统方式，这种方式会循环所有的监听器，<em>同步阻塞，直到所有的监听器执行完成</em>。由于上述那种A监听器执行完再执行监听器B的逻辑依赖disruptor的实现，所以<strong><em>同步发布不支持存在after逻辑的监听器！</em></strong><br></li>
+</ol>
+<h4 id="架构设计"><a href="#架构设计" class="headerlink" title="架构设计"></a>架构设计<br></h4><p><img src="/images/electrons架构图.png" alt="Alt text"><br><br></p>
+<h5 id="关于限流"><a href="#关于限流" class="headerlink" title="关于限流"></a>关于限流<br></h5><p>令牌桶算法的实现，针对<strong><em>全部通道</em></strong>，每个通道都有一个限流器（<strong><em>包括NormalChannel</em></strong>）。在Config中配置之后即可开启，现在没有针对某一个通道的单独配置，后期考虑加入。<br></p>
+<h5 id="关于熔断"><a href="#关于熔断" class="headerlink" title="关于熔断"></a>关于熔断<br></h5><p>上文提到过，只有特殊通道支持熔断，这里阐述一下设计理念：<br></p>
+<p><strong>为什么对普通通道不设计熔断</strong>：普通通道存放的事件的监听器是没有关联的，即只要监听器链中存在<code>after</code>逻辑的监听器，就不会放到普通通道中。如果因为某个监听器持续出错，把整个通道熔断，其实是非常不合理的，因为其他监听器跟持续出错的监听器之间没有任何联系，不应该一起被熔断，其他监听器应该允许继续执行。<br></p>
+<p><strong>为什么对特殊通道设计熔断</strong>：原理类似，由于特殊通道是存在after逻辑的通道，即监听器之间存在关联，如果中间或前置监听器出问题，很可能导致后继监听器处理事件出错，或者无法处理事件，这时候熔断整个通道，提醒用户去解决问题。<br></p>
+<h4 id="特别鸣谢"><a href="#特别鸣谢" class="headerlink" title="特别鸣谢"></a>特别鸣谢<br></h4><p><strong>释迦</strong>：帮我理顺思路以及链的遍历算法的完善。<br><br><strong>排骨</strong>：第一版本的开发者，看了代码之后决定重写一个更加完善、立体的插件。提供了工具类，参考了相关概念，是在1.0版本基础上的2.0版本。<br></p>
+<h4 id="关于"><a href="#关于" class="headerlink" title="关于"></a>关于<br></h4><p><a href="https://github.com/carryxyh/Electrons" target="_blank" rel="noopener">源码地址</a><br><br>相关问题，二维火内部联系<strong><em>紫苑</em></strong>，非二维火同学联系我的邮箱：<em>ziyuan@2dfire.com</em><br></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/异步/" rel="tag"># 异步</a>
+          
+            <a href="/tags/sub-pub/" rel="tag"># sub/pub</a>
+          
+            <a href="/tags/生产者消费者模型/" rel="tag"># 生产者消费者模型</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/03/09/Go语言中的Dispatcher/" rel="next" title="Go语言中的Dispatcher">
+                <i class="fa fa-chevron-left"></i> Go语言中的Dispatcher
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/04/11/Java阻塞队列的原理分析/" rel="prev" title="Java阻塞队列的原理分析">
+                Java阻塞队列的原理分析 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:ziyuan@2dfire.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">23</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">37</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Electrons使用指南"><span class="nav-number">1.</span> <span class="nav-text">Electrons使用指南</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#使用"><span class="nav-number">1.2.</span> <span class="nav-text">使用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#其他使用注意事项"><span class="nav-number">1.3.</span> <span class="nav-text">其他使用注意事项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#架构设计"><span class="nav-number">1.4.</span> <span class="nav-text">架构设计</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#关于限流"><span class="nav-number">1.4.1.</span> <span class="nav-text">关于限流</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#关于熔断"><span class="nav-number">1.4.2.</span> <span class="nav-text">关于熔断</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#特别鸣谢"><span class="nav-number">1.5.</span> <span class="nav-text">特别鸣谢</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#关于"><span class="nav-number">1.6.</span> <span class="nav-text">关于</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

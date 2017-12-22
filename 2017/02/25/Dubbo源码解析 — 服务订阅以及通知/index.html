@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="服务订阅,服务通知," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Dubbo源码解析 — 服务订阅以及通知 前言由于服务的注册内容比较多，所以把上一部分单独做一篇，订阅和通知合在一起。 subscribe承接上一篇，我们说完了服务的发布，现在看看服务的订阅。考虑了一下，我还是决定在这里贴一下Protocol接口的相关注释，方便大家理解： 12345678910111213141516171819202122232425262728/**     * 暴露远程服务">
+<meta name="keywords" content="服务订阅,服务通知">
+<meta property="og:type" content="article">
+<meta property="og:title" content=" Dubbo源码解析 --- 服务订阅以及通知">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/index.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Dubbo源码解析 — 服务订阅以及通知 前言由于服务的注册内容比较多，所以把上一部分单独做一篇，订阅和通知合在一起。 subscribe承接上一篇，我们说完了服务的发布，现在看看服务的订阅。考虑了一下，我还是决定在这里贴一下Protocol接口的相关注释，方便大家理解： 12345678910111213141516171819202122232425262728/**     * 暴露远程服务">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2017-02-25T04:23:47.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content=" Dubbo源码解析 --- 服务订阅以及通知">
+<meta name="twitter:description" content="Dubbo源码解析 — 服务订阅以及通知 前言由于服务的注册内容比较多，所以把上一部分单独做一篇，订阅和通知合在一起。 subscribe承接上一篇，我们说完了服务的发布，现在看看服务的订阅。考虑了一下，我还是决定在这里贴一下Protocol接口的相关注释，方便大家理解： 12345678910111213141516171819202122232425262728/**     * 暴露远程服务">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/"/>
+
+
+
+
+
+  <title> Dubbo源码解析 --- 服务订阅以及通知 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline"> Dubbo源码解析 --- 服务订阅以及通知</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-02-25T11:37:53+08:00">
+                2017-02-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
+                    <span itemprop="name">dubbo源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Dubbo源码解析-—-服务订阅以及通知"><a href="#Dubbo源码解析-—-服务订阅以及通知" class="headerlink" title="Dubbo源码解析 — 服务订阅以及通知"></a>Dubbo源码解析 — 服务订阅以及通知</h2><hr>
+<h5 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言<br></h5><p>由于服务的注册内容比较多，所以把上一部分单独做一篇，订阅和通知合在一起。<br></p>
+<h5 id="subscribe"><a href="#subscribe" class="headerlink" title="subscribe"></a>subscribe<br></h5><p>承接上一篇，我们说完了服务的发布，现在看看服务的订阅。考虑了一下，我还是决定在这里贴一下Protocol接口的相关注释，方便大家理解：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line">     * 暴露远程服务：&lt;br&gt;</span><br><span class="line">     * 1. 协议在接收请求时，应记录请求来源方地址信息：RpcContext.getContext().setRemoteAddress();&lt;br&gt;</span><br><span class="line">     * 2. export()必须是幂等的，也就是暴露同一个URL的Invoker两次，和暴露一次没有区别。&lt;br&gt;</span><br><span class="line">     * 3. export()传入的Invoker由框架实现并传入，协议不需要关心。&lt;br&gt;</span><br><span class="line">     * </span><br><span class="line">     * @param &lt;T&gt; 服务的类型</span><br><span class="line">     * @param invoker 服务的执行体</span><br><span class="line">     * @return exporter 暴露服务的引用，用于取消暴露</span><br><span class="line">     * @throws RpcException 当暴露服务出错时抛出，比如端口已占用</span><br><span class="line">     */</span><br><span class="line">    @Adaptive</span><br><span class="line">    &lt;T&gt; Exporter&lt;T&gt; export(Invoker&lt;T&gt; invoker) throws RpcException;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 引用远程服务：&lt;br&gt;</span><br><span class="line">     * 1. 当用户调用refer()所返回的Invoker对象的invoke()方法时，协议需相应执行同URL远端export()传入的Invoker对象的invoke()方法。&lt;br&gt;</span><br><span class="line">     * 2. refer()返回的Invoker由协议实现，协议通常需要在此Invoker中发送远程请求。&lt;br&gt;</span><br><span class="line">     * 3. 当url中有设置check=false时，连接失败不能抛出异常，并内部自动恢复。&lt;br&gt;</span><br><span class="line">     * </span><br><span class="line">     * @param &lt;T&gt; 服务的类型</span><br><span class="line">     * @param type 服务的类型</span><br><span class="line">     * @param url 远程服务的URL地址</span><br><span class="line">     * @return invoker 服务的本地代理</span><br><span class="line">     * @throws RpcException 当连接服务提供方失败时抛出</span><br><span class="line">     */</span><br><span class="line">    @Adaptive</span><br><span class="line">    &lt;T&gt; Invoker&lt;T&gt; refer(Class&lt;T&gt; type, URL url) throws RpcException;</span><br></pre></td></tr></table></figure>
+<p>这里很容易就可以明白，export发布，refer引用，然后获取invoker，然后执行invoker的方法即可。<br></p>
+<p>继续看一下RegistryProtocol的refer方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">public &lt;T&gt; Invoker&lt;T&gt; refer(Class&lt;T&gt; type, URL url) throws RpcException &#123;</span><br><span class="line"></span><br><span class="line">    //处理注册中心的协议，用url中registry参数的值作为真实的注册中心协议</span><br><span class="line">    url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);</span><br><span class="line">	</span><br><span class="line">	//拿到真正的注册中心实例，我们的例子中就是zookeeperRegistry</span><br><span class="line">    Registry registry = registryFactory.getRegistry(url);</span><br><span class="line"></span><br><span class="line">	if (RegistryService.class.equals(type)) </span><br><span class="line">		//todo 不太理解，貌似是注册中心服务本身的暴露</span><br><span class="line">		return proxyFactory.getInvoker((T) registry, type, url);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">    //分组聚合处理，http://alibaba.github.io/dubbo-doc-static/Merge+By+Group-zh.htm</span><br><span class="line">    // group=&quot;a,b&quot; or group=&quot;*&quot;</span><br><span class="line">    Map&lt;String, String&gt; qs = StringUtils.parseQueryString(url.getParameterAndDecoded(Constants.REFER_KEY));</span><br><span class="line">    </span><br><span class="line">    String group = qs.get(Constants.GROUP_KEY);</span><br><span class="line">    </span><br><span class="line">    if (group != null &amp;&amp; group.length() &gt; 0 ) &#123;</span><br><span class="line">        if ( ( Constants.COMMA_SPLIT_PATTERN.split( group ) ).length &gt; 1</span><br><span class="line">                || &quot;*&quot;.equals( group ) ) &#123;</span><br><span class="line">            return doRefer( getMergeableCluster(), registry, type, url );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return doRefer(cluster, registry, type, url);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>继续看一下doRefer方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">private &lt;T&gt; Invoker&lt;T&gt; doRefer(Cluster cluster, Registry registry, Class&lt;T&gt; type, URL url) &#123;</span><br><span class="line">	</span><br><span class="line">	//这个directory把同一个serviceInterface对应的多个invoker管理起来提供概念上的化多为单一，供路由、均衡算法等使用</span><br><span class="line">	RegistryDirectory&lt;T&gt; directory = new RegistryDirectory&lt;T&gt;(type, url);</span><br><span class="line">    directory.setRegistry(registry);</span><br><span class="line">    directory.setProtocol(protocol);</span><br><span class="line">    URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, NetUtils.getLocalHost(), 0, type.getName(), directory.getUrl().getParameters());</span><br><span class="line"></span><br><span class="line">    //注册自己</span><br><span class="line">    if (! Constants.ANY_VALUE.equals(url.getServiceInterface())</span><br><span class="line">            &amp;&amp; url.getParameter(Constants.REGISTER_KEY, true)) &#123;</span><br><span class="line">		registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,</span><br><span class="line">                Constants.CHECK_KEY, String.valueOf(false)));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    //订阅目标服务提供方</span><br><span class="line">	directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, Constants.PROVIDERS_CATEGORY </span><br><span class="line">	+ &quot;,&quot; + Constants.CONFIGURATORS_CATEGORY </span><br><span class="line">	+ &quot;,&quot; + Constants.ROUTERS_CATEGORY));</span><br><span class="line">	</span><br><span class="line">	//合并所有相同invoker</span><br><span class="line">    return cluster.join(directory);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><em>服务消费方不仅会订阅相关的服务，也会注册自身供其他层使用（服务治理）</em>。特别要注意的是订阅时，同时订阅了三个分类类型：<strong><em>providers，routers，configurators</em></strong>。<br></p>
+<p>继续深挖dubbo中服务消费方订阅服务的细节，上面方法中最终把订阅细节委托给RegistryDirectory.subscribe方法，注意，这个方法接受的参数，此时的url已经把category设置为providers，routers，configurators：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public void subscribe(URL url) &#123;</span><br><span class="line">    setConsumerUrl(url);</span><br><span class="line">    registry.subscribe(url, this);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里registry就是zookeeperRegistry，这在doRefer方法可以看到明确的注入。然后和注册服务时一样，订阅会先由FailbackRegistry完成失效重试的处理，最终会交给zookeeperRegistry.doSubscribe方法。zookeeperRegistry实例拥有ZookeeperClient类型引用，该类型对象封装了和zookeeper通信的逻辑（默认是使用zkclient客户端）。我们在doSubscribe中能看到对zkClient的使用，而在ZK中的路径模式，统一看上一篇关于服务注册的最后一张图。<br></p>
+<p>订阅之后，下面我们讲解notify，我们在doSubscribe中可以看到NotifyListener的调用。<br></p>
+<h5 id="Notify"><a href="#Notify" class="headerlink" title="Notify"></a>Notify<br></h5><p>这里先解决一个小问题，之前在其他博客上也看到过，dubbo中有一个ChildListener接口，并且我们在ZookeeperRegistry中会看到如下：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">private final ConcurrentMap&lt;URL, ConcurrentMap&lt;NotifyListener, ChildListener&gt;&gt; zkListeners = new ConcurrentHashMap&lt;URL, ConcurrentMap&lt;NotifyListener, ChildListener&gt;&gt;();</span><br></pre></td></tr></table></figure>
+<p>这里我还没用细究这个ChildListener的作用，借鉴了一篇博客里的讲解：<br></p>
+<blockquote>
+<p>这个ChildListener接口用于<strong>把zkclient的事件（IZkChildListener）转换到registry事件（NotifyListener）</strong>。这么做的深意不是特别的理解，可能是因为我并没有太多zookeeper的使用经验导致的，这里的做法可以<em>更好的把zkclient的api和dubbo真身的注册中心逻辑分离开</em>，毕竟dubbo除了zkclient以外还可以选择curator。<br></p>
+</blockquote>
+<p>我们主要看一下RegistryDirectory的notify方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">public synchronized void notify(List&lt;URL&gt; urls) &#123;</span><br><span class="line">    </span><br><span class="line">    ...</span><br><span class="line">    </span><br><span class="line">    // configurators 更新缓存的服务提供方配置规则</span><br><span class="line">    if (configuratorUrls != null &amp;&amp; configuratorUrls.size() &gt;0 ) &#123;</span><br><span class="line">        this.configurators = toConfigurators(configuratorUrls);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    // routers  更新缓存的路由配置规则</span><br><span class="line">    if (routerUrls != null &amp;&amp; routerUrls.size() &gt;0 )&#123;</span><br><span class="line">        List&lt;Router&gt; routers = toRouters(routerUrls);</span><br><span class="line">        if(routers != null)&#123; // null - do nothing</span><br><span class="line">            setRouters(routers);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 合并override参数</span><br><span class="line">    List&lt;Configurator&gt; localConfigurators = this.configurators;</span><br><span class="line">    </span><br><span class="line">    this.overrideDirectoryUrl = directoryUrl;</span><br><span class="line">    if (localConfigurators != null &amp;&amp; localConfigurators.size() &gt; 0) &#123;</span><br><span class="line">        for (Configurator configurator : localConfigurators) &#123;</span><br><span class="line">            this.overrideDirectoryUrl = configurator.configure(overrideDirectoryUrl);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // providers</span><br><span class="line">    refreshInvoker(invokerUrls);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里在每次消费方接受到注册中心的通知后，大概会做下面这些事儿：<br></p>
+<ul>
+<li>更新服务提供方的配置规则<br></li>
+<li>更新路由规则<br></li>
+<li>重建invoker实例<br></li>
+</ul>
+<p>我们这里主要看dubbo如何“重建invoker实例”，也就是最后一行代码调用的方法refreshInvoker：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">private void refreshInvoker(List&lt;URL&gt; invokerUrls)&#123;</span><br><span class="line">    if (invokerUrls != null &amp;&amp; invokerUrls.size() == 1 &amp;&amp; invokerUrls.get(0) != null &amp;&amp; Constants.EMPTY_PROTOCOL.equals(invokerUrls.get(0).getProtocol())) &#123; </span><br><span class="line">    </span><br><span class="line">	    //如果传入的参数只包含一个empty://协议的url，表明禁用当前服务</span><br><span class="line">        this.forbidden = true; // 禁止访问</span><br><span class="line">        this.methodInvokerMap = null; // 置空列表</span><br><span class="line">        destroyAllInvokers(); // 关闭所有Invoker</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        this.forbidden = false; // 允许访问</span><br><span class="line">        Map&lt;String, Invoker&lt;T&gt;&gt; oldUrlInvokerMap = this.urlInvokerMap;</span><br><span class="line"></span><br><span class="line">        if (invokerUrls.size() == 0 &amp;&amp; this.cachedInvokerUrls != null) &#123;</span><br><span class="line">             //如果传入的invokerUrl列表是空，则表示只是下发的override规则或route规则，需要重新交叉对比，决定是否需要重新引用</span><br><span class="line">            invokerUrls.addAll(this.cachedInvokerUrls);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            this.cachedInvokerUrls = new HashSet&lt;URL&gt;();</span><br><span class="line">            //缓存invokerUrls列表，便于交叉对比</span><br><span class="line">            this.cachedInvokerUrls.addAll(invokerUrls);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        if (invokerUrls.size() ==0 )&#123;</span><br><span class="line">            return;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Map&lt;String, Invoker&lt;T&gt;&gt; newUrlInvokerMap = toInvokers(invokerUrls) ;// 将URL列表转成Invoker列表</span><br><span class="line">        Map&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt; newMethodInvokerMap = toMethodInvokers(newUrlInvokerMap); // 换方法名映射Invoker列表</span><br><span class="line"></span><br><span class="line">        // state change</span><br><span class="line">        //如果计算错误，则不进行处理.</span><br><span class="line">        if (newUrlInvokerMap == null || newUrlInvokerMap.size() == 0 ) &#123;</span><br><span class="line">        </span><br><span class="line">			logger.error(new IllegalStateException(&quot;urls to invokers error .invokerUrls.size :&quot;+invokerUrls.size() + &quot;, invoker.size :0. urls :&quot;+invokerUrls.toString()));</span><br><span class="line">            return ;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        this.methodInvokerMap = multiGroup ? toMergeMethodInvokerMap(newMethodInvokerMap) : newMethodInvokerMap;</span><br><span class="line">        this.urlInvokerMap = newUrlInvokerMap;</span><br><span class="line"></span><br><span class="line">        try &#123;</span><br><span class="line">	        // 关闭未使用的Invoker</span><br><span class="line">            destroyUnusedInvokers(oldUrlInvokerMap,newUrlInvokerMap);</span><br><span class="line">        &#125;catch (Exception e) &#123;</span><br><span class="line">            logger.warn(&quot;destroyUnusedInvokers error. &quot;, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>到这里我们已经完成了服务通知的业务逻辑，有兴趣的童鞋可以深究一下toInvokers方法，它又会走一遍url -&gt; invoker的逻辑（服务引用）。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/服务订阅/" rel="tag"># 服务订阅</a>
+          
+            <a href="/tags/服务通知/" rel="tag"># 服务通知</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/02/25/深克隆插件FKC/" rel="next" title="深克隆插件 -- FKC">
+                <i class="fa fa-chevron-left"></i> 深克隆插件 -- FKC
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/02/25/synchronized 关键字/" rel="prev" title="synchronized 关键字">
+                synchronized 关键字 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:ziyuan@2dfire.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">23</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">37</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Dubbo源码解析-—-服务订阅以及通知"><span class="nav-number">1.</span> <span class="nav-text">Dubbo源码解析 — 服务订阅以及通知</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#前言"><span class="nav-number">1.0.0.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#subscribe"><span class="nav-number">1.0.0.2.</span> <span class="nav-text">subscribe</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Notify"><span class="nav-number">1.0.0.3.</span> <span class="nav-text">Notify</span></a></li></ol></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

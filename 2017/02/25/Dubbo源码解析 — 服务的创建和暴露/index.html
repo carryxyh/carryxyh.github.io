@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="服务创建,服务暴露," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Dubbo源码解析 — 服务的创建和暴露 前言本文主要就dubbo基础的XML解析开始，到服务的创建和发布，最终延展到底层netty的调用，给出一个初始化流程的解读。在这里你能看到dubbo一些优秀的抽象设计，以及底层源代码的解读。如有语义不明，联系紫苑。或者邮件ziyuan@2dfire.com。 service和server首先，当发布一个服务的Server时，我们需要编写一个Spring配置">
+<meta name="keywords" content="服务创建,服务暴露">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Dubbo源码解析 --- 服务的创建和暴露">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务的创建和暴露/index.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Dubbo源码解析 — 服务的创建和暴露 前言本文主要就dubbo基础的XML解析开始，到服务的创建和发布，最终延展到底层netty的调用，给出一个初始化流程的解读。在这里你能看到dubbo一些优秀的抽象设计，以及底层源代码的解读。如有语义不明，联系紫苑。或者邮件ziyuan@2dfire.com。 service和server首先，当发布一个服务的Server时，我们需要编写一个Spring配置">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2017-02-25T04:24:06.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Dubbo源码解析 --- 服务的创建和暴露">
+<meta name="twitter:description" content="Dubbo源码解析 — 服务的创建和暴露 前言本文主要就dubbo基础的XML解析开始，到服务的创建和发布，最终延展到底层netty的调用，给出一个初始化流程的解读。在这里你能看到dubbo一些优秀的抽象设计，以及底层源代码的解读。如有语义不明，联系紫苑。或者邮件ziyuan@2dfire.com。 service和server首先，当发布一个服务的Server时，我们需要编写一个Spring配置">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务的创建和暴露/"/>
+
+
+
+
+
+  <title>Dubbo源码解析 --- 服务的创建和暴露 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务的创建和暴露/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Dubbo源码解析 --- 服务的创建和暴露</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-02-25T11:37:53+08:00">
+                2017-02-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
+                    <span itemprop="name">dubbo源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Dubbo源码解析-—-服务的创建和暴露"><a href="#Dubbo源码解析-—-服务的创建和暴露" class="headerlink" title="Dubbo源码解析 — 服务的创建和暴露"></a>Dubbo源码解析 — 服务的创建和暴露</h2><hr>
+<h5 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h5><p>本文主要就dubbo基础的XML解析开始，到服务的创建和发布，最终延展到底层netty的调用，给出一个初始化流程的解读。<br><br>在这里你能看到dubbo一些优秀的抽象设计，以及底层源代码的解读。如有语义不明，联系紫苑。或者邮件<a href="ziyuan@2dfire.com">ziyuan@2dfire.com</a>。<br></p>
+<h5 id="service和server"><a href="#service和server" class="headerlink" title="service和server"></a>service和server<br></h5><p>首先，当发布一个服务的Server时，我们需要编写一个Spring配置文件，形如以下：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;beans xmlns=&quot;...&quot;&gt;</span><br><span class="line">    &lt;dubbo:application name=&quot;hello-world-app&quot; /&gt;</span><br><span class="line">    &lt;dubbo:protocol name=&quot;dubbo&quot; port=&quot;20880&quot; /&gt;</span><br><span class="line">    &lt;dubbo:service interface=&quot;net.beamlight.dubbo.service.DemoService&quot; ref=&quot;demoService&quot; registry=&quot;...&quot; /&gt;</span><br><span class="line">    &lt;bean id=&quot;demoService&quot; class=&quot;net.beamlight.dubbo.provider.DemoServiceImpl&quot; /&gt;</span><br><span class="line">&lt;/beans&gt;</span><br></pre></td></tr></table></figure>
+<p>其中关键的一行为<strong><dubbo:service …=""></dubbo:service></strong>，这里使用了扩展的<strong>Spring Schema</strong>，相关定义在jar包META-INF目录下的<strong>spring.handlers</strong>、<strong>spring.schemas</strong>、<strong>dubbo.xsd</strong>中。解析器为<strong><em>com.alibaba.dubbo.config.spring.schema.DubboNamespaceHandler</em></strong>，所以它也就成了启动provider的“应用程序入口”。<br><br>而我们观察这个NamespaceHandler的代码，非常的简短，这里就不贴了。实际就重写了<strong>NamespaceHandlerSupport</strong>的<strong>init</strong>方法，注册了一些<strong>BeanDefinitionParser</strong>，而读过spring源码的人都应该了解，spring的启动流程：先根据xml生成beanDefinition，然后再根据beanDefinition生成Bean并放到一个concurentHashMap中。那么我们直接看DubboNamespaceHandler中注册的DubboBeanDefinitionParser，这里有这么一行代码：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">registerBeanDefinitionParser(&quot;service&quot;, new DubboBeanDefinitionParser(ServiceBean.class, true));</span><br></pre></td></tr></table></figure>
+<p>DubboBeanDefinitionParser中主要做了一些BeanDefinition的初始化，我们跳过直接看<strong>ServiceBean</strong>。<br><br>同样我们省略一些初始化（这里其实是初始化了一些config，比如protocolConfig、monitorConfig等等，具体细节查看源码），在初始化的最后我们找到了这么几行代码：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/* 省略一些初始化操作 */</span><br><span class="line">if (!isDelay()) &#123;</span><br><span class="line">	export();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>export即为我们的发布操作，二话不说点进去。<br><br>export是ServiceConfig中的方法，而ServiceBean继承自ServiceConfig（这个地方的抽象是不是有点不太合适？思考中…），在export中我们看到了这么几个现象：</p>
+<ol>
+<li>delay的使用：<br></li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">if (delay != null &amp;&amp; delay &gt; 0) &#123;</span><br><span class="line">	Thread thread = new Thread(new Runnable() &#123;</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			try &#123;</span><br><span class="line">				Thread.sleep(delay);</span><br><span class="line">			&#125; catch (Throwable e) &#123;</span><br><span class="line">				//我们看到这里是直接ignore掉了</span><br><span class="line">			&#125;</span><br><span class="line">				doExport();</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;);</span><br><span class="line">	thread.setDaemon(true);</span><br><span class="line">	thread.setName(&quot;DelayExportServiceThread&quot;);</span><br><span class="line">	thread.start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们发现，delay的作用就是<strong><em>延迟暴露</em></strong>，而延迟的方式也很直截了当，<strong>Thread.sleep(delay)</strong>，另外一个比较有意思的就是我们可以看到，延迟暴露的服务是通过守护线程发布的，而守护线程的优先级比较低，这里的设计是不是有何用意，有兴趣的同学可以细究一下或者有知道的告诉我一下。<br></p>
+<ol>
+<li><strong>export是synchronized修饰的方法</strong>。也就是说暴露的过程是原子操作，正常情况下不会出现锁竞争的问题，毕竟初始化过程大多数情况下都是单一线程操作，这里联想到了spring的初始化流程，也进行了加锁操作，这里也给我们平时设计一个不错的启示：<strong>初始化流程的性能调优优先级应该放的比较低，但是安全的优先级应该放的比较高！</strong><br><br>继续看doExport()方法。同样是一堆初始化代码，这里我们看到了如果provider已经存在（provider != null）的情况下，我们之前说过的初始化的monitorConfig、moudleConfig中的一些配置是不会生效的（protocol、monitor等属性），而是直接从已有的provider中获取的，而provider的初始化是在serviceBean中，根据：</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">//如果上下文已经存在的情况下，从上下文中获取providers</span><br><span class="line">Map&lt;String, ProviderConfig&gt; providerConfigMap =  applicationContext == null ? null  : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ProviderConfig.class, false, false);</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">ProviderConfig providerConfig = null;</span><br><span class="line">for (ProviderConfig config : providerConfigMap.values()) &#123;</span><br><span class="line">	if (config.isDefault() == null || config.isDefault().booleanValue()) &#123;</span><br><span class="line">		if (providerConfig != null) &#123;</span><br><span class="line">			throw new IllegalStateException(&quot;Duplicate provider configs: &quot; + providerConfig + &quot; and &quot; + config);</span><br><span class="line">		&#125;</span><br><span class="line">		providerConfig = config;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line">if (providerConfig != null) &#123;</span><br><span class="line">	//这里的setProvider方法继承自ServiceConfig</span><br><span class="line">	setProvider(providerConfig);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>获得。<br></p>
+<h5 id="export过程"><a href="#export过程" class="headerlink" title="export过程"></a>export过程<br></h5><p>继续看doExport()，最终会调用到doExportUrls()中：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">//DUBBO框架整体是基于URL为总线的方式来达到各个模块之间的动态加载，这里也有体现，后面我们在dubbo的插件化中会特别讲解</span><br><span class="line">List&lt;URL&gt; registryURLs = loadRegistries(true);</span><br><span class="line">for (ProtocolConfig protocolConfig : protocols) &#123;</span><br><span class="line">	doExportUrlsFor1Protocol(protocolConfig, registryURLs);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>继续看doExportUrlsFor1Protocol()方法之前，我们会发现，实际上发布服务的是protocol，这里的抽象做的也很精彩，毕竟各个protocol的内容大不相同，protocol后面还会讲解，默认的protocol是dubboProtol。在doExportUrlsFor1Protocol中，我们会看到如下语句：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">Invoker&lt;?&gt; invoker = proxyFactory.getInvoker(ref, (Class)interfaceClass, url);</span><br><span class="line">Exporter&lt;?&gt; exporter = protocol.export(invoker);</span><br><span class="line">exporters.add(exporter);</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>这里我们会发现：<br></p>
+<ol>
+<li>dubbo的比较核心的抽象之一：<strong>Invoker</strong>。<br></li>
+<li><strong>invoke实际上是一个代理类</strong>，从proxyFactory（默认为javassist的proxyFactory）中生成。<br></li>
+</ol>
+<p>这里我们也做一个小总结，各个dubbo组件的作用：<br></p>
+<ul>
+<li>Invoker – 执行具体的远程调用</li>
+<li>Protocol – 服务地址的发布和订阅</li>
+<li>Exporter – 暴露服务或取消暴露<br><br></li>
+</ul>
+<h5 id="protocol发布服务"><a href="#protocol发布服务" class="headerlink" title="protocol发布服务"></a>protocol发布服务</h5><p>我们看一下dubboProtocol的export方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">openServer(url);</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>省略一些步骤和判断，直接看openServer：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">ExchangeServer server = serverMap.get(key);</span><br><span class="line">if (server == null) &#123;</span><br><span class="line">	serverMap.put(key, createServer(url));</span><br><span class="line">&#125; else &#123;</span><br><span class="line">	//server支持reset,配合override功能使用</span><br><span class="line">	server.reset(url);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>继续看其中的createServer方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">//requestHandler包含通信协议的主要处理逻辑</span><br><span class="line">private ExchangeHandler requestHandler = new ExchangeHandlerAdapter()&#123;</span><br><span class="line">	...</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">ExchangeServer server;</span><br><span class="line">try &#123;</span><br><span class="line">	server = Exchangers.bind(url, requestHandler);</span><br><span class="line">&#125; catch (RemotingException e) &#123;</span><br><span class="line">	throw new RpcException(&quot;Fail to start server(url: &quot; + url + &quot;) &quot; + e.getMessage(), e);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>发现<strong>ExchangeServer是通过Exchangers</strong>创建的，直接看bind方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">getExchanger(url).bind(url, handler);</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>getExchanger方法实际上调用的是<strong>ExtensionLoader</strong>的相关方法，这里的ExtensionLoader是dubbo插件化的核心，我们会在后面的插件化讲解中详细讲解，这里我们只需要知道Exchanger的默认实现只有一个：HeaderExchanger。上面一段代码最终调用的是：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">public ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException &#123;</span><br><span class="line">	return new HeaderExchangeServer(Transporters.bind(url, new DecodeHandler(new HeaderExchangeHandler(handler))));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到Server与Client实例均是在这里创建的，HeaderExchangeServer需要一个Server类型的参数，来自Transporters.bind()：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public static Server bind(URL url, ChannelHandler... handlers) throws RemotingException &#123;</span><br><span class="line">	...</span><br><span class="line">	return getTransporter().bind(url, handler);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>getTransporter()获取的实例来源于配置，默认返回一个NettyTransporter：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">public Server bind(URL url, ChannelHandler listener) throws RemotingException &#123;</span><br><span class="line">	return new NettyServer(url, listener);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最终来到了NettyServer，在它的doOpen()方法中看到了我们熟悉的Netty Bootstrap~~，至此，我们一个provider的注册完成，<strong>可以看到底层dubbo的默认实现时netty</strong>。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/服务创建/" rel="tag"># 服务创建</a>
+          
+            <a href="/tags/服务暴露/" rel="tag"># 服务暴露</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/02/25/Dubbo源码解析 — 关于dubbo的插件化/" rel="prev" title=" Dubbo源码解析 --- 关于dubbo的插件化">
+                 Dubbo源码解析 --- 关于dubbo的插件化 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:ziyuan@2dfire.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">23</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">37</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Dubbo源码解析-—-服务的创建和暴露"><span class="nav-number">1.</span> <span class="nav-text">Dubbo源码解析 — 服务的创建和暴露</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#前言"><span class="nav-number">1.0.0.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#service和server"><span class="nav-number">1.0.0.2.</span> <span class="nav-text">service和server</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#export过程"><span class="nav-number">1.0.0.3.</span> <span class="nav-text">export过程</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#protocol发布服务"><span class="nav-number">1.0.0.4.</span> <span class="nav-text">protocol发布服务</span></a></li></ol></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
