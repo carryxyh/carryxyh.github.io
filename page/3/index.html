@@ -413,7 +413,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 关于dubbo的插件化/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — filter和listener/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -432,7 +432,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — 关于dubbo的插件化/" itemprop="url"> Dubbo源码解析 --- 关于dubbo的插件化</a></h1>
+                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — filter和listener/" itemprop="url"> Dubbo源码解析 --- filter和listener</a></h1>
         
 
         <div class="post-meta">
@@ -506,13 +506,14 @@
       
         
           
-          Dubbo源码解析 — 关于dubbo的插件化
-前言Dubbo的插件化实现非常类似于原生的JAVA的SPI：它只是提供一种协议，并没有提供相关插件化实施的接口。用过的同学都知道，它有一种java原生的支持类：ServiceLoader，通过声明接口的实现类，在META-INF/services中注册一个实现类，然后通过ServiceLoader去生成一个接口实例，当更换插件的时候只需要把自己实现的插件替换到META-INF/services中即可。
-Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规则是在META-INF/dubbo、META-INF/dubb
+          Dubbo源码解析 — filter和listener
+前言有一句说一句，这个标题的有点标题党的意思，我们在这里并不想给大家讲解filter和listener的概念、实现、功能等等。而是想给大家讲解filter和listener的注入过程，具体filter和listener请大家看一下官方文档，或者可以查看一下dubbo已知扩展点的实现。
+问题我们看一下消费方执行流程：
+1ReferenceBean --&gt; ReferenceConfig --&gt;  RegistryProtocol --&gt; DubboProtocol  --&gt;  invoker  --&gt;  exp
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2017/02/25/Dubbo源码解析 — 关于dubbo的插件化/#more" rel="contents">
+            <a class="btn" href="/2017/02/25/Dubbo源码解析 — filter和listener/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -563,7 +564,7 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务的创建和暴露/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — Invoker和Exchanger/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -582,7 +583,7 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — 服务的创建和暴露/" itemprop="url">Dubbo源码解析 --- 服务的创建和暴露</a></h1>
+                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — Invoker和Exchanger/" itemprop="url"> Dubbo源码解析 --- Invoker和Exchanger</a></h1>
         
 
         <div class="post-meta">
@@ -656,14 +657,16 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
       
         
           
-          Dubbo源码解析 — 服务的创建和暴露
-前言本文主要就dubbo基础的XML解析开始，到服务的创建和发布，最终延展到底层netty的调用，给出一个初始化流程的解读。在这里你能看到dubbo一些优秀的抽象设计，以及底层源代码的解读。如有语义不明，联系紫苑。或者邮件ziyuan@2dfire.com。
-service和server首先，当发布一个服务的Server时，我们需要编写一个Spring配置文件，形如以下：
-123456&lt;beans xmlns=&quot;...&quot;&gt;    &lt;dubbo:application name=&quot;hello-world-a
+          Dubbo源码解析 — Invoker和Exchanger
+前言在一个框架中我们通常把负责数据交换和网络通信的组件叫做Exchanger。Dubbo中每个Invoker都维护了一个ExchangeClient的引用，并通过它和远程的Server进行通信。
+Invoker先来看一下官方文档中对inoker的介绍：
+
+Invoker是Provider的一个可调用Service的抽象，Invoker封装了Provider地址及Service接口信息。
+Directory代表多个Invoker，可以把它看成invoker的list集合，但与List不同的是，它的值可能是动态变化的，比如注册中心推送变更
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2017/02/25/Dubbo源码解析 — 服务的创建和暴露/#more" rel="contents">
+            <a class="btn" href="/2017/02/25/Dubbo源码解析 — Invoker和Exchanger/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
