@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="go,闭包," />
+  <meta name="keywords" content="rocketmq," />
 
 
 
@@ -79,20 +79,18 @@
 
 
 
-<meta name="description" content="Go语言中的闭包 先看一个demo： 123456func f(i int) func() int &amp;#123;    return func() int &amp;#123;        i++        return i    &amp;#125;&amp;#125; 函数f返回了一个函数，返回的这个函数就是一个闭包。这个函数中本身是没有定义变量i的，而是引用了它所在的环境（函数f）中的变量i。 我们再看一下效">
-<meta name="keywords" content="go,闭包">
+<meta name="description" content="RocketMQ源码解读——消息发送之选择队列并发送接着上一篇消息发送之Topic路由信息获取来，这一篇我们看一下选择和发送的过程： 123456MessageQueue mq = null;Exception exception = null;SendResult sendResult = null;//获取重试次数int timesTotal = communicationMode == Co">
+<meta name="keywords" content="rocketmq">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Go语言中的闭包">
-<meta property="og:url" content="http://wyj.shiwuliang.com/2017/02/25/Go语言中的闭包/index.html">
+<meta property="og:title" content="RocketMQ源码解读——消息发送之选择队列并发送">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2017/12/23/RocketMQ源码解读——消息发送之选择队列并发送/index.html">
 <meta property="og:site_name" content="一时无两">
-<meta property="og:description" content="Go语言中的闭包 先看一个demo： 123456func f(i int) func() int &amp;#123;    return func() int &amp;#123;        i++        return i    &amp;#125;&amp;#125; 函数f返回了一个函数，返回的这个函数就是一个闭包。这个函数中本身是没有定义变量i的，而是引用了它所在的环境（函数f）中的变量i。 我们再看一下效">
+<meta property="og:description" content="RocketMQ源码解读——消息发送之选择队列并发送接着上一篇消息发送之Topic路由信息获取来，这一篇我们看一下选择和发送的过程： 123456MessageQueue mq = null;Exception exception = null;SendResult sendResult = null;//获取重试次数int timesTotal = communicationMode == Co">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://wyj.shiwuliang.com/images/1486986995092.png">
-<meta property="og:updated_time" content="2017-02-25T07:09:31.000Z">
+<meta property="og:updated_time" content="2017-12-23T07:40:23.594Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Go语言中的闭包">
-<meta name="twitter:description" content="Go语言中的闭包 先看一个demo： 123456func f(i int) func() int &amp;#123;    return func() int &amp;#123;        i++        return i    &amp;#125;&amp;#125; 函数f返回了一个函数，返回的这个函数就是一个闭包。这个函数中本身是没有定义变量i的，而是引用了它所在的环境（函数f）中的变量i。 我们再看一下效">
-<meta name="twitter:image" content="http://wyj.shiwuliang.com/images/1486986995092.png">
+<meta name="twitter:title" content="RocketMQ源码解读——消息发送之选择队列并发送">
+<meta name="twitter:description" content="RocketMQ源码解读——消息发送之选择队列并发送接着上一篇消息发送之Topic路由信息获取来，这一篇我们看一下选择和发送的过程： 123456MessageQueue mq = null;Exception exception = null;SendResult sendResult = null;//获取重试次数int timesTotal = communicationMode == Co">
 
 
 
@@ -122,13 +120,13 @@
 
 
 
-  <link rel="canonical" href="http://wyj.shiwuliang.com/2017/02/25/Go语言中的闭包/"/>
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2017/12/23/RocketMQ源码解读——消息发送之选择队列并发送/"/>
 
 
 
 
 
-  <title>Go语言中的闭包 | 一时无两</title>
+  <title>RocketMQ源码解读——消息发送之选择队列并发送 | 一时无两</title>
   
 
 
@@ -265,7 +263,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Go语言中的闭包/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/12/23/RocketMQ源码解读——消息发送之选择队列并发送/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -282,7 +280,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">Go语言中的闭包</h1>
+          <h1 class="post-title" itemprop="name headline">RocketMQ源码解读——消息发送之选择队列并发送</h1>
         
 
         <div class="post-meta">
@@ -294,8 +292,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-02-25T15:07:53+08:00">
-                2017-02-25
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-23T15:41:17+08:00">
+                2017-12-23
               </time>
             
 
@@ -317,8 +315,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/go语言底层/" itemprop="url" rel="index">
-                    <span itemprop="name">go语言底层</span>
+                  <a href="/categories/rocketmq源码/" itemprop="url" rel="index">
+                    <span itemprop="name">rocketmq源码</span>
                   </a>
                 </span>
 
@@ -354,23 +352,21 @@
       
 
       
-        <h2 id="Go语言中的闭包"><a href="#Go语言中的闭包" class="headerlink" title="Go语言中的闭包"></a>Go语言中的闭包</h2><hr>
-<p>先看一个demo：<br></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">func f(i int) func() int &#123;</span><br><span class="line">    return func() int &#123;</span><br><span class="line">        i++</span><br><span class="line">        return i</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>函数f返回了一个函数，<strong>返回的这个函数就是一个闭包</strong>。这个函数中本身是没有定义变量<code>i</code>的，而是引用了它所在的环境（<code>函数f</code>）中的变量<code>i</code>。<br></p>
-<p>我们再看一下效果：<br></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">c1 := f(0)</span><br><span class="line">c2 := f(0)</span><br><span class="line">c1()    // reference to i, i = 0, return 1</span><br><span class="line">c2()    // reference to another i, i = 0, return 1</span><br></pre></td></tr></table></figure>
-<p><strong>c1跟c2引用的是不同的环境</strong>，在调用<code>i++</code>时修改的不是同一个<code>i</code>，因此两次的输出都是1。<em>函数f每进入一次，就形成了一个新的环境</em>，对应的闭包中，函数都是同一个函数，环境却是引用不同的环境。<br></p>
-<p>变量<code>i</code>是函数f中的局部变量，假设这个变量是在函数f的栈中分配的，是不可以的。因为函数f返回以后，对应的栈就失效了，f返回的那个函数中变量i就引用一个失效的位置了。所以<strong><em>闭包的环境中引用的变量不能够在栈上分配</em></strong>。<br></p>
-<h4 id="escape-analyze"><a href="#escape-analyze" class="headerlink" title="escape analyze"></a>escape analyze<br></h4><p>在继续研究闭包的实现之前，先看一看Go的一个语言特性：<br></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">func f() *Cursor &#123;</span><br><span class="line">    var c Cursor</span><br><span class="line">    c.X = 500</span><br><span class="line">    noinline()</span><br><span class="line">    return &amp;c</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>Cursor是一个结构体，这种写法在C语言中是不允许的，因为变量c是在栈上分配的，<em>当函数f返回后c的空间就失效了</em>。但是，在Go语言规范中有说明，这种写法在Go语言中合法的。语言会自动地识别出这种情况并在堆上分配c的内存，而不是函数f的栈上。<br></p>
-<p>为了验证这一点，可以观察函数f生成的汇编代码：<br></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">MOVQ    $type.&quot;&quot;.Cursor+0(SB),(SP)    // 取变量c的类型，也就是Cursor</span><br><span class="line">PCDATA    $0,$16</span><br><span class="line">PCDATA    $1,$0</span><br><span class="line">CALL    ,runtime.new(SB)    // 调用new函数，相当于new(Cursor)</span><br><span class="line">PCDATA    $0,$-1</span><br><span class="line">MOVQ    8(SP),AX    // 取c.X的地址放到AX寄存器</span><br><span class="line">MOVQ    $500,(AX)    // 将AX存放的内存地址的值赋为500</span><br><span class="line">MOVQ    AX,&quot;&quot;.~r0+24(FP)</span><br><span class="line">ADDQ    $16,SP</span><br></pre></td></tr></table></figure>
-<p>识别出变量需要在堆上分配，是由编译器的一种叫<strong><em>escape analyze</em></strong>的技术实现的。如果输入命令：<br></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go build --gcflags=-m main.go</span><br></pre></td></tr></table></figure>
-<p>可以看到输出：<br><br><img src="/images/1486986995092.png" alt="@输出| center "><br><br></p>
-<p>注意最后两行，标识c逃逸了，被移动到堆中。escape analyze可以分析出变量的作用范围，这是对垃圾回收很重要的一项技术。<br></p>
+        <h3 id="RocketMQ源码解读——消息发送之选择队列并发送"><a href="#RocketMQ源码解读——消息发送之选择队列并发送" class="headerlink" title="RocketMQ源码解读——消息发送之选择队列并发送"></a>RocketMQ源码解读——消息发送之选择队列并发送</h3><p>接着上一篇消息发送之Topic路由信息获取来，这一篇我们看一下选择和发送的过程：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">MessageQueue mq = null;</span><br><span class="line">Exception exception = null;</span><br><span class="line">SendResult sendResult = null;</span><br><span class="line">//获取重试次数</span><br><span class="line">int timesTotal = communicationMode == CommunicationMode.SYNC ? 1 + this.defaultMQProducer.getRetryTimesWhenSendFailed() : 1;</span><br><span class="line">int times = 0;</span><br></pre></td></tr></table></figure>
+<p>我们可以看到，如果是同步发送，默认重试2+1次，如果是异步则不重试。</p>
+<h4 id="选择队列"><a href="#选择队列" class="headerlink" title="选择队列"></a>选择队列</h4><p>接着看下面的代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">for (; times &lt; timesTotal; times++) &#123;</span><br><span class="line">	String lastBrokerName = null == mq ? null : mq.getBrokerName();</span><br><span class="line">	MessageQueue mqSelected = this.selectOneMessageQueue(topicPublishInfo, lastBrokerName);</span><br><span class="line">	 // do other thing ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>进入循环体，最多重试<code>timesTotal</code>次。先选择队列，看一下<code>selectOneMessageQueue</code>方法，如果开启了容错策略，则根据容错策略选择消息队列，否则调用<code>TopicPublishInfo.selectOneMessageQueue</code>，我们先看没有开启容错策略的部分，第一次调用该方法，<code>lastBrokerName</code>就是null：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">int index = this.sendWhichQueue.getAndIncrement();</span><br><span class="line">int pos = Math.abs(index) % this.messageQueueList.size();</span><br><span class="line">if (pos &lt; 0)</span><br><span class="line">    pos = 0;</span><br><span class="line">return this.messageQueueList.get(pos);</span><br></pre></td></tr></table></figure>
+<p>其实就是很简单的轮训。</p>
+<p>如果<code>lastBrokerName</code>不为null的时候：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">int index = this.sendWhichQueue.getAndIncrement();</span><br><span class="line">for (int i = 0; i &lt; this.messageQueueList.size(); i++) &#123;</span><br><span class="line">    int pos = Math.abs(index++) % this.messageQueueList.size();</span><br><span class="line">    if (pos &lt; 0)</span><br><span class="line">        pos = 0;</span><br><span class="line">    MessageQueue mq = this.messageQueueList.get(pos);</span><br><span class="line">    if (!mq.getBrokerName().equals(lastBrokerName)) &#123;</span><br><span class="line">        return mq;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">return selectOneMessageQueue();</span><br></pre></td></tr></table></figure></p>
+<p>还是轮询所有的消息队列，获取一个和<code>lastBrokerName</code>不一样的队列。以上就是不开启容错策略的选择队列的过程。下面我们再看一下开启了容错策略的过程：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">// 获取 brokerName=lastBrokerName &amp;&amp; 可用的一个消息队列</span><br><span class="line">int index = tpInfo.getSendWhichQueue().getAndIncrement();</span><br><span class="line">for (int i = 0; i &lt; tpInfo.getMessageQueueList().size(); i++) &#123;</span><br><span class="line">    int pos = Math.abs(index++) % tpInfo.getMessageQueueList().size();</span><br><span class="line">    if (pos &lt; 0)</span><br><span class="line">        pos = 0;</span><br><span class="line">    MessageQueue mq = tpInfo.getMessageQueueList().get(pos);</span><br><span class="line">    if (latencyFaultTolerance.isAvailable(mq.getBrokerName())) &#123;</span><br><span class="line">        if (null == lastBrokerName || mq.getBrokerName().equals(lastBrokerName))</span><br><span class="line">            return mq;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//下面的部分是，如果上面部分没有选到一个符合条件的队列的情况下，会选择一个相对较好的队列，不考虑该队列的可用性</span><br><span class="line">final String notBestBroker = latencyFaultTolerance.pickOneAtLeast();</span><br><span class="line">int writeQueueNums = tpInfo.getQueueIdByBroker(notBestBroker);</span><br><span class="line">if (writeQueueNums &gt; 0) &#123;</span><br><span class="line">    final MessageQueue mq = tpInfo.selectOneMessageQueue();</span><br><span class="line">    if (notBestBroker != null) &#123;</span><br><span class="line">        mq.setBrokerName(notBestBroker);</span><br><span class="line">        mq.setQueueId(tpInfo.getSendWhichQueue().getAndIncrement() % writeQueueNums);</span><br><span class="line">    &#125;</span><br><span class="line">    return mq;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    latencyFaultTolerance.remove(notBestBroker);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>先说一下总的逻辑，根据容错策略选择消息队列：优先获取可用队列，其次选择一个<code>broker</code>获取队列，最差返回任意<code>broker</code>的一个队列。</p>
+<p><code>latencyFaultTolerance.isAvailable(mq.getBrokerName())</code>这行代码主要就是在判断<code>broker</code>的可用性，判断依据是<code>broker</code>的响应时间，如果这个<code>broker</code>太久没有响应，则认为该<code>broker</code>不可用。</p>
+<p><code>latencyFaultTolerance.pickOneAtLeast()</code>把<code>FaultItem</code>重新排序（这个<code>FaultItem</code>就是封装了这个<code>broker</code>的开始时间，等待时间等数据），然后还是用近似遍历的方式找一个<code>broker</code>。这里面有个小细节，这个遍历的依据并不是所有的<code>FaultItem</code>的集合，而是这个集合长度的一半，可能考虑到这个集合会经常变化吧？</p>
+<p>后面的逻辑和选择一个队列不考虑可用性的逻辑基本一致。至此选择队列的逻辑就全部结束了，下一篇我们看一下真正的发送。</p>
 
       
     </div>
@@ -388,9 +384,7 @@
       
         <div class="post-tags">
           
-            <a href="/tags/go/" rel="tag"># go</a>
-          
-            <a href="/tags/闭包/" rel="tag"># 闭包</a>
+            <a href="/tags/rocketmq/" rel="tag"># rocketmq</a>
           
         </div>
       
@@ -403,8 +397,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/" rel="next" title=" Dubbo源码解析 --- 服务订阅以及通知">
-                <i class="fa fa-chevron-left"></i>  Dubbo源码解析 --- 服务订阅以及通知
+              <a href="/2017/12/21/RocketMQ源码解读——消息发送之TOPIC路由信息获取/" rel="next" title="RocketMQ源码解读——消息发送之TOPIC路由信息获取">
+                <i class="fa fa-chevron-left"></i> RocketMQ源码解读——消息发送之TOPIC路由信息获取
               </a>
             
           </div>
@@ -412,10 +406,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2017/02/25/Go语言中的Continuous Stack(连续栈)/" rel="prev" title="Go语言中的Continuous Stack(连续栈)">
-                Go语言中的Continuous Stack(连续栈) <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -567,7 +557,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Go语言中的闭包"><span class="nav-number">1.</span> <span class="nav-text">Go语言中的闭包</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#escape-analyze"><span class="nav-number">1.0.1.</span> <span class="nav-text">escape analyze</span></a></li></ol></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocketMQ源码解读——消息发送之选择队列并发送"><span class="nav-number">1.</span> <span class="nav-text">RocketMQ源码解读——消息发送之选择队列并发送</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#选择队列"><span class="nav-number">1.1.</span> <span class="nav-text">选择队列</span></a></li></ol></li></ol></div>
             
 
           </div>
