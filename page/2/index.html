@@ -1482,7 +1482,7 @@ service和server首先，当发布一个服务的Server时，我们需要编写�
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — filter和listener/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务注册/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -1501,7 +1501,7 @@ service和server首先，当发布一个服务的Server时，我们需要编写�
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — filter和listener/" itemprop="url"> Dubbo源码解析 --- filter和listener</a></h1>
+                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — 服务注册/" itemprop="url"> Dubbo源码解析 --- 服务注册</a></h1>
         
 
         <div class="post-meta">
@@ -1575,14 +1575,14 @@ service和server首先，当发布一个服务的Server时，我们需要编写�
       
         
           
-          Dubbo源码解析 — filter和listener
-前言有一句说一句，这个标题的有点标题党的意思，我们在这里并不想给大家讲解filter和listener的概念、实现、功能等等。而是想给大家讲解filter和listener的注入过程，具体filter和listener请大家看一下官方文档，或者可以查看一下dubbo已知扩展点的实现。
-问题我们看一下消费方执行流程：
-1ReferenceBean --&gt; ReferenceConfig --&gt;  RegistryProtocol --&gt; DubboProtocol  --&gt;  invoker  --&gt;  exp
+          Dubbo源码解析 — 服务注册
+前言对于分布式服务架构，解决服务的发现问题，引入了注册中心中间件，从而很好的解决了服务双方（消费方和提供方）的直接依赖问题。这种解耦的意义是非凡的，不仅在程序运行时保证了灵活性，在开发阶段也使得快速迭代成为了可能，甚至在运维层面也提供了非常好的自由度。
+夸了这么多，但要实现一个完美的注册中心系统却不是一件那么容易的事儿，你必须时刻注意关注它的可用性（包括稳定，实时和高效），这一点在任何一款分布式系统中都是件很复杂的事儿。当然这篇文章并不是打算摆平这么个庞然大物，我们只是从dubbo和zookeeper之间的关系来了解一下在dubbo架构中注册中心的相关知识。
+
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2017/02/25/Dubbo源码解析 — filter和listener/#more" rel="contents">
+            <a class="btn" href="/2017/02/25/Dubbo源码解析 — 服务注册/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>

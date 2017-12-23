@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="一时无两">
 <meta property="og:description" content="RocketMQ源码解读——消息发送之选择队列并发送接着上一篇消息发送之Topic路由信息获取来，这一篇我们看一下选择和发送的过程： 123456MessageQueue mq = null;Exception exception = null;SendResult sendResult = null;//获取重试次数int timesTotal = communicationMode == Co">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-12-23T07:40:23.594Z">
+<meta property="og:updated_time" content="2017-12-23T07:43:36.497Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RocketMQ源码解读——消息发送之选择队列并发送">
 <meta name="twitter:description" content="RocketMQ源码解读——消息发送之选择队列并发送接着上一篇消息发送之Topic路由信息获取来，这一篇我们看一下选择和发送的过程： 123456MessageQueue mq = null;Exception exception = null;SendResult sendResult = null;//获取重试次数int timesTotal = communicationMode == Co">
@@ -366,8 +366,8 @@
 <p>先说一下总的逻辑，根据容错策略选择消息队列：优先获取可用队列，其次选择一个<code>broker</code>获取队列，最差返回任意<code>broker</code>的一个队列。</p>
 <p><code>latencyFaultTolerance.isAvailable(mq.getBrokerName())</code>这行代码主要就是在判断<code>broker</code>的可用性，判断依据是<code>broker</code>的响应时间，如果这个<code>broker</code>太久没有响应，则认为该<code>broker</code>不可用。</p>
 <p><code>latencyFaultTolerance.pickOneAtLeast()</code>把<code>FaultItem</code>重新排序（这个<code>FaultItem</code>就是封装了这个<code>broker</code>的开始时间，等待时间等数据），然后还是用近似遍历的方式找一个<code>broker</code>。这里面有个小细节，这个遍历的依据并不是所有的<code>FaultItem</code>的集合，而是这个集合长度的一半，可能考虑到这个集合会经常变化吧？</p>
-<p>后面的逻辑和选择一个队列不考虑可用性的逻辑基本一致。至此选择队列的逻辑就全部结束了，下一篇我们看一下真正的发送。</p>
-
+<p>后面的逻辑和选择一个队列不考虑可用性的逻辑基本一致。至此选择队列的逻辑就全部结束了，下一部分我们看一下真正的发送。</p>
+<h4 id="真正的发送部分"><a href="#真正的发送部分" class="headerlink" title="真正的发送部分"></a>真正的发送部分</h4>
       
     </div>
     
@@ -557,7 +557,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocketMQ源码解读——消息发送之选择队列并发送"><span class="nav-number">1.</span> <span class="nav-text">RocketMQ源码解读——消息发送之选择队列并发送</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#选择队列"><span class="nav-number">1.1.</span> <span class="nav-text">选择队列</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocketMQ源码解读——消息发送之选择队列并发送"><span class="nav-number">1.</span> <span class="nav-text">RocketMQ源码解读——消息发送之选择队列并发送</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#选择队列"><span class="nav-number">1.1.</span> <span class="nav-text">选择队列</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#真正的发送部分"><span class="nav-number">1.2.</span> <span class="nav-text">真正的发送部分</span></a></li></ol></li></ol></div>
             
 
           </div>
