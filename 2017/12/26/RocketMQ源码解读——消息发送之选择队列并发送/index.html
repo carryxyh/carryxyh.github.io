@@ -83,11 +83,11 @@
 <meta name="keywords" content="rocketmq">
 <meta property="og:type" content="article">
 <meta property="og:title" content="RocketMQ源码解读——消息发送之选择队列并发送">
-<meta property="og:url" content="http://wyj.shiwuliang.com/2017/12/23/RocketMQ源码解读——消息发送之选择队列并发送/index.html">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2017/12/26/RocketMQ源码解读——消息发送之选择队列并发送/index.html">
 <meta property="og:site_name" content="一时无两">
 <meta property="og:description" content="RocketMQ源码解读——消息发送之选择队列并发送接着上一篇消息发送之Topic路由信息获取来，这一篇我们看一下选择和发送的过程： 123456MessageQueue mq = null;Exception exception = null;SendResult sendResult = null;//获取重试次数int timesTotal = communicationMode == Co">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-12-23T07:43:36.497Z">
+<meta property="og:updated_time" content="2017-12-26T06:52:56.130Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RocketMQ源码解读——消息发送之选择队列并发送">
 <meta name="twitter:description" content="RocketMQ源码解读——消息发送之选择队列并发送接着上一篇消息发送之Topic路由信息获取来，这一篇我们看一下选择和发送的过程： 123456MessageQueue mq = null;Exception exception = null;SendResult sendResult = null;//获取重试次数int timesTotal = communicationMode == Co">
@@ -120,7 +120,7 @@
 
 
 
-  <link rel="canonical" href="http://wyj.shiwuliang.com/2017/12/23/RocketMQ源码解读——消息发送之选择队列并发送/"/>
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2017/12/26/RocketMQ源码解读——消息发送之选择队列并发送/"/>
 
 
 
@@ -263,7 +263,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/12/23/RocketMQ源码解读——消息发送之选择队列并发送/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/12/26/RocketMQ源码解读——消息发送之选择队列并发送/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -292,8 +292,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-23T15:41:17+08:00">
-                2017-12-23
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-26T15:08:17+08:00">
+                2017-12-26
               </time>
             
 
@@ -367,7 +367,32 @@
 <p><code>latencyFaultTolerance.isAvailable(mq.getBrokerName())</code>这行代码主要就是在判断<code>broker</code>的可用性，判断依据是<code>broker</code>的响应时间，如果这个<code>broker</code>太久没有响应，则认为该<code>broker</code>不可用。</p>
 <p><code>latencyFaultTolerance.pickOneAtLeast()</code>把<code>FaultItem</code>重新排序（这个<code>FaultItem</code>就是封装了这个<code>broker</code>的开始时间，等待时间等数据），然后还是用近似遍历的方式找一个<code>broker</code>。这里面有个小细节，这个遍历的依据并不是所有的<code>FaultItem</code>的集合，而是这个集合长度的一半，可能考虑到这个集合会经常变化吧？</p>
 <p>后面的逻辑和选择一个队列不考虑可用性的逻辑基本一致。至此选择队列的逻辑就全部结束了，下一部分我们看一下真正的发送。</p>
-<h4 id="真正的发送部分"><a href="#真正的发送部分" class="headerlink" title="真正的发送部分"></a>真正的发送部分</h4>
+<h4 id="发送消息"><a href="#发送消息" class="headerlink" title="发送消息"></a>发送消息</h4><p>真正的发送是这一句：<code>sendResult = this.sendKernelImpl(msg, mq, communicationMode, sendCallback, topicPublishInfo, timeout);</code>这个mq就是我们上面选择了的mq。</p>
+<p>看一下这个<code>sendKernelImpl</code>的方法，还是很长我们还是需要分段来看：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">//获取broker的地址</span><br><span class="line">String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());</span><br><span class="line">if (null == brokerAddr) &#123;</span><br><span class="line">	//如果这时候获取不到，则再进行一次获取topic的路由信息流程</span><br><span class="line">    tryToFindTopicPublishInfo(mq.getTopic());</span><br><span class="line">    brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>上面两步走完，<code>brokerAddr</code>就默认存在了，如果继续不存在则抛出异常。我们看下不为null时的正常流程（代码部分有点冗长，有兴趣的可以自己研究一下）：</p>
+<ol>
+<li>根据是否存在<code>CheckForbiddenHook</code>拼装<code>CheckForbiddenContext</code>。</li>
+<li>根据是否存在发送消息钩子构建发送消息上下文，并且执行发送前要执行的钩子方法。</li>
+<li>拼装发送消息的<code>request</code>，这里如果是批量消息，则<code>batch</code>标记会置为<code>true</code>。</li>
+<li>根据发送模式发送消息，同步和只发送一次的消息走的是相同的方法。</li>
+</ol>
+<p>我们主要看发送消息，先看异步，有回调的：<code>this.mQClientFactory.getMQClientAPIImpl().sendMessage</code>方法最终会走到<code>sendMessageAsync</code>中：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">this.remotingClient.invokeAsync(addr, request, timeoutMillis, new InvokeCallback() &#123;</span><br><span class="line">	@Override</span><br><span class="line">	public void operationComplete(ResponseFuture responseFuture) &#123;</span><br><span class="line">		//... do send message complete</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>我们继续看<code>remotingClient.invokeAsync</code>方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">//创建channel，这里是netty的channel</span><br><span class="line">final Channel channel = this.getAndCreateChannel(addr);</span><br><span class="line">if (channel != null &amp;&amp; channel.isActive()) &#123;</span><br><span class="line">    try &#123;</span><br><span class="line">	    //rpchook的用法：在真正进行远程请求时执行</span><br><span class="line">        if (this.rpcHook != null) &#123;</span><br><span class="line">            this.rpcHook.doBeforeRequest(addr, request);</span><br><span class="line">        &#125;</span><br><span class="line">        //真正异步发送</span><br><span class="line">        this.invokeAsyncImpl(channel, request, timeoutMillis, invokeCallback);</span><br><span class="line">    &#125; catch (RemotingSendRequestException e) &#123;</span><br><span class="line">        log.warn(&quot;invokeAsync: send request exception, so close the channel[&#123;&#125;]&quot;, addr);</span><br><span class="line">        this.closeChannel(addr, channel);</span><br><span class="line">        throw e;</span><br><span class="line">    &#125;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">	//创建不成功抛异常，远程连接异常</span><br><span class="line">    this.closeChannel(addr, channel);</span><br><span class="line">    throw new RemotingConnectException(addr);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>封装的真多，继续看<code>invokeAsyncImpl</code>方法，在这个方法中我们看到了<code>channel.writeAndFlush(request).addListener(new ChannelFutureListener() { ... }</code>，熟悉netty的同学应该知道，这边会把<code>msg</code>直接冲刷到<code>socket</code>中。我们注意几个细节：</p>
+<ol>
+<li>发送之前需要获取一个信号量，如果获取不到则抛出一个超时异常。</li>
+<li>如果发送的<code>ChannelFuture</code>成功，则不执行<code>invokeCallback</code>，我们可以看到判断如果成功就返回了，注意这里这个<code>InvokeCallback</code>并不是我们自己可以添加的<code>SendCallback</code>，<code>SendCallback</code>可以处理消息发送成功或者失败，而<code>InvokeCallback</code>处理的是<code>ResponseFuture</code>。我们通过<code>DefaultMQProducer</code>不能设置这个<code>InvokeCallback</code>。</li>
+<li>真正执行重试的是在<code>processSendResponse</code>之后，如果<code>SendResult</code>处理后需要重试，会执行<code>onExceptionImpl</code>，其中有这么一句：<code>if (needRetry &amp;&amp; tmp &lt;= timesTotal)</code>，如果需要则重试。</li>
+</ol>
+<p><code>invokeOnewayImpl</code>和<code>invokeAsyncImpl</code>有类似的地方，但是不需要处理回调。而<code>invokeSyncImpl</code>和异步处理的区别在于，同步发送会在发送之后等待结果的返回：<code>RemotingCommand responseCommand = responseFuture.waitResponse(timeoutMillis);</code>，并且返回<code>responseCommand</code>，之后执行<code>processSendResponse</code>，返回发送结果。至此，整个发送流程结束。</p>
+<h4 id="减少队列数量的细节"><a href="#减少队列数量的细节" class="headerlink" title="减少队列数量的细节"></a>减少队列数量的细节</h4><p>有个小细节，之前在rocketmq的issue里看到的。关于QueueData中的<code>writeQueueNums</code>和<code>readQueueNums</code>，这两个不是同一个值，官方解释是比较容易扩展，增加队列数量还好，rocketmq会隔段时间自动同步队列信息。问题就是减少队列数量，会不会导致丢消息，这里如果本来有十个队列（1~10号），现在变为五个（只剩1~5号），那么可能导致丢消息。针对减少队列的情况，真正推荐的做法如下：</p>
+<ol>
+<li>减少写入队列的数量。</li>
+<li>等待所有待消耗队列中的消息被所有消耗组消耗。这一步就是为了保证不丢消息。</li>
+<li>减少读取队列号码。</li>
+</ol>
+
       
     </div>
     
@@ -557,7 +582,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocketMQ源码解读——消息发送之选择队列并发送"><span class="nav-number">1.</span> <span class="nav-text">RocketMQ源码解读——消息发送之选择队列并发送</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#选择队列"><span class="nav-number">1.1.</span> <span class="nav-text">选择队列</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#真正的发送部分"><span class="nav-number">1.2.</span> <span class="nav-text">真正的发送部分</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocketMQ源码解读——消息发送之选择队列并发送"><span class="nav-number">1.</span> <span class="nav-text">RocketMQ源码解读——消息发送之选择队列并发送</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#选择队列"><span class="nav-number">1.1.</span> <span class="nav-text">选择队列</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#发送消息"><span class="nav-number">1.2.</span> <span class="nav-text">发送消息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#减少队列数量的细节"><span class="nav-number">1.3.</span> <span class="nav-text">减少队列数量的细节</span></a></li></ol></li></ol></div>
             
 
           </div>
