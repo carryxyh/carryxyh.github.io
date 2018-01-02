@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="rocketmq," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="RocketMQ源码解读——Broker消息存储 我们这一篇来看broker的消息存储过程。 broker启动时会启动一个NettyRemotingServer，我们之前说过，rocketmq通过netty做信息传递，这个NettyRemotingServer初始化时，会把NettyServerHandler加到Pipeline里，这个方法最终会执行processMessageReceived方法">
+<meta name="keywords" content="rocketmq">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocketMQ源码解读——Broker消息存储">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2018/01/02/RocketMQ源码解读——Broker消息存储/index.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="RocketMQ源码解读——Broker消息存储 我们这一篇来看broker的消息存储过程。 broker启动时会启动一个NettyRemotingServer，我们之前说过，rocketmq通过netty做信息传递，这个NettyRemotingServer初始化时，会把NettyServerHandler加到Pipeline里，这个方法最终会执行processMessageReceived方法">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-01-02T13:47:18.400Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RocketMQ源码解读——Broker消息存储">
+<meta name="twitter:description" content="RocketMQ源码解读——Broker消息存储 我们这一篇来看broker的消息存储过程。 broker启动时会启动一个NettyRemotingServer，我们之前说过，rocketmq通过netty做信息传递，这个NettyRemotingServer初始化时，会把NettyServerHandler加到Pipeline里，这个方法最终会执行processMessageReceived方法">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2018/01/02/RocketMQ源码解读——Broker消息存储/"/>
+
+
+
+
+
+  <title>RocketMQ源码解读——Broker消息存储 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/01/02/RocketMQ源码解读——Broker消息存储/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">RocketMQ源码解读——Broker消息存储</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-01-02T21:47:17+08:00">
+                2018-01-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/rocketmq源码/" itemprop="url" rel="index">
+                    <span itemprop="name">rocketmq源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="RocketMQ源码解读——Broker消息存储"><a href="#RocketMQ源码解读——Broker消息存储" class="headerlink" title="RocketMQ源码解读——Broker消息存储"></a>RocketMQ源码解读——Broker消息存储</h3><hr>
+<p>我们这一篇来看<code>broker</code>的消息存储过程。</p>
+<p><code>broker</code>启动时会启动一个<code>NettyRemotingServer</code>，我们之前说过，<code>rocketmq</code>通过<code>netty</code>做信息传递，这个<code>NettyRemotingServer</code>初始化时，会把<code>NettyServerHandler</code>加到<code>Pipeline</code>里，这个方法最终会执行<code>processMessageReceived</code>方法，根据消息的种类来分类处理消息。</p>
+<p>我们关注的是请求，关注一下<code>processRequestCommand</code>这个方法：</p>
+<ol>
+<li>先获取一个<code>pair（rocketmq封装的类似键值对的对象）</code>，第一个值是<code>processor</code>，第二个是一个线程池，用来处理请求。</li>
+<li>初始化任务。</li>
+<li>提交任务。</li>
+</ol>
+<p>初始化任务这一步包含比较多的逻辑，我们看一下要初始化的这个任务是做什么的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">RPCHook rpcHook = NettyRemotingAbstract.this.getRPCHook();</span><br><span class="line">if (rpcHook != null) &#123;</span><br><span class="line"></span><br><span class="line">//如果有rpc钩子，先执行    rpcHook.doBeforeRequest(RemotingHelper.parseChannelRemoteAddr(ctx.channel()), cmd);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//这里用pair的第一个processor来处理请求</span><br><span class="line">final RemotingCommand response = pair.getObject1().processRequest(ctx, cmd);</span><br><span class="line">if (rpcHook != null) &#123;</span><br><span class="line"></span><br><span class="line">//后执行    rpcHook.doAfterResponse(RemotingHelper.parseChannelRemoteAddr(ctx.channel()), cmd, response);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">if (!cmd.isOnewayRPC()) &#123;</span><br><span class="line">    if (response != null) &#123;</span><br><span class="line">        response.setOpaque(opaque);</span><br><span class="line">        response.markResponseType();</span><br><span class="line">        try &#123;</span><br><span class="line">	        //响应信息回写</span><br><span class="line">            ctx.writeAndFlush(response);</span><br><span class="line">        &#125; catch (Throwable e) &#123;</span><br><span class="line">            log.error(&quot;process request over, but response failed&quot;, e);</span><br><span class="line">            log.error(cmd.toString());</span><br><span class="line">            log.error(response.toString());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">		//如果response为null就忽略了</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>总结一下这个任务，就是处理请求，并且把请求写会远端，如果是一个一次性请求，则不回写<code>response</code>。</p>
+<p>我们看一下这个<code>processor</code>做什么，这里这个<code>processor</code>是<code>SendMessageProcessor</code>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">SendMessageRequestHeader requestHeader = parseRequestHeader(request);</span><br><span class="line">if (requestHeader == null) &#123;</span><br><span class="line">    return null;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">mqtraceContext = buildMsgContext(ctx, requestHeader);</span><br><span class="line">this.executeSendMessageHookBefore(ctx, request, mqtraceContext);</span><br><span class="line"></span><br><span class="line">RemotingCommand response;</span><br><span class="line">//真正的处理请求的方法</span><br><span class="line">if (requestHeader.isBatch()) &#123;</span><br><span class="line">    response = this.sendBatchMessage(ctx, request, mqtraceContext, requestHeader);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    response = this.sendMessage(ctx, request, mqtraceContext, requestHeader);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">this.executeSendMessageHookAfter(response, mqtraceContext);</span><br><span class="line">return response;</span><br></pre></td></tr></table></figure>
+<p>这里又又又出现了钩子，可以看到<code>rocketmq</code>里各种钩子遍地飞，这里注意这个钩子和上个方法中的不一样，这个钩子是发送消息的钩子，上一个是RPC钩子，及远程调用，不太一样，发送消息一定是RPC调用，但是反过来不成立，注意区分。</p>
+<p>我们看一下<code>sendMessage</code>的部分：</p>
+<ol>
+<li>拼装响应头。（之前跟同事聊起<code>rocketmq</code>，同事说<code>rocketmq</code>不完善的其中之一就在于没有消息追踪，但是我们看的是4.2.0版本已经有开关可以控制开启TRACE，作者没有具体验证这个功能，读完debug完再说）</li>
+<li>校验消息体合法。</li>
+<li>选取<code>queueId</code>，决定要写到哪个队列里去。</li>
+<li>处理重试和死信队列。</li>
+<li>创建<code>MessageExtBrokerInner</code>。</li>
+<li>获取<code>MessageStore</code>并且存储消息。</li>
+<li>处理存储信息的结果。</li>
+</ol>
+<p>我们先看一下第四步，如果是<code>RETRY</code>类型的消息：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">String groupName = newTopic.substring(MixAll.RETRY_GROUP_TOPIC_PREFIX.length());</span><br><span class="line">SubscriptionGroupConfig subscriptionGroupConfig =</span><br><span class="line">    this.brokerController.getSubscriptionGroupManager().findSubscriptionGroupConfig(groupName);</span><br><span class="line">if (null == subscriptionGroupConfig) &#123;</span><br><span class="line">    response.setCode(ResponseCode.SUBSCRIPTION_GROUP_NOT_EXIST);</span><br><span class="line">    response.setRemark(</span><br><span class="line">        &quot;subscription group not exist, &quot; + groupName + &quot; &quot; + FAQUrl.suggestTodo(FAQUrl.SUBSCRIPTION_GROUP_NOT_EXIST));</span><br><span class="line">    return false;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//计算最大可消费次数</span><br><span class="line">int maxReconsumeTimes = subscriptionGroupConfig.getRetryMaxTimes();</span><br><span class="line">if (request.getVersion() &gt;= MQVersion.Version.V3_4_9.ordinal()) &#123;</span><br><span class="line">    maxReconsumeTimes = requestHeader.getMaxReconsumeTimes();</span><br><span class="line">&#125;</span><br><span class="line">//获取已消费次数</span><br><span class="line">int reconsumeTimes = requestHeader.getReconsumeTimes() == null ? 0 : requestHeader.getReconsumeTimes();</span><br><span class="line">if (reconsumeTimes &gt;= maxReconsumeTimes) &#123;</span><br><span class="line">    newTopic = MixAll.getDLQTopic(groupName);</span><br><span class="line">    int queueIdInt = Math.abs(this.random.nextInt() % 99999999) % DLQ_NUMS_PER_GROUP;</span><br><span class="line">    //死信队列每个消费组只有一条队列</span><br><span class="line">    topicConfig = this.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(newTopic,</span><br><span class="line">        DLQ_NUMS_PER_GROUP,</span><br><span class="line">        PermName.PERM_WRITE, 0</span><br><span class="line">    );</span><br><span class="line">    //把topic设置为新的死信队列的topic（%RETRY% + consumerGroup）</span><br><span class="line">    msg.setTopic(newTopic);</span><br><span class="line">    msg.setQueueId(queueIdInt);</span><br><span class="line">    if (null == topicConfig) &#123;</span><br><span class="line">        response.setCode(ResponseCode.SYSTEM_ERROR);</span><br><span class="line">        response.setRemark(&quot;topic[&quot; + newTopic + &quot;] not exist&quot;);</span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们可以看到，如果一条消息一直消费失败，会添加到死信队列里。</p>
+<p>关于真正存储消息的部分，下一篇再说，因为涉及到<code>rocketmq</code>的文件格式的问题，这是非常重要的。</p>
+<p>这里有个注意的地方是，什么样的消息是<code>RETRY类型的消息</code>，这个部分的代码要到我们的消费者里去看了，回忆一下上一篇：我们启动消费者的时候，实际上会启动一个定时服务不停的向一个队列中插入<code>PullRequest</code>，然后有一个死循环一直在获取请求然后去拉取消息，我们看一下<code>ConsumeMessageConcurrentlyService.submitConsumeRequest</code>方法，里面其实提交的任务是一个叫<code>ConsumeRequest</code>的类，这个类实际上真正处理消息的类，我们在这里面找到了真正用监听器去处理消息的语句：<code>listener.consumeMessage(Collections.unmodifiableList(msgs), context);</code>。大家还有印象么？我们追踪一下这个方法返回的<code>status</code>，可以看到有这么一句：<code>ConsumeMessageConcurrentlyService.this.processConsumeResult(status, context, this);</code>及处理消费结果的部分，追进去看一下，里面发现如果消费者是集群模式：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">//如果消息消费成功，则msgBackFailed为空</span><br><span class="line">List&lt;MessageExt&gt; msgBackFailed = new ArrayList&lt;MessageExt&gt;(consumeRequest.getMsgs().size());</span><br><span class="line">//消费失败会进入循环</span><br><span class="line">for (int i = ackIndex + 1; i &lt; consumeRequest.getMsgs().size(); i++) &#123;</span><br><span class="line">    MessageExt msg = consumeRequest.getMsgs().get(i);</span><br><span class="line">    //把消息发回去</span><br><span class="line">    boolean result = this.sendMessageBack(msg, context);</span><br><span class="line">    if (!result) &#123;</span><br><span class="line">        msg.setReconsumeTimes(msg.getReconsumeTimes() + 1);</span><br><span class="line">        msgBackFailed.add(msg);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//发回Broker失败的消息，直接提交延迟重新消费</span><br><span class="line">if (!msgBackFailed.isEmpty()) &#123;</span><br><span class="line">    consumeRequest.getMsgs().removeAll(msgBackFailed);</span><br><span class="line"></span><br><span class="line">    this.submitConsumeRequestLater(msgBackFailed, consumeRequest.getProcessQueue(), consumeRequest.getMessageQueue());</span><br><span class="line">&#125;</span><br><span class="line">break;</span><br></pre></td></tr></table></figure>
+<p>集群模式下，如果消费失败会把消息发回去让其他机器消费。我们最终追到<code>sendMessageBack</code>方法中，如果发送回去时报错，我们看下如何处理：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Message newMsg = new Message(MixAll.getRetryTopic(this.defaultMQPushConsumer.getConsumerGroup()), msg.getBody());</span><br><span class="line"></span><br><span class="line">String originMsgId = MessageAccessor.getOriginMessageId(msg);</span><br><span class="line">MessageAccessor.setOriginMessageId(newMsg, UtilAll.isBlank(originMsgId) ? msg.getMsgId() : originMsgId);</span><br><span class="line"></span><br><span class="line">newMsg.setFlag(msg.getFlag());</span><br><span class="line">MessageAccessor.setProperties(newMsg, msg.getProperties());</span><br><span class="line">MessageAccessor.putProperty(newMsg, MessageConst.PROPERTY_RETRY_TOPIC, msg.getTopic());</span><br><span class="line">MessageAccessor.setReconsumeTime(newMsg, String.valueOf(msg.getReconsumeTimes() + 1));</span><br><span class="line">MessageAccessor.setMaxReconsumeTimes(newMsg, String.valueOf(getMaxReconsumeTimes()));</span><br><span class="line">newMsg.setDelayTimeLevel(3 + msg.getReconsumeTimes());</span><br><span class="line"></span><br><span class="line">this.mQClientFactory.getDefaultMQProducer().send(newMsg);</span><br></pre></td></tr></table></figure>
+<p>我们看到，重新创建了一条新的消息，但是TOPIC修改了一下，修改成<code>%RETRY% + consumerGroup</code>。然后又走了一遍发送操作。</p>
+<p>说回去，最后看一下<code>handlePutMessageResult</code>这个方法，处理最终存储的结果和相应信息：</p>
+<ol>
+<li>根据冷存的结果设置相应的<code>code</code>。</li>
+<li>如果冷存成功，统计相应的信息。然后把<code>response</code>写回远端，如果有钩子则设置发送失败到<code>context</code></li>
+<li>如果执行失败，如果有钩子则设置发送失败到<code>context</code>。</li>
+</ol>
+<p>至此，消息存储部分结束。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/rocketmq/" rel="tag"># rocketmq</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/12/26/RocketMQ源码解读——消息消费之消费者启动/" rel="next" title="RocketMQ源码解读——消息消费之消费者启动">
+                <i class="fa fa-chevron-left"></i> RocketMQ源码解读——消息消费之消费者启动
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:ziyuan@2dfire.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">26</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">37</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocketMQ源码解读——Broker消息存储"><span class="nav-number">1.</span> <span class="nav-text">RocketMQ源码解读——Broker消息存储</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
