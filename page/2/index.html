@@ -79,16 +79,16 @@
 
 
 
-<meta name="description" content="嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:ziyuan@2dfire.com">
+<meta name="description" content="嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com">
 <meta property="og:type" content="website">
 <meta property="og:title" content="一时无两">
 <meta property="og:url" content="http://wyj.shiwuliang.com/page/2/index.html">
 <meta property="og:site_name" content="一时无两">
-<meta property="og:description" content="嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:ziyuan@2dfire.com">
+<meta property="og:description" content="嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com">
 <meta property="og:locale" content="zh-Hans">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="一时无两">
-<meta name="twitter:description" content="嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:ziyuan@2dfire.com">
+<meta name="twitter:description" content="嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com">
 
 
 
@@ -1491,7 +1491,7 @@ lock对象维护了一个等待队列list；
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — Invoker和Exchanger/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Perspective – 全链路监控系统/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -1510,7 +1510,7 @@ lock对象维护了一个等待队列list；
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — Invoker和Exchanger/" itemprop="url"> Dubbo源码解析 --- Invoker和Exchanger</a></h1>
+                <a class="post-title-link" href="/2017/02/25/Perspective – 全链路监控系统/" itemprop="url">Perspective -- 全链路监控系统</a></h1>
         
 
         <div class="post-meta">
@@ -1545,8 +1545,8 @@ lock对象维护了一个等待队列list；
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
-                    <span itemprop="name">dubbo源码</span>
+                  <a href="/categories/全链路监控/" itemprop="url" rel="index">
+                    <span itemprop="name">全链路监控</span>
                   </a>
                 </span>
 
@@ -1584,16 +1584,15 @@ lock对象维护了一个等待队列list；
       
         
           
-          Dubbo源码解析 — Invoker和Exchanger
-前言在一个框架中我们通常把负责数据交换和网络通信的组件叫做Exchanger。Dubbo中每个Invoker都维护了一个ExchangeClient的引用，并通过它和远程的Server进行通信。
-Invoker先来看一下官方文档中对inoker的介绍：
-
-Invoker是Provider的一个可调用Service的抽象，Invoker封装了Provider地址及Service接口信息。
-Directory代表多个Invoker，可以把它看成invoker的list集合，但与List不同的是，它的值可能是动态变化的，比如注册中心推送变更
+          Perspective – 全链路监控系统
+解决的问题：最初版本，只解决购物车以下的链路监控。后面考虑适用在二维火其他系统。
+相比于CAT、ZIPKIN：更加轻量级。
+处理异步线程的全局ID传递：在进行线程操作的时候，使用统一提供的线程模型。包装一个线程类，创建之前从中央IDFactory中申请一个（没有则创建）全局ID，然后自己生成一个当前Branch的ID。线程池执行的其实只是一个代理类，finally中将全局ID和BranchID回传，用于绑定一个Trace和Branch。
+进程间全局ID传递：第一版本只针对Dubbo做扩展，使用类似CAT的方式，增加过滤器，同样把invoker.inv
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2017/02/25/Dubbo源码解析 — Invoker和Exchanger/#more" rel="contents">
+            <a class="btn" href="/2017/02/25/Perspective – 全链路监控系统/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -1644,7 +1643,7 @@ Directory代表多个Invoker，可以把它看成invoker的list集合，但与Li
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — filter和listener/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 关于dubbo的插件化/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -1663,7 +1662,7 @@ Directory代表多个Invoker，可以把它看成invoker的list集合，但与Li
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — filter和listener/" itemprop="url"> Dubbo源码解析 --- filter和listener</a></h1>
+                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — 关于dubbo的插件化/" itemprop="url"> Dubbo源码解析 --- 关于dubbo的插件化</a></h1>
         
 
         <div class="post-meta">
@@ -1737,14 +1736,13 @@ Directory代表多个Invoker，可以把它看成invoker的list集合，但与Li
       
         
           
-          Dubbo源码解析 — filter和listener
-前言有一句说一句，这个标题的有点标题党的意思，我们在这里并不想给大家讲解filter和listener的概念、实现、功能等等。而是想给大家讲解filter和listener的注入过程，具体filter和listener请大家看一下官方文档，或者可以查看一下dubbo已知扩展点的实现。
-问题我们看一下消费方执行流程：
-1ReferenceBean --&gt; ReferenceConfig --&gt;  RegistryProtocol --&gt; DubboProtocol  --&gt;  invoker  --&gt;  exp
+          Dubbo源码解析 — 关于dubbo的插件化
+前言Dubbo的插件化实现非常类似于原生的JAVA的SPI：它只是提供一种协议，并没有提供相关插件化实施的接口。用过的同学都知道，它有一种java原生的支持类：ServiceLoader，通过声明接口的实现类，在META-INF/services中注册一个实现类，然后通过ServiceLoader去生成一个接口实例，当更换插件的时候只需要把自己实现的插件替换到META-INF/services中即可。
+Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规则是在META-INF/dubbo、META-INF/dubb
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2017/02/25/Dubbo源码解析 — filter和listener/#more" rel="contents">
+            <a class="btn" href="/2017/02/25/Dubbo源码解析 — 关于dubbo的插件化/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -1826,7 +1824,7 @@ Directory代表多个Invoker，可以把它看成invoker的list集合，但与Li
                 alt="时无两" />
             
               <p class="site-author-name" itemprop="name">时无两</p>
-              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:ziyuan@2dfire.com</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
           </div>
 
           <nav class="site-state motion-element">
