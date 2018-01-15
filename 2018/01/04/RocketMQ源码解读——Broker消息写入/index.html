@@ -88,7 +88,8 @@
 <meta property="og:description" content="RocketMQ源码解读——Broker消息写入 继续上一篇我们说了broker的消息存储过程，这一篇我们看一下消息在broker上以何种形式存储。 消息的存储最终通过CommitLog这个类来做，CommitLog，MappedFileQueue和MappedFile这三个类抽象了存储过程中的相关概念，对应关系如下：CommitLog： MappedFileQueue ：MappedFile =">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://wyj.shiwuliang.com/images/1515066570531.png">
-<meta property="og:updated_time" content="2018-01-04T13:19:47.447Z">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/1516020184402.png">
+<meta property="og:updated_time" content="2018-01-15T13:20:49.407Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RocketMQ源码解读——Broker消息写入">
 <meta name="twitter:description" content="RocketMQ源码解读——Broker消息写入 继续上一篇我们说了broker的消息存储过程，这一篇我们看一下消息在broker上以何种形式存储。 消息的存储最终通过CommitLog这个类来做，CommitLog，MappedFileQueue和MappedFile这三个类抽象了存储过程中的相关概念，对应关系如下：CommitLog： MappedFileQueue ：MappedFile =">
@@ -386,6 +387,26 @@
 <p>刷盘之后会处理<code>broker</code>的高可用：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">//如果是同步Master，同步到从节点</span><br><span class="line">if (BrokerRole.SYNC_MASTER == this.defaultMessageStore.getMessageStoreConfig().getBrokerRole()) &#123;</span><br><span class="line">    HAService service = this.defaultMessageStore.getHaService();</span><br><span class="line">    if (messageExt.isWaitStoreMsgOK()) &#123;</span><br><span class="line">        // Determine whether to wait</span><br><span class="line">        if (service.isSlaveOK(result.getWroteOffset() + result.getWroteBytes())) &#123;</span><br><span class="line">            GroupCommitRequest request = new GroupCommitRequest(result.getWroteOffset() + result.getWroteBytes());</span><br><span class="line">            service.putRequest(request);</span><br><span class="line">            service.getWaitNotifyObject().wakeupAll();</span><br><span class="line">            boolean flushOK =</span><br><span class="line">                request.waitForFlush(this.defaultMessageStore.getMessageStoreConfig().getSyncFlushTimeout());</span><br><span class="line">            if (!flushOK) &#123;</span><br><span class="line">                log.error(&quot;do sync transfer other node, wait return, but failed, topic: &quot; + messageExt.getTopic() + &quot; tags: &quot;</span><br><span class="line">                    + messageExt.getTags() + &quot; client address: &quot; + messageExt.getBornHostNameString());</span><br><span class="line">                putMessageResult.setPutMessageStatus(PutMessageStatus.FLUSH_SLAVE_TIMEOUT);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        // Slave problem</span><br><span class="line">        else &#123;</span><br><span class="line">            // Tell the producer, slave not available</span><br><span class="line">            putMessageResult.setPutMessageStatus(PutMessageStatus.SLAVE_NOT_AVAILABLE);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>至此，<code>broker</code>的消息写入已经全部结束。这篇中遗漏的两个部分包括刷盘策略和数据同步，我们接下来的文章再详细看。</p>
+<h4 id="后续补充"><a href="#后续补充" class="headerlink" title="后续补充"></a>后续补充</h4><p>我们就用<code>rocketmq</code>的demo试一下，看一下<code>cosumequeue</code>的结构，路径：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/Users/xxx/store/consumequeue/TopicTest</span><br></pre></td></tr></table></figure></p>
+<p>这个里面有什么，有我们这个<code>topic</code>下的消费队列，目前只有一个<code>0</code>，意味着队列id为0，进去看一下只有一个二进制文件，名字全是0，打开看看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0000000    00  00  00  00  00  00  00  00  00  00  00  b2  00  00  00  00</span><br><span class="line">0000010    00  27  a8  07  00  00  00  00  00  00  00  00  00  00  00  00</span><br><span class="line">0000020    00  00  00  00  00  00  00  00  00  00  00  00  00  00  00  00</span><br></pre></td></tr></table></figure>
+<p>这个文件名以已有存储容量递增：00000000000000000000，00000000001073741824，00000000002147483648 … </p>
+<p>看一下这个文件的内容，最左边是地址，16进制，不是文件内容。我们看下<code>ConsumeQueue</code>中每个消息的结构：<br><img src="/images/1516020184402.png" alt="结构 | center "></p>
+<p>我们可以看到：</p>
+<ol>
+<li>一条消息20字节。</li>
+<li><code>CommitLog Offset</code>是指这条消息在<code>Commit Log</code>文件中的实际偏移量。</li>
+<li><code>Size</code>是消息长度。</li>
+<li><code>Message Tag HashCode</code>是存储消息的<code>tag</code>的哈希值，用于快速定位消息。</li>
+</ol>
+<p>这个<code>Consume Queue</code>是消息的逻辑队列，相当于字典的目录（这就是为什么里面会有一个tag的hashcode），用来指定消息在物理文件<code>commit log</code>上的位置。如果<code>TopicTest</code>有两个<code>queue</code>，则：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">TopicTest + queue0 = ConsumerQueue1</span><br><span class="line">TopicTest + queue1 = ConsumerQueue2</span><br></pre></td></tr></table></figure></p>
+<p>写入<code>Consume Queue</code>的关键是两个组件：</p>
+<ol>
+<li><code>FlushConsumeQueueService</code>：flush ConsumeQueue。</li>
+<li><code>ReputMessageService</code>：write ConsumeQueue。</li>
+</ol>
+<p>这个<code>ReputMessageService</code>的内容从哪来，就是从我们之前说过的<code>commitLog</code>：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SelectMappedBufferResult result = DefaultMessageStore.this.commitLog.getData(reputFromOffset);</span><br><span class="line">//do sth....</span><br><span class="line">this.reputFromOffset += size;</span><br></pre></td></tr></table></figure></p>
+<p>这是个无限循环，只要<code>commitlog</code>中有消息，这个任务就会一直把新的消息的相关信息写到<code>consume queue</code>中。具体的细节我们以后细说。</p>
 
       
     </div>
@@ -580,7 +601,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocketMQ源码解读——Broker消息写入"><span class="nav-number">1.</span> <span class="nav-text">RocketMQ源码解读——Broker消息写入</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#消息的格式"><span class="nav-number">1.1.</span> <span class="nav-text">消息的格式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#代码部分"><span class="nav-number">1.2.</span> <span class="nav-text">代码部分</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocketMQ源码解读——Broker消息写入"><span class="nav-number">1.</span> <span class="nav-text">RocketMQ源码解读——Broker消息写入</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#消息的格式"><span class="nav-number">1.1.</span> <span class="nav-text">消息的格式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#代码部分"><span class="nav-number">1.2.</span> <span class="nav-text">代码部分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#后续补充"><span class="nav-number">1.3.</span> <span class="nav-text">后续补充</span></a></li></ol></li></ol></div>
             
 
           </div>
