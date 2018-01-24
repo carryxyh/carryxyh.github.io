@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="rocketmq," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="RocketMQ源码解读——消费者的Rebalance过程@(rocketmq源码解读)  关于消费者的Rebalance过程，入口在RebalanceService，这是个线程，默认每隔20s做一次rebalance。 我们追进来，看一下RebalanceImpl的doRebalance方法： 123456789101112131415161718//isOrder 是否顺序消息public v">
+<meta name="keywords" content="rocketmq">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocketMQ源码解读——消费者的Rebalance过程">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2018/01/24/RocketMQ源码解读——消费者的Rebalance过程/index.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="RocketMQ源码解读——消费者的Rebalance过程@(rocketmq源码解读)  关于消费者的Rebalance过程，入口在RebalanceService，这是个线程，默认每隔20s做一次rebalance。 我们追进来，看一下RebalanceImpl的doRebalance方法： 123456789101112131415161718//isOrder 是否顺序消息public v">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-01-24T12:29:52.598Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RocketMQ源码解读——消费者的Rebalance过程">
+<meta name="twitter:description" content="RocketMQ源码解读——消费者的Rebalance过程@(rocketmq源码解读)  关于消费者的Rebalance过程，入口在RebalanceService，这是个线程，默认每隔20s做一次rebalance。 我们追进来，看一下RebalanceImpl的doRebalance方法： 123456789101112131415161718//isOrder 是否顺序消息public v">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2018/01/24/RocketMQ源码解读——消费者的Rebalance过程/"/>
+
+
+
+
+
+  <title>RocketMQ源码解读——消费者的Rebalance过程 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/01/24/RocketMQ源码解读——消费者的Rebalance过程/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">RocketMQ源码解读——消费者的Rebalance过程</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-01-24T20:29:17+08:00">
+                2018-01-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/rocketmq源码/" itemprop="url" rel="index">
+                    <span itemprop="name">rocketmq源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="RocketMQ源码解读——消费者的Rebalance过程"><a href="#RocketMQ源码解读——消费者的Rebalance过程" class="headerlink" title="RocketMQ源码解读——消费者的Rebalance过程"></a>RocketMQ源码解读——消费者的Rebalance过程</h3><p>@(rocketmq源码解读)</p>
+<hr>
+<p>关于消费者的<code>Rebalance过程</code>，入口在<code>RebalanceService</code>，这是个线程，默认每隔<strong>20s</strong>做一次<code>rebalance</code>。</p>
+<p>我们追进来，看一下<code>RebalanceImpl</code>的<code>doRebalance</code>方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">//isOrder 是否顺序消息</span><br><span class="line">public void doRebalance(final boolean isOrder) &#123;</span><br><span class="line">	// 每个topic的订阅数据</span><br><span class="line">    Map&lt;String, SubscriptionData&gt; subTable = this.getSubscriptionInner();</span><br><span class="line">    if (subTable != null) &#123;</span><br><span class="line">        for (final Map.Entry&lt;String, SubscriptionData&gt; entry : subTable.entrySet()) &#123;</span><br><span class="line">            final String topic = entry.getKey();</span><br><span class="line">            try &#123;</span><br><span class="line">                this.rebalanceByTopic(topic, isOrder);</span><br><span class="line">            &#125; catch (Throwable e) &#123;</span><br><span class="line">                if (!topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) &#123;</span><br><span class="line">                    log.warn(&quot;rebalanceByTopic Exception&quot;, e);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    this.truncateMessageQueueNotMyTopic();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里可以看到，对所有<code>Consumer</code>端维护的<code>Topic</code>都进行<code>rebalance</code>。</p>
+<p>继续看一下<code>rebalanceByTopic</code>，这个方法比较长，根据消息模式分为<code>广播</code>和<code>集群</code>模式，先看广播模式：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Set&lt;MessageQueue&gt; mqSet = this.topicSubscribeInfoTable.get(topic);</span><br><span class="line">if (mqSet != null) &#123;</span><br><span class="line">    boolean changed = this.updateProcessQueueTableInRebalance(topic, mqSet, isOrder);</span><br><span class="line">    if (changed) &#123;</span><br><span class="line">        this.messageQueueChanged(topic, mqSet, mqSet);</span><br><span class="line">        log.info(&quot;messageQueueChanged &#123;&#125; &#123;&#125; &#123;&#125; &#123;&#125;&quot;,</span><br><span class="line">            consumerGroup,</span><br><span class="line">            topic,</span><br><span class="line">            mqSet,</span><br><span class="line">            mqSet);</span><br><span class="line">    &#125;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    log.warn(&quot;doRebalance, &#123;&#125;, but the topic[&#123;&#125;] not exist.&quot;, consumerGroup, topic);</span><br><span class="line">&#125;</span><br><span class="line">break;</span><br></pre></td></tr></table></figure></p>
+<p>其中<code>topicSubscribeInfoTable</code>的更新操作（更新<code>topic</code>对应的<code>MessageQueue</code>）信息，我们之前提到过，发生在发送消息时（<code>updateTopicRouteInfoFromNameServer</code>方法），我们看一下<code>updateProcessQueueTableInRebalance</code>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">// 移除 在processQueueTable &amp;&amp; 不存在于 mqSet 里的消息队列</span><br><span class="line">Iterator&lt;Entry&lt;MessageQueue, ProcessQueue&gt;&gt; it = this.processQueueTable.entrySet().iterator();</span><br><span class="line">while (it.hasNext()) &#123;</span><br><span class="line">    Entry&lt;MessageQueue, ProcessQueue&gt; next = it.next();</span><br><span class="line">    MessageQueue mq = next.getKey();</span><br><span class="line">    ProcessQueue pq = next.getValue();</span><br><span class="line">    if (mq.getTopic().equals(topic)) &#123;</span><br><span class="line">        if (!mqSet.contains(mq)) &#123;//不包含的队列</span><br><span class="line">            pq.setDropped(true);</span><br><span class="line">            if (this.removeUnnecessaryMessageQueue(mq, pq)) &#123;</span><br><span class="line">                it.remove();</span><br><span class="line">                changed = true;</span><br><span class="line">                log.info(&quot;doRebalance, &#123;&#125;, remove unnecessary mq, &#123;&#125;&quot;, consumerGroup, mq);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; else if (pq.isPullExpired()) &#123;//拉去的队列超时，同样清理</span><br><span class="line">            switch (this.consumeType()) &#123;</span><br><span class="line">                case CONSUME_ACTIVELY:</span><br><span class="line">                    break;</span><br><span class="line">                case CONSUME_PASSIVELY:</span><br><span class="line">	                //PUSH模式下，移除拉取超时的</span><br><span class="line">                    pq.setDropped(true);</span><br><span class="line">                    if (this.removeUnnecessaryMessageQueue(mq, pq)) &#123;</span><br><span class="line">                        it.remove();</span><br><span class="line">                        changed = true;</span><br><span class="line">                        log.error(&quot;[BUG]doRebalance, &#123;&#125;, remove unnecessary mq, &#123;&#125;, because pull is pause, so try to fixed it&quot;,</span><br><span class="line">                            consumerGroup, mq);</span><br><span class="line">                    &#125;</span><br><span class="line">                    break;</span><br><span class="line">                default:</span><br><span class="line">                    break;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>继续往下看，下面是把远端新增的队列加入到<code>processQueueTable</code>中：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (MessageQueue mq : mqSet) &#123;</span><br><span class="line">	<span class="comment">//如果processQueueTable不包括这个mq</span></span><br><span class="line">    <span class="keyword">if</span> (!<span class="keyword">this</span>.processQueueTable.containsKey(mq)) &#123;</span><br><span class="line">        <span class="keyword">if</span> (isOrder &amp;&amp; !<span class="keyword">this</span>.lock(mq)) &#123;</span><br><span class="line">            log.warn(<span class="string">"doRebalance, &#123;&#125;, add a new mq failed, &#123;&#125;, because lock failed"</span>, consumerGroup, mq);</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//把这个mq的offset先干掉，再添加</span></span><br><span class="line">        <span class="keyword">this</span>.removeDirtyOffset(mq);</span><br><span class="line">        ProcessQueue pq = <span class="keyword">new</span> ProcessQueue();</span><br><span class="line">        <span class="keyword">long</span> nextOffset = <span class="keyword">this</span>.computePullFromWhere(mq);</span><br><span class="line">        <span class="keyword">if</span> (nextOffset &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">            ProcessQueue pre = <span class="keyword">this</span>.processQueueTable.putIfAbsent(mq, pq);</span><br><span class="line">            <span class="keyword">if</span> (pre != <span class="keyword">null</span>) &#123;</span><br><span class="line">                log.info(<span class="string">"doRebalance, &#123;&#125;, mq already exists, &#123;&#125;"</span>, consumerGroup, mq);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                log.info(<span class="string">"doRebalance, &#123;&#125;, add a new mq, &#123;&#125;"</span>, consumerGroup, mq);</span><br><span class="line">                PullRequest pullRequest = <span class="keyword">new</span> PullRequest();</span><br><span class="line">                pullRequest.setConsumerGroup(consumerGroup);</span><br><span class="line">                pullRequest.setNextOffset(nextOffset);</span><br><span class="line">                pullRequest.setMessageQueue(mq);</span><br><span class="line">                pullRequest.setProcessQueue(pq);</span><br><span class="line">                pullRequestList.add(pullRequest);</span><br><span class="line">                <span class="comment">//返回是否有变化</span></span><br><span class="line">                changed = <span class="keyword">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            log.warn(<span class="string">"doRebalance, &#123;&#125;, add new mq failed, &#123;&#125;"</span>, consumerGroup, mq);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面会发起消息拉取请求，我们忽略。</p>
+<p>集群模式的更新队列方式使用的同样是<code>updateProcessQueueTableInRebalance</code>。这里注意下不同模式下的消费进度：<br><strong>广播模式</strong>：使用<code>本地文件</code>的消费进度。<br><strong>集群模式</strong>：使用<code>Broker</code>的消费进度。</p>
+<p>广播模式使用本地的消费进度即可，因为消费者之间互相独立，集群模式则不是，正常情况下，一条消息在一个消费者上消费成功，则不会发送到其他消费者，消费的进度需要由<code>Broker</code>把控。</p>
+<p>集群模式的消息<code>rebalance</code>我们后面再看。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/rocketmq/" rel="tag"># rocketmq</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/01/16/RocketMQ源码解读——Consumer从文件中拉取消息/" rel="next" title="RocketMQ源码解读——Consumer从文件中拉取消息">
+                <i class="fa fa-chevron-left"></i> RocketMQ源码解读——Consumer从文件中拉取消息
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">30</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">37</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocketMQ源码解读——消费者的Rebalance过程"><span class="nav-number">1.</span> <span class="nav-text">RocketMQ源码解读——消费者的Rebalance过程</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
