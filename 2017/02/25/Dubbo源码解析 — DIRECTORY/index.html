@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="Dubbo源码解析 — DIRECTORY@(dubbo源码分析)">
+<meta name="description" content="Dubbo源码解析 — DIRECTORY和ROUTER@(dubbo源码分析)  今天看一下Directory和Router。 我们直接从代码看起（一贯风格），先看后总结，对着总结再来看，相信会收获很多。我们先看com.alibaba.dubbo.config.ReferenceConfig的createProxy： 123if (urls.size() == 1) &amp;#123;    invo">
 <meta name="keywords" content="插件化,ExtensionLoader">
 <meta property="og:type" content="article">
-<meta property="og:title" content=" Dubbo源码解析 --- DIRECTORY">
+<meta property="og:title" content=" Dubbo源码解析 --- DIRECTORY和ROUTER">
 <meta property="og:url" content="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — DIRECTORY/index.html">
 <meta property="og:site_name" content="一时无两">
-<meta property="og:description" content="Dubbo源码解析 — DIRECTORY@(dubbo源码分析)">
+<meta property="og:description" content="Dubbo源码解析 — DIRECTORY和ROUTER@(dubbo源码分析)  今天看一下Directory和Router。 我们直接从代码看起（一贯风格），先看后总结，对着总结再来看，相信会收获很多。我们先看com.alibaba.dubbo.config.ReferenceConfig的createProxy： 123if (urls.size() == 1) &amp;#123;    invo">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-02-01T12:28:59.754Z">
+<meta property="og:updated_time" content="2018-02-06T13:24:57.371Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content=" Dubbo源码解析 --- DIRECTORY">
-<meta name="twitter:description" content="Dubbo源码解析 — DIRECTORY@(dubbo源码分析)">
+<meta name="twitter:title" content=" Dubbo源码解析 --- DIRECTORY和ROUTER">
+<meta name="twitter:description" content="Dubbo源码解析 — DIRECTORY和ROUTER@(dubbo源码分析)  今天看一下Directory和Router。 我们直接从代码看起（一贯风格），先看后总结，对着总结再来看，相信会收获很多。我们先看com.alibaba.dubbo.config.ReferenceConfig的createProxy： 123if (urls.size() == 1) &amp;#123;    invo">
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-  <title> Dubbo源码解析 --- DIRECTORY | 一时无两</title>
+  <title> Dubbo源码解析 --- DIRECTORY和ROUTER | 一时无两</title>
   
 
 
@@ -280,7 +280,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline"> Dubbo源码解析 --- DIRECTORY</h1>
+          <h1 class="post-title" itemprop="name headline"> Dubbo源码解析 --- DIRECTORY和ROUTER</h1>
         
 
         <div class="post-meta">
@@ -352,8 +352,28 @@
       
 
       
-        <h2 id="Dubbo源码解析-—-DIRECTORY"><a href="#Dubbo源码解析-—-DIRECTORY" class="headerlink" title="Dubbo源码解析 — DIRECTORY"></a>Dubbo源码解析 — DIRECTORY</h2><p>@(dubbo源码分析)</p>
+        <h2 id="Dubbo源码解析-—-DIRECTORY和ROUTER"><a href="#Dubbo源码解析-—-DIRECTORY和ROUTER" class="headerlink" title="Dubbo源码解析 — DIRECTORY和ROUTER"></a>Dubbo源码解析 — DIRECTORY和ROUTER</h2><p>@(dubbo源码分析)</p>
 <hr>
+<p>今天看一下<code>Directory</code>和<code>Router</code>。</p>
+<p>我们直接从代码看起（一贯风格），先看后总结，对着总结再来看，相信会收获很多。我们先看<code>com.alibaba.dubbo.config.ReferenceConfig</code>的<code>createProxy</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (urls.size() == <span class="number">1</span>) &#123;</span><br><span class="line">    invoker = refprotocol.refer(interfaceClass, urls.get(<span class="number">0</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们之前说过了，根据扩展点，我们知道这里的<code>protocol</code>目前是<code>RegistryProtocol</code>，点进去：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> doRefer(cluster, registry, type, url);</span><br></pre></td></tr></table></figure>
+<p>这里的<code>cluster</code>同样是扩展点，点进去：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">RegistryDirectory&lt;T&gt; directory = <span class="keyword">new</span> RegistryDirectory&lt;T&gt;(type, url);</span><br><span class="line">directory.setRegistry(registry);</span><br><span class="line">directory.setProtocol(protocol);</span><br><span class="line"><span class="comment">// all attributes of REFER_KEY</span></span><br><span class="line">Map&lt;String, String&gt; parameters = <span class="keyword">new</span> HashMap&lt;String, String&gt;(directory.getUrl().getParameters());</span><br><span class="line">URL subscribeUrl = <span class="keyword">new</span> URL(Constants.CONSUMER_PROTOCOL, parameters.remove(Constants.REGISTER_IP_KEY), <span class="number">0</span>, type.getName(), parameters);</span><br><span class="line"><span class="keyword">if</span> (!Constants.ANY_VALUE.equals(url.getServiceInterface())</span><br><span class="line">        &amp;&amp; url.getParameter(Constants.REGISTER_KEY, <span class="keyword">true</span>)) &#123;</span><br><span class="line">    registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,</span><br><span class="line">            Constants.CHECK_KEY, String.valueOf(<span class="keyword">false</span>)));</span><br><span class="line">&#125;</span><br><span class="line">directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY,</span><br><span class="line">        Constants.PROVIDERS_CATEGORY</span><br><span class="line">                + <span class="string">","</span> + Constants.CONFIGURATORS_CATEGORY</span><br><span class="line">                + <span class="string">","</span> + Constants.ROUTERS_CATEGORY));</span><br><span class="line"></span><br><span class="line">Invoker invoker = cluster.join(directory);</span><br><span class="line">ProviderConsumerRegTable.registerConsuemr(invoker, url, subscribeUrl, directory);</span><br><span class="line"><span class="keyword">return</span> invoker;</span><br></pre></td></tr></table></figure>
+<p>这里出现了第一个东西：<code>DIRECTORY</code>，这里会用<code>cluster</code>的<code>join</code>方法生成一个<code>Invoker</code>：<code>Invoker invoker = cluster.join(directory);</code>，这里的<code>cluster</code>debug一下，是<code>FailoverCluster</code>，生成的就是<code>FailoverClusterInvoker</code>。这里我们都没有发现这个<code>Directory</code>的作用，先别急，我们至少知道了<code>AbstractClusterInvoker</code>中有一个<code>Directory</code>的实例。</p>
+<p>再看我们的<code>AbstractClusterInvoker</code>的<code>invoke</code>方法，这是<code>Dubbo</code>所有集群<code>invoker</code>的入口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">checkWhetherDestroyed();</span><br><span class="line">LoadBalance loadbalance;</span><br><span class="line"><span class="comment">//注意这里</span></span><br><span class="line">List&lt;Invoker&lt;T&gt;&gt; invokers = list(invocation);</span><br><span class="line"><span class="keyword">if</span> (invokers != <span class="keyword">null</span> &amp;&amp; invokers.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    loadbalance = ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(invokers.get(<span class="number">0</span>).getUrl()</span><br><span class="line">            .getMethodParameter(invocation.getMethodName(), Constants.LOADBALANCE_KEY, Constants.DEFAULT_LOADBALANCE));</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    loadbalance = ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(Constants.DEFAULT_LOADBALANCE);</span><br><span class="line">&#125;</span><br><span class="line">RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);</span><br><span class="line"><span class="keyword">return</span> doInvoke(invocation, invokers, loadbalance);</span><br></pre></td></tr></table></figure>
+<p>这里有个<code>list</code>方法，返回的是<code>invoker</code>集合，<code>doInvoke</code>方法下沉到了子类，之前我们说过，这里会根据负载均衡策略选出一个<code>invoker</code>执行，那么我们看下<code>list</code>方法是如何选取<code>invoker</code>集合的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//使用directory去选取</span></span><br><span class="line">List&lt;Invoker&lt;T&gt;&gt; invokers = directory.list(invocation);</span><br><span class="line"><span class="keyword">return</span> invokers;</span><br></pre></td></tr></table></figure>
+<p>点进去进入到<code>AbstractDirectory</code>的<code>list</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Invoker&lt;T&gt;&gt; invokers = doList(invocation);</span><br><span class="line"><span class="comment">//本地的routers</span></span><br><span class="line">List&lt;Router&gt; localRouters = <span class="keyword">this</span>.routers; <span class="comment">// local reference</span></span><br><span class="line"><span class="keyword">if</span> (localRouters != <span class="keyword">null</span> &amp;&amp; localRouters.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">for</span> (Router router : localRouters) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (router.getUrl() == <span class="keyword">null</span> || router.getUrl().getParameter(Constants.RUNTIME_KEY, <span class="keyword">false</span>)) &#123;</span><br><span class="line">                invokers = router.route(invokers, getConsumerUrl(), invocation);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            logger.error(<span class="string">"Failed to execute router: "</span> + getUrl() + <span class="string">", cause: "</span> + t.getMessage(), t);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>继续看一下<code>doList</code>，这里同样下沉到子类，子类有两个，分别是：<code>RegistryDirectory</code>和<code>StaticDirectory</code>，这两个的区别我们别的文章再说，这里简单提一下：<code>RegistryDirectory</code>中的<code>invoker</code>集合是动态的（实现了<code>NotifyListener</code>接口），而<code>StaticDirectory</code>中的<code>invoker</code>集合是固定的。</p>
+<p>那么<code>StaticDirectory</code>返回的集合就是固定的，而<code>RegistryDirectory</code>是动态的，我们在注册中心对<code>invoker</code>做改动，都会引起<code>RegistryDirectory</code>中<code>invoker</code>集合的变化。</p>
+<p>这里我们大概就能理解这个<code>Directory</code>，实际上，这个东西就是<code>Invoker</code>的集合。</p>
+<p><code>doList</code>结束，下面就出现了我们说的<code>Router</code>，默认有三种实现：<code>ConditionRouter</code>、<code>MockInvokersSelector</code>（虽然叫Selector）和<code>ScriptRouter</code>。这篇文章先不具体展开讨论每种<code>Router</code>的实现方式。</p>
+<p><code>router</code>返回的并不是一个<code>Invoker</code>，而是<code>invoker</code>集合，我们可以认为，<code>router</code>的作用就是把<code>Directory</code>中符合路由规则的<code>invoker</code>筛选出来，然后在这些<code>invoker</code>中，根据负载均衡策略和集群容错策略执行<code>invoke</code>方法。</p>
+<p>总结一下：<br><strong>Director</strong>：<code>invoker</code>的集合，是<code>AbstractClusterInvoker</code>的属性，可以认为是本集群下的所有<code>Invoker</code>。<br><strong>Router</strong>：从<code>Directory</code>中挑选出符合要求的<code>Invoker</code>集合。<br><strong>LoadBalance</strong>：从<code>Router</code>挑选的<code>invoker</code>中再选出<strong>其中一个</strong>作为最终选择去执行<code>invoke</code>方法。</p>
 
       
     </div>
@@ -392,8 +412,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/" rel="prev" title=" Dubbo源码解析 --- 服务订阅以及通知">
-                 Dubbo源码解析 --- 服务订阅以及通知 <i class="fa fa-chevron-right"></i>
+              <a href="/2017/02/25/深克隆插件FKC/" rel="prev" title="深克隆插件 -- FKC">
+                深克隆插件 -- FKC <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -475,7 +495,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">33</span>
+                  <span class="site-state-item-count">32</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -546,7 +566,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Dubbo源码解析-—-DIRECTORY"><span class="nav-number">1.</span> <span class="nav-text">Dubbo源码解析 — DIRECTORY</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Dubbo源码解析-—-DIRECTORY和ROUTER"><span class="nav-number">1.</span> <span class="nav-text">Dubbo源码解析 — DIRECTORY和ROUTER</span></a></li></ol></div>
             
 
           </div>

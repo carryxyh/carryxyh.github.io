@@ -413,157 +413,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="时无两">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="一时无两">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/" itemprop="url"> Dubbo源码解析 --- 服务订阅以及通知</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-02-25T11:37:53+08:00">
-                2017-02-25
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
-                    <span itemprop="name">dubbo源码</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-          Dubbo源码解析 — 服务订阅以及通知
-前言由于服务的注册内容比较多，所以把上一部分单独做一篇，订阅和通知合在一起。
-subscribe承接上一篇，我们说完了服务的发布，现在看看服务的订阅。考虑了一下，我还是决定在这里贴一下Protocol接口的相关注释，方便大家理解：
-12345678910111213141516171819202122232425262728/**     * 暴露远程服务：&lt;br&gt;     * 1. 协议在接收请求时，应记录请求来源方地址信息：RpcContext.getContext().setRemoteAddress();&lt;br&gt;    
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — DIRECTORY/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -583,7 +432,7 @@ subscribe承接上一篇，我们说完了服务的发布，现在看看服务�
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — DIRECTORY/" itemprop="url"> Dubbo源码解析 --- DIRECTORY</a></h1>
+                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — DIRECTORY/" itemprop="url"> Dubbo源码解析 --- DIRECTORY和ROUTER</a></h1>
         
 
         <div class="post-meta">
@@ -657,10 +506,13 @@ subscribe承接上一篇，我们说完了服务的发布，现在看看服务�
       
         
           
-          Dubbo源码解析 — DIRECTORY@(dubbo源码分析)
+          Dubbo源码解析 — DIRECTORY和ROUTER@(dubbo源码分析)
 
-
-          
+今天看一下Directory和Router。
+我们直接从代码看起（一贯风格），先看后总结，对着总结再来看，相信会收获很多。我们先看com.alibaba.dubbo.config.ReferenceConfig的createProxy：
+123if (urls.size() == 1) &#123;    invoker = refprotocol.refer(interfaceClass, urls.get(0));&#125;
+这里我们之前说过了，根据扩展点，我们知道这里的protocol目前是Regist
+          ...
           <!--noindex-->
           <div class="post-button text-center">
             <a class="btn" href="/2017/02/25/Dubbo源码解析 — DIRECTORY/#more" rel="contents">
@@ -755,7 +607,7 @@ subscribe承接上一篇，我们说完了服务的发布，现在看看服务�
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">33</span>
+                  <span class="site-state-item-count">32</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
