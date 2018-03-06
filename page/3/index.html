@@ -1632,7 +1632,7 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/synchronized 关键字/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -1651,7 +1651,7 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/25/synchronized 关键字/" itemprop="url">synchronized 关键字</a></h1>
+                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/" itemprop="url"> Dubbo源码解析 --- 服务订阅以及通知</a></h1>
         
 
         <div class="post-meta">
@@ -1686,8 +1686,8 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java源码/" itemprop="url" rel="index">
-                    <span itemprop="name">java源码</span>
+                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
+                    <span itemprop="name">dubbo源码</span>
                   </a>
                 </span>
 
@@ -1725,20 +1725,14 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
       
         
           
-          synchronized 关键字
-实现原理在java1.6中对synchronized进行了一系列优化，在之前的版本中，lock性能远比synchronized关键字好，测试数据这里不放了。重点关注下实现原理。
-先说几个概念：
-
-普通同步方法，锁当前实例（相当于synchronize（this））。
-静态同步方法，锁当前类的class对象。（任何该class的实例全都会阻塞）
-synchronized（object）锁object对象。
-
-当一个线程访问同步代码块时，它首先是需要得到锁才能执行同步代码，当退出或者抛出异常时必须要释放锁，那么它是如何来实现这个机制的呢？我们先看一段简单的代码：
-
+          Dubbo源码解析 — 服务订阅以及通知
+前言由于服务的注册内容比较多，所以把上一部分单独做一篇，订阅和通知合在一起。
+subscribe承接上一篇，我们说完了服务的发布，现在看看服务的订阅。考虑了一下，我还是决定在这里贴一下Protocol接口的相关注释，方便大家理解：
+12345678910111213141516171819202122232425262728/**     * 暴露远程服务：&lt;br&gt;     * 1. 协议在接收请求时，应记录请求来源方地址信息：RpcContext.getContext().setRemoteAddress();&lt;br&gt;    
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2017/02/25/synchronized 关键字/#more" rel="contents">
+            <a class="btn" href="/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
