@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="tomcat,servlet," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Tomcat异步Servlet实现分析——开启异步上下文前言异步servlet是servlet 3.0的新特性，具体的使用方式就不说了，我们主要看异步Servlet的代码实现。有两种场景：  可立即返回给请求方数据的。很简单不说了。 另外一些情况，需要等待处理结果，这个时候如果我们使用容器中的线程池，则线程池很快会耗尽。Servlet 3.0提供了异步支持，能够指示Respons在Servlet容">
+<meta name="keywords" content="tomcat,servlet">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Tomcat异步Servlet实现分析——开启异步上下文">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2018/03/06/Tomcat异步Servlet实现分析——开启异步上下文/index.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Tomcat异步Servlet实现分析——开启异步上下文前言异步servlet是servlet 3.0的新特性，具体的使用方式就不说了，我们主要看异步Servlet的代码实现。有两种场景：  可立即返回给请求方数据的。很简单不说了。 另外一些情况，需要等待处理结果，这个时候如果我们使用容器中的线程池，则线程池很快会耗尽。Servlet 3.0提供了异步支持，能够指示Respons在Servlet容">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-03-06T11:54:48.308Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Tomcat异步Servlet实现分析——开启异步上下文">
+<meta name="twitter:description" content="Tomcat异步Servlet实现分析——开启异步上下文前言异步servlet是servlet 3.0的新特性，具体的使用方式就不说了，我们主要看异步Servlet的代码实现。有两种场景：  可立即返回给请求方数据的。很简单不说了。 另外一些情况，需要等待处理结果，这个时候如果我们使用容器中的线程池，则线程池很快会耗尽。Servlet 3.0提供了异步支持，能够指示Respons在Servlet容">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2018/03/06/Tomcat异步Servlet实现分析——开启异步上下文/"/>
+
+
+
+
+
+  <title>Tomcat异步Servlet实现分析——开启异步上下文 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/03/06/Tomcat异步Servlet实现分析——开启异步上下文/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Tomcat异步Servlet实现分析——开启异步上下文</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-06T19:54:13+08:00">
+                2018-03-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tomcat源码解析/" itemprop="url" rel="index">
+                    <span itemprop="name">tomcat源码解析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Tomcat异步Servlet实现分析——开启异步上下文"><a href="#Tomcat异步Servlet实现分析——开启异步上下文" class="headerlink" title="Tomcat异步Servlet实现分析——开启异步上下文"></a>Tomcat异步Servlet实现分析——开启异步上下文</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p><code>异步servlet</code>是<code>servlet 3.0</code>的新特性，具体的使用方式就不说了，我们主要看异步Servlet的代码实现。有两种场景：</p>
+<ol>
+<li>可立即返回给请求方数据的。很简单不说了。</li>
+<li>另外一些情况，需要等待处理结果，这个时候如果我们使用容器中的线程池，则线程池很快会耗尽。Servlet 3.0提供了异步支持，能够指示Respons在Servlet容器的线程退出之后保持开发状态。</li>
+</ol>
+<h4 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h4><p>源码的入口在<code>org.apache.catalina.connector.Request</code>，先由一个请求开启异步（<code>startAsync</code>方法）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> AsyncContext <span class="title">startAsync</span><span class="params">(ServletRequest request,</span></span></span><br><span class="line"><span class="function"><span class="params">        ServletResponse response)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!isAsyncSupported()) &#123;</span><br><span class="line">        IllegalStateException ise =</span><br><span class="line">                <span class="keyword">new</span> IllegalStateException(sm.getString(<span class="string">"request.asyncNotSupported"</span>));</span><br><span class="line">        log.warn(sm.getString(<span class="string">"coyoteRequest.noAsync"</span>,</span><br><span class="line">                StringUtils.join(getNonAsyncClassNames())), ise);</span><br><span class="line">        <span class="keyword">throw</span> ise;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (asyncContext == <span class="keyword">null</span>) &#123;</span><br><span class="line">        asyncContext = <span class="keyword">new</span> AsyncContextImpl(<span class="keyword">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    asyncContext.setStarted(getContext(), request, response,</span><br><span class="line">            request==getRequest() &amp;&amp; response==getResponse().getResponse());</span><br><span class="line">    asyncContext.setTimeout(getConnector().getAsyncTimeout());</span><br><span class="line">    <span class="keyword">return</span> asyncContext;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意这里的前半部分，需要判断是否支持异步，如果不支持就直接抛异常了，设置异步支持这里也不说了，我们看后面，初始化<code>AsyncContextImpl</code>，这个是异步线程上下文非常重要，后面我们细看其作用。</p>
+<p>然后是设置超时时间（异步的请求设置超时时间这个没啥疑问），然后是设置开始状态（<code>asyncContext.setStarted</code>）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">synchronized</span> (asyncContextLock) &#123;</span><br><span class="line">    <span class="keyword">this</span>.request.getCoyoteRequest().action(</span><br><span class="line">            ActionCode.ASYNC_START, <span class="keyword">this</span>);</span><br><span class="line">    <span class="keyword">this</span>.context = context;</span><br><span class="line">    <span class="keyword">this</span>.servletRequest = request;</span><br><span class="line">    <span class="keyword">this</span>.servletResponse = response;</span><br><span class="line">    <span class="keyword">this</span>.hasOriginalRequestAndResponse = originalRequestResponse;</span><br><span class="line">    <span class="keyword">this</span>.event = <span class="keyword">new</span> AsyncEvent(<span class="keyword">this</span>, request, response);</span><br><span class="line">    List&lt;AsyncListenerWrapper&gt; listenersCopy = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    listenersCopy.addAll(listeners);</span><br><span class="line">    listeners.clear();</span><br><span class="line">    <span class="keyword">for</span> (AsyncListenerWrapper listener : listenersCopy) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            listener.fireOnStartAsync(event);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            ExceptionUtils.handleThrowable(t);</span><br><span class="line">       &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们可以看到，<code>AsyncContextImpl</code>里缓存了很多信息，包括请求、相应和上下文。</p>
+<p>然后触发了<code>AsyncListenerWrapper</code>的<code>fireOnStartAsync</code>方法，这个<code>AsyncListenerWrapper</code>实际上是<code>AsyncListener</code>的包装类，我们可以通过<code>AsyncContext.addListener</code>设置。</p>
+<p>那么这里我们可以看到，<code>AsyncContextImpl</code>的作用：主要是缓存了很多的请求的中间信息，如request，response，listener，dispatch对象，event，还有servlet实例化的instanceManager等，那么为什么需要缓存这些信息呢？</p>
+<p>是因为Tomcat工作线程在<code>Request.startAsync</code>之后，把该异步<code>servlet</code>的后续代码执行完毕后，Tomcat工作线程直接就结束了，也就是返回线程池中了，相当于线程根本不会保存记录信息。</p>
+<p>而我们这时的状态相当于一个请求到服务器了，业务正在执行，执行到一半，线程没了，这就需要至少有个缓存的地方，而这个缓存就是<code>AsyncContextImpl</code>。</p>
+<p>再看这里：<code>this.request.getCoyoteRequest().action(ActionCode.ASYNC_START, this);</code>，这个设计到Tomcat的<code>Http11Processor</code>中的处理器来处理这个事件的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Servlet 3.0 asynchronous support</span></span><br><span class="line"><span class="keyword">case</span> ASYNC_START: &#123;</span><br><span class="line">    asyncStateMachine.asyncStart((AsyncContextCallback) param);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后是Tomcat中的状态机，网上说，这个状态机是JAVA EE明确规定要实现的：<code>在该类中，对Servlet出于异步环境中的状态进行监控和管理，对于每一个状态都有严格的要求，其下一个状态做什么</code>，如果有兴趣可以查一下Servlet 3.1的规范，有图有说明。</p>
+<p>我们继续看这个状态机如何处理：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (state == AsyncState.DISPATCHED) &#123;</span><br><span class="line">    state = AsyncState.STARTING;</span><br><span class="line">    <span class="keyword">this</span>.asyncCtxt = asyncCtxt;</span><br><span class="line">    lastAsyncStart = System.currentTimeMillis();</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">            sm.getString(<span class="string">"asyncStateMachine.invalidAsyncState"</span>,</span><br><span class="line">                    <span class="string">"asyncStart()"</span>, state));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>就是设置状态和这个<code>asyncCtxt</code>，这个其实是<code>AsyncContextImpl</code>，这个类实现了<code>AsyncContextCallback</code>接口，拥有<code>fireOnComplete</code>方法。</p>
+<p>到这里我们的开启异步上下文就结束了。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/tomcat/" rel="tag"># tomcat</a>
+          
+            <a href="/tags/servlet/" rel="tag"># servlet</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/02/28/Gorilla-Mux源码解析/" rel="next" title="Gorilla/Mux源码解析">
+                <i class="fa fa-chevron-left"></i> Gorilla/Mux源码解析
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">35</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">12</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">43</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Tomcat异步Servlet实现分析——开启异步上下文"><span class="nav-number">1.</span> <span class="nav-text">Tomcat异步Servlet实现分析——开启异步上下文</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#源码"><span class="nav-number">1.2.</span> <span class="nav-text">源码</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
