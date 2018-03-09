@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="rocketmq," />
+  <meta name="keywords" content="路漫漫其修远兮，吾将上蹿下跳来回折腾！" />
 
 
 
@@ -79,18 +79,17 @@
 
 
 
-<meta name="description" content="RocketMQ源码解读——消息消费之消费者启动 我们下面两篇文章看消费者。消息队列主要就是生产和消费两端，但是其实rocketmq还有很重要的两个部分是broker和nameserver，broker中有真正的消息，nameserver是一个类似注册中心的角色。broker中存储的消息结构复杂，我们后面再看，先看拉取。 消费者分为两种，本质上都是通过拉的方式实现的，我们先看消费者启动部分。 消费">
-<meta name="keywords" content="rocketmq">
+<meta name="description" content="云音乐招聘信息（帮同事发的） 我们组正处在飞速发展期，需要后台，前端，产品，运营，qa等多个岗位人才，有兴趣的同学可以发简历和要应聘的岗位到我邮箱 hzcuizhiqiang@corp.netease.com，或联系微信czq911013   服务端开发Java开发工程师（云音乐）职位类别：    技术&amp;gt;技术架构中心工作地点：    杭州市学历要求：    本科工作年限：    0-3年岗位">
 <meta property="og:type" content="article">
-<meta property="og:title" content="RocketMQ源码解读——消息消费之消费者启动">
-<meta property="og:url" content="http://wyj.shiwuliang.com/2017/12/26/RocketMQ源码解读——消息消费之消费者启动/index.html">
+<meta property="og:title" content="云音乐招聘信息">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2018/03/09/云音乐招聘信息/index.html">
 <meta property="og:site_name" content="一时无两">
-<meta property="og:description" content="RocketMQ源码解读——消息消费之消费者启动 我们下面两篇文章看消费者。消息队列主要就是生产和消费两端，但是其实rocketmq还有很重要的两个部分是broker和nameserver，broker中有真正的消息，nameserver是一个类似注册中心的角色。broker中存储的消息结构复杂，我们后面再看，先看拉取。 消费者分为两种，本质上都是通过拉的方式实现的，我们先看消费者启动部分。 消费">
+<meta property="og:description" content="云音乐招聘信息（帮同事发的） 我们组正处在飞速发展期，需要后台，前端，产品，运营，qa等多个岗位人才，有兴趣的同学可以发简历和要应聘的岗位到我邮箱 hzcuizhiqiang@corp.netease.com，或联系微信czq911013   服务端开发Java开发工程师（云音乐）职位类别：    技术&amp;gt;技术架构中心工作地点：    杭州市学历要求：    本科工作年限：    0-3年岗位">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-12-28T12:52:07.242Z">
+<meta property="og:updated_time" content="2018-03-09T03:46:14.820Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="RocketMQ源码解读——消息消费之消费者启动">
-<meta name="twitter:description" content="RocketMQ源码解读——消息消费之消费者启动 我们下面两篇文章看消费者。消息队列主要就是生产和消费两端，但是其实rocketmq还有很重要的两个部分是broker和nameserver，broker中有真正的消息，nameserver是一个类似注册中心的角色。broker中存储的消息结构复杂，我们后面再看，先看拉取。 消费者分为两种，本质上都是通过拉的方式实现的，我们先看消费者启动部分。 消费">
+<meta name="twitter:title" content="云音乐招聘信息">
+<meta name="twitter:description" content="云音乐招聘信息（帮同事发的） 我们组正处在飞速发展期，需要后台，前端，产品，运营，qa等多个岗位人才，有兴趣的同学可以发简历和要应聘的岗位到我邮箱 hzcuizhiqiang@corp.netease.com，或联系微信czq911013   服务端开发Java开发工程师（云音乐）职位类别：    技术&amp;gt;技术架构中心工作地点：    杭州市学历要求：    本科工作年限：    0-3年岗位">
 
 
 
@@ -120,13 +119,13 @@
 
 
 
-  <link rel="canonical" href="http://wyj.shiwuliang.com/2017/12/26/RocketMQ源码解读——消息消费之消费者启动/"/>
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2018/03/09/云音乐招聘信息/"/>
 
 
 
 
 
-  <title>RocketMQ源码解读——消息消费之消费者启动 | 一时无两</title>
+  <title>云音乐招聘信息 | 一时无两</title>
   
 
 
@@ -263,7 +262,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/12/26/RocketMQ源码解读——消息消费之消费者启动/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/03/09/云音乐招聘信息/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -280,7 +279,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">RocketMQ源码解读——消息消费之消费者启动</h1>
+          <h1 class="post-title" itemprop="name headline">云音乐招聘信息</h1>
         
 
         <div class="post-meta">
@@ -292,8 +291,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-26T21:41:17+08:00">
-                2017-12-26
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-09T11:46:53+08:00">
+                2018-03-09
               </time>
             
 
@@ -315,8 +314,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/rocketmq源码/" itemprop="url" rel="index">
-                    <span itemprop="name">rocketmq源码</span>
+                  <a href="/categories/云音乐招聘/" itemprop="url" rel="index">
+                    <span itemprop="name">云音乐招聘</span>
                   </a>
                 </span>
 
@@ -352,25 +351,16 @@
       
 
       
-        <h3 id="RocketMQ源码解读——消息消费之消费者启动"><a href="#RocketMQ源码解读——消息消费之消费者启动" class="headerlink" title="RocketMQ源码解读——消息消费之消费者启动"></a>RocketMQ源码解读——消息消费之消费者启动</h3><hr>
-<p>我们下面两篇文章看消费者。消息队列主要就是生产和消费两端，但是其实rocketmq还有很重要的两个部分是<code>broker</code>和<code>nameserver</code>，<code>broker</code>中有真正的消息，<code>nameserver</code>是一个类似注册中心的角色。<code>broker</code>中存储的消息结构复杂，我们后面再看，先看拉取。</p>
-<p>消费者分为两种，本质上都是通过<code>拉</code>的方式实现的，我们先看消费者启动部分。</p>
-<p>消费者启动设置要注意的有几个点：</p>
-<ol>
-<li>设置<code>nameserver</code>（这个<code>producer</code>和<code>broker</code>也需要）。</li>
-<li>设置从哪里消费。</li>
-<li>订阅<code>topic</code>和<code>tag</code>。</li>
-</ol>
-<p>push类型的消费者，依靠<code>server</code>端主动的推送消息过来（表面上），需要注册监听器，来监听发送过来的消息。</p>
-<p>pull类型的消费者，需要调用<code>consumer.fetchSubscribeMessageQueues(topic)</code>方法，从<code>server</code>端主动拉取消息。</p>
-<p>我们挑选push类型的看一下。</p>
-<h4 id="cusumer-start"><a href="#cusumer-start" class="headerlink" title="cusumer.start"></a>cusumer.start</h4><p>代码太多了，我们挑主要的看一下，启动中一共要启动两个组件：<code>consumeMessageService</code>和<code>mQClientFactory</code>。</p>
-<p><code>consumeMessageService</code>开始时开启一个定时任务，主要是定时清理过期消息，而主要的功能是处理消息，里面会使用我们注册的监听器对消息进行消费，<code>mQClientFactory</code>功能比较重要，重点看一下它的启动：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">this.serviceState = ServiceState.START_FAILED;</span><br><span class="line">// If not specified,looking address from name server</span><br><span class="line">if (null == this.clientConfig.getNamesrvAddr()) &#123;</span><br><span class="line">    this.mQClientAPIImpl.fetchNameServerAddr();</span><br><span class="line">&#125;</span><br><span class="line">// Start request-response channel</span><br><span class="line">this.mQClientAPIImpl.start();</span><br><span class="line">// Start various schedule tasks</span><br><span class="line">this.startScheduledTask();</span><br><span class="line">// Start pull service</span><br><span class="line">this.pullMessageService.start();</span><br><span class="line">// Start rebalance service</span><br><span class="line">this.rebalanceService.start();</span><br><span class="line">// Start push service</span><br><span class="line">this.defaultMQProducer.getDefaultMQProducerImpl().start(false);</span><br><span class="line">log.info(&quot;the client factory [&#123;&#125;] start OK&quot;, this.clientId);</span><br><span class="line">this.serviceState = ServiceState.RUNNING;</span><br></pre></td></tr></table></figure></p>
-<p>这里要启动好多定时任务，具体的看<code>startScheduledTask</code>，这里先不细说，先看一下<code>PullMessageService</code>的<code>run</code>方法：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">PullRequest pullRequest = this.pullRequestQueue.take();</span><br><span class="line">if (pullRequest != null) &#123;</span><br><span class="line">    this.pullMessage(pullRequest);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>当这个service不结束就会一直不停的从队列里获取<code>PullRequest</code>，如果能获取到，就指定拉取消息的部分：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">DefaultMQPushConsumerImpl impl = (DefaultMQPushConsumerImpl) consumer;</span><br><span class="line">impl.pullMessage(pullRequest);</span><br></pre></td></tr></table></figure></p>
-<p>这个<code>pullMessage</code>方法最终会执行<code>this.pullAPIWrapper.pullKernelImpl</code>方法，我们可以看到，最终依赖的还是pull方式实现。</p>
-<p>到这里可能大家有个问题，这个<code>PullRequest</code>哪里来的呢？我们看到现在并没有出现哪里向阻塞队列里放<code>PullRequest</code>。我们看一下<code>PullMessageService</code>的<code>executePullRequestImmediately</code>方法，在这里找到了put的入口。最终会在<code>pullMessage</code>里找到入口。我们可以看到实际上向队列里放入<code>PullRequest</code>是一个类似定时任务的方式。不停地放，这样我们就可以从<code>server</code>一直不停地拉取消息。这也能解释<strong>rocketmq实际上是通过拉的方式来获取消息的</strong>。</p>
+        <h2 id="云音乐招聘信息（帮同事发的）"><a href="#云音乐招聘信息（帮同事发的）" class="headerlink" title="云音乐招聘信息（帮同事发的）"></a>云音乐招聘信息（帮同事发的）</h2><ul>
+<li>我们组正处在飞速发展期，需要后台，前端，产品，运营，qa等多个岗位人才，有兴趣的同学可以发简历和要应聘的岗位到我邮箱 hzcuizhiqiang@corp.netease.com，或联系微信czq911013</li>
+</ul>
+<hr>
+<h3 id="服务端开发"><a href="#服务端开发" class="headerlink" title="服务端开发"></a>服务端开发</h3><h4 id="Java开发工程师（云音乐）"><a href="#Java开发工程师（云音乐）" class="headerlink" title="Java开发工程师（云音乐）"></a>Java开发工程师（云音乐）</h4><p>职位类别：    技术&gt;技术架构中心<br>工作地点：    杭州市<br>学历要求：    本科<br>工作年限：    0-3年<br>岗位描述<br>1.负责互联网产品后端服务器架构设计，要求系统具有可扩展性， 能够支持大量并发用户；<br>2.根据产品需求完成服务器架构和模块设计、编码、测试以及文档编写等工作；<br>3.优化系统性能， 保证服务器质量和性能。<br>岗位要求<br>1.重点本科或以上学历，计算机软件或相关专业，英语CET4以上;<br>2.精通java编程，熟悉java sdk提供的主要能力;<br>3.理解java运行时工作原理，熟悉jvm性能调优，能够充分利用java特性支持框架与程序库的设计开发;<br>4.熟悉多线程编程，熟练使用java并发包下的各项常用基础设施;<br>5.熟悉网络编程，能够熟练使用java nio开发高并发、高吞吐量的服务;<br>6.熟悉常用网络协议，如TCP/IP, HTTP;<br>7.能够熟练使用linux，能够利用常用的工具对程序进行跟踪诊断;<br>8.有分布式系统开发经验，对消息服务、负载均衡、高可用机制等有深入理解;<br>9.具备良好学习、沟通能力及团队协作精神，对工作积极严谨，勇于承担压力</p>
+<h4 id="高级Java开发工程师（云音乐）"><a href="#高级Java开发工程师（云音乐）" class="headerlink" title="高级Java开发工程师（云音乐）"></a>高级Java开发工程师（云音乐）</h4><p>职位类别：    技术&gt;服务端开发<br>工作地点：    杭州市<br>学历要求：    本科<br>工作年限：    3-5年<br>岗位描述<br>1.负责互联网产品后端服务器架构设计，要求系统具有可扩展性， 能够支持大量并发用户；<br>2.根据产品需求完成服务器架构和模块设计、编码、测试以及文档编写等工作；<br>3.优化系统性能， 保证服务器质量和性能。<br>岗位要求<br>1.重点本科或以上学历，计算机软件或相关专业，英语CET4以上;<br>2.精通java编程，熟悉java sdk提供的主要能力;<br>3.理解java运行时工作原理，熟悉jvm性能调优，能够充分利用java特性支持框架与程序库的设计开发;<br>4.熟悉多线程编程，熟练使用java并发包下的各项常用基础设施;<br>5.熟悉网络编程，能够熟练使用java nio开发高并发、高吞吐量的服务;<br>6.熟悉常用网络协议，如TCP/IP, HTTP;<br>7.能够熟练使用linux，能够利用常用的工具对程序进行跟踪诊断;<br>8.有分布式系统开发经验，对消息服务、负载均衡、高可用机制等有深入理解;<br>9.具备良好学习、沟通能力及团队协作精神，对工作积极严谨，勇于承担压力。</p>
+<hr>
+<h3 id="前端开发"><a href="#前端开发" class="headerlink" title="前端开发"></a>前端开发</h3><h4 id="网易云音乐前端开发工程师"><a href="#网易云音乐前端开发工程师" class="headerlink" title="网易云音乐前端开发工程师"></a>网易云音乐前端开发工程师</h4><p>职位类别：    技术&gt;前端及客户端开发<br>所属部门：    音乐事业部&gt;研发部&gt;前端开发中心<br>工作地点：    杭州市<br>学历要求：    本科<br>工作年限：    3-5年<br>岗位描述<br>岗位描述：<br>1、负责前端功能开发和维护，参与团队协作，高质高效完成产品需求；<br>2、提升产品的用户体验、前端性能以及团队开发效率；<br>3、乐于分享，帮助新人成长；<br>4、研究和探索创新的开发思路和前沿的前端技术，应用到团队与产品中。<br>岗位要求<br>岗位要求：<br>1、计算机及相关专业本科以上学历，3年以上前端开发经验；<br>2、精通前端相关技术（HTML、CSS、Javascript），熟悉web标准，并以此作为自己的标准；<br>3、对前端开发规范、工程化、组件化、测试有一定的认识和实践；<br>4、在自己擅长的领域有比较深的认识，并有比较完善而成熟的技术方案；<br>5、在熟悉开发流程的基础上，持续改善流程，提高效率；<br>6、乐于分享，帮助新人提高；<br>7、对新技术保持敏感和好奇心, 并能推动在产品中应用；<br>8、个性乐观开朗，逻辑性强，善于和各种背景的人合作，能够承担较大压力。</p>
+<h4 id="网易云音乐资深前端开发工程师"><a href="#网易云音乐资深前端开发工程师" class="headerlink" title="网易云音乐资深前端开发工程师"></a>网易云音乐资深前端开发工程师</h4><p>岗位描述<br>1、负责Web前端功能开发和维护，与后端工程师协作，高质高效完成产品需求；<br>2、提升产品的用户体验、前端性能以及团队的开发效率；<br>3、研究和探索创新的开发思路和前沿的前端技术，应用到团队与产品中。<br>岗位要求<br>1、本科及以上学历，两年以上互联网前端开发经验；<br>2、精通Javascript等Web开发技术，精通html/xhtml/html5、css/css3等网页制作技术，熟悉页面架构和布局以及跨浏览器、跨终端开发；<br>3、善于解决各浏览器的兼容性问题；<br>4、熟悉一种主流js开源框架的使用 （比如jQuery）；<br>5、工作认真负责，乐观开朗，善于团队合作；<br>6、有较强的逻辑分析、问题排查能力；<br>7、具有很强的学习能力和对新技术的追求精神。</p>
+<h4 id="高级IOS工程师"><a href="#高级IOS工程师" class="headerlink" title="高级IOS工程师"></a>高级IOS工程师</h4><p>职位类别：    技术&gt;前端及客户端开发<br>所属部门：    音乐事业部&gt;研发部&gt;前端开发中心<br>工作地点：    杭州市<br>学历要求：    本科<br>工作年限：    3-5年<br>职位类别：    技术&gt;前端及客户端开发<br>所属部门：    音乐事业部&gt;研发部&gt;iOS组<br>工作地点：    杭州市<br>学历要求：    本科<br>工作年限：    0-3年<br>岗位描述<br>岗位描述<br>1、负责云音乐iOS平台的客户端开发和维护；<br>2、优化客户端的模块结构和流程逻辑；<br>3、研究前沿技术，提升用户体验，满足产品需求；<br>岗位要求<br>1、计算机相关专业，本科及以上学历；<br>2、1~3年iOS开发经验；<br>3、较强的发现、分析和解决技术问题的能力；<br>4、深刻理解iOS平台，精通ObjC/C/C++语言；<br>5、有较好的学习与沟通能力，有创新力和责任感；</p>
 
       
     </div>
@@ -386,12 +376,6 @@
 
     <footer class="post-footer">
       
-        <div class="post-tags">
-          
-            <a href="/tags/rocketmq/" rel="tag"># rocketmq</a>
-          
-        </div>
-      
 
       
       
@@ -401,8 +385,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/12/26/RocketMQ源码解读——消息发送之选择队列并发送/" rel="next" title="RocketMQ源码解读——消息发送之选择队列并发送">
-                <i class="fa fa-chevron-left"></i> RocketMQ源码解读——消息发送之选择队列并发送
+              <a href="/2018/03/08/Tomcat异步Servlet实现分析——异步结束/" rel="next" title="Tomcat异步Servlet实现分析——异步结束">
+                <i class="fa fa-chevron-left"></i> Tomcat异步Servlet实现分析——异步结束
               </a>
             
           </div>
@@ -410,10 +394,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2018/01/02/RocketMQ源码解读——Broker消息存储/" rel="prev" title="RocketMQ源码解读——Broker消息存储">
-                RocketMQ源码解读——Broker消息存储 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -565,7 +545,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocketMQ源码解读——消息消费之消费者启动"><span class="nav-number">1.</span> <span class="nav-text">RocketMQ源码解读——消息消费之消费者启动</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#cusumer-start"><span class="nav-number">1.1.</span> <span class="nav-text">cusumer.start</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#云音乐招聘信息（帮同事发的）"><span class="nav-number">1.</span> <span class="nav-text">云音乐招聘信息（帮同事发的）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#服务端开发"><span class="nav-number">1.1.</span> <span class="nav-text">服务端开发</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Java开发工程师（云音乐）"><span class="nav-number">1.1.1.</span> <span class="nav-text">Java开发工程师（云音乐）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#高级Java开发工程师（云音乐）"><span class="nav-number">1.1.2.</span> <span class="nav-text">高级Java开发工程师（云音乐）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#前端开发"><span class="nav-number">1.2.</span> <span class="nav-text">前端开发</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#网易云音乐前端开发工程师"><span class="nav-number">1.2.1.</span> <span class="nav-text">网易云音乐前端开发工程师</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#网易云音乐资深前端开发工程师"><span class="nav-number">1.2.2.</span> <span class="nav-text">网易云音乐资深前端开发工程师</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#高级IOS工程师"><span class="nav-number">1.2.3.</span> <span class="nav-text">高级IOS工程师</span></a></li></ol></li></ol></li></ol></div>
             
 
           </div>
