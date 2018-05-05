@@ -262,7 +262,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Perspective – 全链路监控系统/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -281,7 +281,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/" itemprop="url"> Dubbo源码解析 --- 服务订阅以及通知</a></h1>
+                <a class="post-title-link" href="/2017/02/25/Perspective – 全链路监控系统/" itemprop="url">Perspective -- 全链路监控系统</a></h1>
         
 
         <div class="post-meta">
@@ -316,8 +316,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
-                    <span itemprop="name">dubbo源码</span>
+                  <a href="/categories/全链路监控/" itemprop="url" rel="index">
+                    <span itemprop="name">全链路监控</span>
                   </a>
                 </span>
 
@@ -355,14 +355,15 @@
       
         
           
-          Dubbo源码解析 — 服务订阅以及通知
-前言由于服务的注册内容比较多，所以把上一部分单独做一篇，订阅和通知合在一起。
-subscribe承接上一篇，我们说完了服务的发布，现在看看服务的订阅。考虑了一下，我还是决定在这里贴一下Protocol接口的相关注释，方便大家理解：
-12345678910111213141516171819202122232425262728/**     * 暴露远程服务：&lt;br&gt;     * 1. 协议在接收请求时，应记录请求来源方地址信息：RpcContext.getContext().setRemoteAddress();&lt;br&gt;    
+          Perspective – 全链路监控系统
+解决的问题：最初版本，只解决购物车以下的链路监控。后面考虑适用在二维火其他系统。
+相比于CAT、ZIPKIN：更加轻量级。
+处理异步线程的全局ID传递：在进行线程操作的时候，使用统一提供的线程模型。包装一个线程类，创建之前从中央IDFactory中申请一个（没有则创建）全局ID，然后自己生成一个当前Branch的ID。线程池执行的其实只是一个代理类，finally中将全局ID和BranchID回传，用于绑定一个Trace和Branch。
+进程间全局ID传递：第一版本只针对Dubbo做扩展，使用类似CAT的方式，增加过滤器，同样把invoker.inv
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/#more" rel="contents">
+            <a class="btn" href="/2017/02/25/Perspective – 全链路监控系统/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
