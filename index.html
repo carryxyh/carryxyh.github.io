@@ -262,7 +262,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/05/04/Rocketmq源码解读——刷盘策略/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/05/07/Rocketmq源码解读——刷盘策略/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -281,7 +281,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2018/05/04/Rocketmq源码解读——刷盘策略/" itemprop="url">Rocketmq源码解读——刷盘策略</a></h1>
+                <a class="post-title-link" href="/2018/05/07/Rocketmq源码解读——刷盘策略/" itemprop="url">Rocketmq源码解读——刷盘策略</a></h1>
         
 
         <div class="post-meta">
@@ -293,8 +293,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-05-04T20:51:17+08:00">
-                2018-05-04
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-05-07T20:56:17+08:00">
+                2018-05-07
               </time>
             
 
@@ -355,18 +355,19 @@
       
         
           
-          Rocketmq源码解读——刷盘策略前言rocketmq一共有三种刷盘策略：
+          Rocketmq源码解读——刷盘策略前言rocketmq一共有三种（其实真正进行写操作的是两种）刷盘策略：
 
 CommitRealTimeService：异步刷盘并且开启内存字节缓冲区
 FlushRealTimeService：异步刷盘但是不开启内存字节缓冲区
 GroupCommitService：同步刷盘
 
 三种刷盘策略性能依次降低。
-
-          
+代码先看刷盘策略被初始化的部分：
+123456789101112private final FlushCommitLogService flushCommitLogService;//If TransientStorePool enabled, we must
+          ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2018/05/04/Rocketmq源码解读——刷盘策略/#more" rel="contents">
+            <a class="btn" href="/2018/05/07/Rocketmq源码解读——刷盘策略/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
