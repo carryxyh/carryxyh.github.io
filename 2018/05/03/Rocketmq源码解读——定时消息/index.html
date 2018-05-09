@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="Rocketmq源码解读——定时消息前言rocketmq只支持固定精度的定时消息，如果要支持任意的时间精度，需要在broker层面做消息排序，如果要持久化，那么将产生巨大的开销。 延迟级别我就不列举了。 代码存储消息时，延迟消息进入Topic为SCHEDULE_TOPIC_XXXX： 12345678910111213141516// Delay Deliveryif (msg.getDelayT">
+<meta name="description" content="Rocketmq源码解读——定时消息前言rocketmq只支持固定精度的定时消息，如果要支持任意的时间精度，需要在broker层面做消息排序，如果要持久化，那么将产生巨大的开销。 延迟级别我就不列举了。 这篇文章除了讲解定时消息，还会连带讲解一下ReputMessageService和消息重试（消费失败），因为延时消息和以上两个模块都息息相关。 代码存储消息时，延迟消息进入Topic为SCHEDU">
 <meta name="keywords" content="rocketmq">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Rocketmq源码解读——定时消息">
 <meta property="og:url" content="http://wyj.shiwuliang.com/2018/05/03/Rocketmq源码解读——定时消息/index.html">
 <meta property="og:site_name" content="一时无两">
-<meta property="og:description" content="Rocketmq源码解读——定时消息前言rocketmq只支持固定精度的定时消息，如果要支持任意的时间精度，需要在broker层面做消息排序，如果要持久化，那么将产生巨大的开销。 延迟级别我就不列举了。 代码存储消息时，延迟消息进入Topic为SCHEDULE_TOPIC_XXXX： 12345678910111213141516// Delay Deliveryif (msg.getDelayT">
+<meta property="og:description" content="Rocketmq源码解读——定时消息前言rocketmq只支持固定精度的定时消息，如果要支持任意的时间精度，需要在broker层面做消息排序，如果要持久化，那么将产生巨大的开销。 延迟级别我就不列举了。 这篇文章除了讲解定时消息，还会连带讲解一下ReputMessageService和消息重试（消费失败），因为延时消息和以上两个模块都息息相关。 代码存储消息时，延迟消息进入Topic为SCHEDU">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-05-03T13:58:01.639Z">
+<meta property="og:updated_time" content="2018-05-09T13:04:04.048Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Rocketmq源码解读——定时消息">
-<meta name="twitter:description" content="Rocketmq源码解读——定时消息前言rocketmq只支持固定精度的定时消息，如果要支持任意的时间精度，需要在broker层面做消息排序，如果要持久化，那么将产生巨大的开销。 延迟级别我就不列举了。 代码存储消息时，延迟消息进入Topic为SCHEDULE_TOPIC_XXXX： 12345678910111213141516// Delay Deliveryif (msg.getDelayT">
+<meta name="twitter:description" content="Rocketmq源码解读——定时消息前言rocketmq只支持固定精度的定时消息，如果要支持任意的时间精度，需要在broker层面做消息排序，如果要持久化，那么将产生巨大的开销。 延迟级别我就不列举了。 这篇文章除了讲解定时消息，还会连带讲解一下ReputMessageService和消息重试（消费失败），因为延时消息和以上两个模块都息息相关。 代码存储消息时，延迟消息进入Topic为SCHEDU">
 
 
 
@@ -354,6 +354,7 @@
       
         <h3 id="Rocketmq源码解读——定时消息"><a href="#Rocketmq源码解读——定时消息" class="headerlink" title="Rocketmq源码解读——定时消息"></a>Rocketmq源码解读——定时消息</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>rocketmq只支持固定精度的定时消息，如果要支持任意的时间精度，需要在broker层面做消息排序，如果要持久化，那么将产生巨大的开销。</p>
 <p>延迟级别我就不列举了。</p>
+<p>这篇文章除了讲解定时消息，还会连带讲解一下<code>ReputMessageService</code>和消息重试（消费失败），因为延时消息和以上两个模块都息息相关。</p>
 <h4 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h4><p>存储消息时，延迟消息进入<code>Topic</code>为SCHEDULE_TOPIC_XXXX：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Delay Delivery</span></span><br><span class="line"><span class="keyword">if</span> (msg.getDelayTimeLevel() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (msg.getDelayTimeLevel() &gt; <span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel()) &#123;</span><br><span class="line">        msg.setDelayTimeLevel(<span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 存储消息时，延迟消息进入 `Topic` 为 `SCHEDULE_TOPIC_XXXX` 。</span></span><br><span class="line">    topic = ScheduleMessageService.SCHEDULE_TOPIC;</span><br><span class="line">    <span class="comment">// 延迟级别与消息队列编号做固定映射</span></span><br><span class="line">    queueId = ScheduleMessageService.delayLevel2QueueId(msg.getDelayTimeLevel());</span><br><span class="line">    <span class="comment">// Backup real topic, queueId</span></span><br><span class="line">    MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_TOPIC, msg.getTopic());</span><br><span class="line">    MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_QUEUE_ID, String.valueOf(msg.getQueueId()));</span><br><span class="line">    msg.setPropertiesString(MessageDecoder.messageProperties2String(msg.getProperties()));</span><br><span class="line">    msg.setTopic(topic);</span><br><span class="line">    msg.setQueueId(queueId);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这句<code>queueId = ScheduleMessageService.delayLevel2QueueId(msg.getDelayTimeLevel());</code>用来计算queueId，实际上就是<code>delayLevel - 1</code>。</p>

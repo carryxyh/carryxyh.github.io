@@ -513,8 +513,9 @@ GroupCommitService：同步刷盘
           
           Rocketmq源码解读——定时消息前言rocketmq只支持固定精度的定时消息，如果要支持任意的时间精度，需要在broker层面做消息排序，如果要持久化，那么将产生巨大的开销。
 延迟级别我就不列举了。
+这篇文章除了讲解定时消息，还会连带讲解一下ReputMessageService和消息重试（消费失败），因为延时消息和以上两个模块都息息相关。
 代码存储消息时，延迟消息进入Topic为SCHEDULE_TOPIC_XXXX：
-12345678910111213141516// Delay Deliveryif (msg.getDelayTimeLevel() &gt; 0) &#123;    if (msg.getDelayTimeLevel() &gt; this.defaultMessageStore.getScheduleMe
+12345678910111213141516// Delay Deliveryif (msg.getDelayTimeLevel() &gt; 0) &#123;   
           ...
           <!--noindex-->
           <div class="post-button text-center">
