@@ -262,7 +262,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务的创建和暴露/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -281,7 +281,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — 服务的创建和暴露/" itemprop="url">Dubbo源码解析 --- 服务的创建和暴露</a></h1>
+                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/" itemprop="url"> Dubbo源码解析 --- 服务订阅以及通知</a></h1>
         
 
         <div class="post-meta">
@@ -355,14 +355,14 @@
       
         
           
-          Dubbo源码解析 — 服务的创建和暴露
-前言本文主要就dubbo基础的XML解析开始，到服务的创建和发布，最终延展到底层netty的调用，给出一个初始化流程的解读。在这里你能看到dubbo一些优秀的抽象设计，以及底层源代码的解读。如有语义不明，联系紫苑。或者邮件ziyuan@2dfire.com。
-service和server首先，当发布一个服务的Server时，我们需要编写一个Spring配置文件，形如以下：
-123456&lt;beans xmlns=&quot;...&quot;&gt;    &lt;dubbo:application name=&quot;hello-world-a
+          Dubbo源码解析 — 服务订阅以及通知
+前言由于服务的注册内容比较多，所以把上一部分单独做一篇，订阅和通知合在一起。
+subscribe承接上一篇，我们说完了服务的发布，现在看看服务的订阅。考虑了一下，我还是决定在这里贴一下Protocol接口的相关注释，方便大家理解：
+12345678910111213141516171819202122232425262728/**     * 暴露远程服务：&lt;br&gt;     * 1. 协议在接收请求时，应记录请求来源方地址信息：RpcContext.getContext().setRemoteAddress();&lt;br&gt;    
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2017/02/25/Dubbo源码解析 — 服务的创建和暴露/#more" rel="contents">
+            <a class="btn" href="/2017/02/25/Dubbo源码解析 — 服务订阅以及通知/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -413,7 +413,7 @@ service和server首先，当发布一个服务的Server时，我们需要编写�
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务注册/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — Invoker和Exchanger/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -432,7 +432,7 @@ service和server首先，当发布一个服务的Server时，我们需要编写�
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — 服务注册/" itemprop="url"> Dubbo源码解析 --- 服务注册</a></h1>
+                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — Invoker和Exchanger/" itemprop="url"> Dubbo源码解析 --- Invoker和Exchanger</a></h1>
         
 
         <div class="post-meta">
@@ -506,14 +506,167 @@ service和server首先，当发布一个服务的Server时，我们需要编写�
       
         
           
-          Dubbo源码解析 — 服务注册
-前言对于分布式服务架构，解决服务的发现问题，引入了注册中心中间件，从而很好的解决了服务双方（消费方和提供方）的直接依赖问题。这种解耦的意义是非凡的，不仅在程序运行时保证了灵活性，在开发阶段也使得快速迭代成为了可能，甚至在运维层面也提供了非常好的自由度。
-夸了这么多，但要实现一个完美的注册中心系统却不是一件那么容易的事儿，你必须时刻注意关注它的可用性（包括稳定，实时和高效），这一点在任何一款分布式系统中都是件很复杂的事儿。当然这篇文章并不是打算摆平这么个庞然大物，我们只是从dubbo和zookeeper之间的关系来了解一下在dubbo架构中注册中心的相关知识。
+          Dubbo源码解析 — Invoker和Exchanger
+前言在一个框架中我们通常把负责数据交换和网络通信的组件叫做Exchanger。Dubbo中每个Invoker都维护了一个ExchangeClient的引用，并通过它和远程的Server进行通信。
+Invoker先来看一下官方文档中对inoker的介绍：
 
+Invoker是Provider的一个可调用Service的抽象，Invoker封装了Provider地址及Service接口信息。
+Directory代表多个Invoker，可以把它看成invoker的list集合，但与List不同的是，它的值可能是动态变化的，比如注册中心推送变更
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2017/02/25/Dubbo源码解析 — 服务注册/#more" rel="contents">
+            <a class="btn" href="/2017/02/25/Dubbo源码解析 — Invoker和Exchanger/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/深克隆插件FKC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/02/25/深克隆插件FKC/" itemprop="url">深克隆插件 -- FKC</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-02-25T11:37:53+08:00">
+                2017-02-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/深克隆/" itemprop="url" rel="index">
+                    <span itemprop="name">深克隆</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+          年前没机会分享我写的插件了，这里也做个总结吧：1.深克隆有几种实现方法：
+（1）最low的，大家都会的，get set get set get set巴拉巴拉。（缺点：显而易见，不通用，而且代码非常的丑陋！）（2）对象流读入，対向流读出，这其实就是一个序列化反序列化。（缺点：流是非常占用资源的，不停地new  close会消耗CPU，一个请求过来要进行几次new操作，会导致GC非常频繁，还有就是原生速度比较慢）
+2.针对以上第二种实现方法，设计了一个深克隆的插件，特点和实现如下：
+（1）针对原生序列化反序列化慢，使用kryo做序列化反序列化处理，kryo底层其实还是用了原生的流，只不过进行了一
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/02/25/深克隆插件FKC/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -757,7 +910,7 @@ service和server首先，当发布一个服务的Server时，我们需要编写�
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">43</span>
+                  <span class="site-state-item-count">44</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
