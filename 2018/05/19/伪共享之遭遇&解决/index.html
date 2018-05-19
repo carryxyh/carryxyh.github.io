@@ -87,14 +87,14 @@
 <meta property="og:site_name" content="一时无两">
 <meta property="og:description" content="伪共享之遭遇&amp;amp;解决前言上一篇我们看了什么是缓存行，什么是MESI协议。这一篇我们来看一下伪共享。 遭遇伪共享之前我们已经说过了，CPU的缓存是以cache line作为单位存储的，那么我们考虑一种情况，如果多个线程在操作同一个实例的不同成员变量，但是这两个变量存在于同一个缓存行里，会发生什么？ 会发生两个线程要不停地去获取这个缓存行的所有权，一个使用另外一个就只能等。这是效率非常慢的。这种">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://wyj.shiwuliang.com/images/15267125775281/15267135632034.jpg">
-<meta property="og:image" content="http://wyj.shiwuliang.com/images/15267125775281/15267140984276.jpg">
-<meta property="og:image" content="http://wyj.shiwuliang.com/images/15267125775281/15267144223927.jpg">
-<meta property="og:updated_time" content="2018-05-19T07:29:55.977Z">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15267135632034.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15267140984276.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15267144223927.jpg">
+<meta property="og:updated_time" content="2018-05-19T07:33:11.552Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="伪共享之遭遇&amp;解决">
 <meta name="twitter:description" content="伪共享之遭遇&amp;amp;解决前言上一篇我们看了什么是缓存行，什么是MESI协议。这一篇我们来看一下伪共享。 遭遇伪共享之前我们已经说过了，CPU的缓存是以cache line作为单位存储的，那么我们考虑一种情况，如果多个线程在操作同一个实例的不同成员变量，但是这两个变量存在于同一个缓存行里，会发生什么？ 会发生两个线程要不停地去获取这个缓存行的所有权，一个使用另外一个就只能等。这是效率非常慢的。这种">
-<meta name="twitter:image" content="http://wyj.shiwuliang.com/images/15267125775281/15267135632034.jpg">
+<meta name="twitter:image" content="http://wyj.shiwuliang.com/images/15267135632034.jpg">
 
 
 
@@ -360,19 +360,19 @@
 <h4 id="遭遇伪共享"><a href="#遭遇伪共享" class="headerlink" title="遭遇伪共享"></a>遭遇伪共享</h4><p>之前我们已经说过了，CPU的缓存是以cache line作为单位存储的，那么我们考虑一种情况，如果多个线程在操作同一个实例的不同成员变量，但是这两个变量存在于同一个缓存行里，会发生什么？</p>
 <p>会发生两个线程要不停地去获取这个缓存行的所有权，一个使用另外一个就只能等。这是效率非常慢的。这种情况下，就是发生了伪共享。</p>
 <p>爬一张Disruptor的图：</p>
-<p><img src="/images/15267125775281/15267135632034.jpg" alt="|center|"></p>
+<p><img src="/images/15267135632034.jpg" alt="|center|"></p>
 <p>一个运行在处理器core1上的线程想要更新变量X的值，同时另外一个运行在处理器core2上的线程想要更新变量Y的值。但是，这两个频繁改动的变量都处于同一条缓存行。两个线程就会轮番发送RFO消息，占得此缓存行的拥有权。当core1取得了拥有权开始更新X，则core2对应的缓存行需要设为I状态（关于MESI四种状态，看我的上一篇文章）。当core2取得了拥有权开始更新Y，则 core1 对应的缓存行需要设为I状态。</p>
 <p>再举个JAVA开发中的栗子~</p>
 <p>比如我自己写个阻塞队列。头结点如果和尾节点在同一个缓存行里，就可能会伪共享。在多个线程频繁的offer/take的时候，就会一定程度上的影响效率。</p>
 <h4 id="解决伪共享问题"><a href="#解决伪共享问题" class="headerlink" title="解决伪共享问题"></a>解决伪共享问题</h4><p>这里同样看一下Disruptor的解决方式。</p>
 <p>看下RingBuffer的继承关系：</p>
-<p><img src="/images/15267125775281/15267140984276.jpg" alt="|center|"></p>
+<p><img src="/images/15267140984276.jpg" alt="|center|"></p>
 <p>看下<code>RingBufferPad</code>：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">RingBufferPad</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="comment">//仅仅填充使用</span></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">long</span> p1, p2, p3, p4, p5, p6, p7;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>再看看<code>RingBuffer</code>：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">RingBuffer</span>&lt;<span class="title">E</span>&gt; <span class="keyword">extends</span> <span class="title">RingBufferFields</span>&lt;<span class="title">E</span>&gt; <span class="keyword">implements</span> <span class="title">Cursored</span>, <span class="title">EventSequencer</span>&lt;<span class="title">E</span>&gt;, <span class="title">EventSink</span>&lt;<span class="title">E</span>&gt;</span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> INITIAL_CURSOR_VALUE = Sequence.INITIAL_VALUE;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">long</span> p1, p2, p3, p4, p5, p6, p7;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//sth...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>依据JVM对象继承关系中父类属性与子类属性，内存地址连续排列布局，<code>RingBufferPad</code>的<code>protected long p1,p2,p3,p4,p5,p6,p7;</code>作为缓存前置填充，<code>RingBuffer</code>中的<code>protected long p1,p2,p3,p4,p5,p6,p7;</code>作为缓存后置填充。这样任意线程访问<code>RingBuffer</code>时，<code>RingBuffer</code>放在父类<code>RingBufferFields</code>的属性，都是独占一行cache line不会产生伪共享问题。如图，<code>RingBuffer</code>的操作字段在<code>RingBufferFields</code>中，使用rbf标识：</p>
-<p><img src="/images/15267125775281/15267144223927.jpg" alt="|center|"></p>
+<p><img src="/images/15267144223927.jpg" alt="|center|"></p>
 <p>按照一行缓存64字节计算，前后填充56字节（7个long），中间大于等于8字节的内容都能独占一行cache line，而<code>RingBufferFields</code>是大于8字节的：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">RingBufferFields</span>&lt;<span class="title">E</span>&gt; <span class="keyword">extends</span> <span class="title">RingBufferPad</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> BUFFER_PAD;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> REF_ARRAY_BASE;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> REF_ELEMENT_SHIFT;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Unsafe UNSAFE = Util.getUnsafe();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">long</span> indexMask;</span><br><span class="line">    <span class="comment">//这里是真正存放事件的地方</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Object[] entries;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">int</span> bufferSize;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> Sequencer sequencer;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//sth...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p><strong>注意</strong>：<br>由于某些 Java 编译器的优化策略，那些没有使用到的补齐数据可能会在编译期间被优化掉，我们可以在程序中加入一些代码防止被编译优化。如下：</p>
