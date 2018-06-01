@@ -89,7 +89,7 @@
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://wyj.shiwuliang.com/images/监听器模型图.png">
 <meta property="og:image" content="http://wyj.shiwuliang.com/images/electrons架构图.png">
-<meta property="og:updated_time" content="2017-03-24T04:24:46.000Z">
+<meta property="og:updated_time" content="2018-06-01T06:26:59.680Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Electrons使用指南">
 <meta name="twitter:description" content="Electrons使用指南前言Electrons是一个异步事件分发器，也是一个通道，结合了生产者消费者模型和SUB/PUB模式。传统的SUB/PUB模型，在publish事件的时候是直接同步执行所有的监听器，是同步阻塞的。现在结合RINGBUFFER的无锁的急速体验，设计了Electrons，意味电路，事件就相当于跑在电路中的电子，电子在电路中的传递速度非常之快，这也是这个插件的寓意。publis">
@@ -408,7 +408,7 @@
 <p><strong>为什么对普通通道不设计熔断</strong>：普通通道存放的事件的监听器是没有关联的，即只要监听器链中存在<code>after</code>逻辑的监听器，就不会放到普通通道中。如果因为某个监听器持续出错，把整个通道熔断，其实是非常不合理的，因为其他监听器跟持续出错的监听器之间没有任何联系，不应该一起被熔断，其他监听器应该允许继续执行。<br></p>
 <p><strong>为什么对特殊通道设计熔断</strong>：原理类似，由于特殊通道是存在after逻辑的通道，即监听器之间存在关联，如果中间或前置监听器出问题，很可能导致后继监听器处理事件出错，或者无法处理事件，这时候熔断整个通道，提醒用户去解决问题。<br></p>
 <h4 id="特别鸣谢"><a href="#特别鸣谢" class="headerlink" title="特别鸣谢"></a>特别鸣谢<br></h4><p><strong>释迦</strong>：帮我理顺思路以及链的遍历算法的完善。<br><br><strong>排骨</strong>：第一版本的开发者，看了代码之后决定重写一个更加完善、立体的插件。提供了工具类，参考了相关概念，是在1.0版本基础上的2.0版本。<br></p>
-<h4 id="关于"><a href="#关于" class="headerlink" title="关于"></a>关于<br></h4><p><a href="https://github.com/carryxyh/Electrons" target="_blank" rel="noopener">源码地址</a><br><br>相关问题，二维火内部联系<strong><em>紫苑</em></strong>，非二维火同学联系我的邮箱：<em>ziyuan@2dfire.com</em><br></p>
+<h4 id="关于"><a href="#关于" class="headerlink" title="关于"></a>关于<br></h4><p><a href="https://github.com/carryxyh/Electrons" target="_blank" rel="noopener">源码地址</a><br><br>联系我的邮箱：<em>carryxyh@gmail.com</em><br></p>
 
       
     </div>
