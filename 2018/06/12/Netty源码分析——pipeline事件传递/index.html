@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="一时无两">
 <meta property="og:description" content="Netty源码分析——pipeline事件传递前言上一篇我们讲了pipeline如何增减节点。这篇文章主要看一下pipeline如何处理事件传播。伴随着事件传播，还会讲一些零零散散的细节。比如HeadContext和TailContext。 HeadContext这是我们pipeline的起点。跟TailContext一样，HeadContext也是一种特殊的Context： 1234567891">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-06-12T13:22:29.575Z">
+<meta property="og:updated_time" content="2018-06-13T11:38:09.990Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Netty源码分析——pipeline事件传递">
 <meta name="twitter:description" content="Netty源码分析——pipeline事件传递前言上一篇我们讲了pipeline如何增减节点。这篇文章主要看一下pipeline如何处理事件传播。伴随着事件传播，还会讲一些零零散散的细节。比如HeadContext和TailContext。 HeadContext这是我们pipeline的起点。跟TailContext一样，HeadContext也是一种特殊的Context： 1234567891">
@@ -393,7 +393,22 @@
 <p><code>selectionKey</code>若在某个地方被移除了<code>readInterestOp</code>操作，则加上。</p>
 <p>一般<code>Channel</code>关闭自动读，是当前<code>Channel</code>的缓冲区（OutboundBuffer）大小超过了<code>WRITE_BUFFER_HIGH_WATER_MARK</code>时。这个我们暂且不说。</p>
 <p>总结一下，Head节点就是整个读的开始。</p>
-<h4 id="TailContext"><a href="#TailContext" class="headerlink" title="TailContext"></a>TailContext</h4>
+<h4 id="TailContext"><a href="#TailContext" class="headerlink" title="TailContext"></a>TailContext</h4><p>tail的代码就不贴了，tail作为很多事件的截止位置（很多方法是空实现），这里主要看一下tail的两个特殊的方法：<code>exceptionCaught()</code>和<code>channelRead()</code>。</p>
+<p>两个方法的实现类似，我们拿出一个看，看下<code>channelRead</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    logger.debug(</span><br><span class="line">            <span class="string">"Discarded inbound message &#123;&#125; that reached at the tail of the pipeline. "</span> +</span><br><span class="line">                    <span class="string">"Please check your pipeline configuration."</span>, msg);</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    ReferenceCountUtil.release(msg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>记录一个日志，说明消息没有被处理，并且被传递到了pipeline的尾部。然后释放消息。</p>
+<h4 id="outBound事件传递"><a href="#outBound事件传递" class="headerlink" title="outBound事件传递"></a>outBound事件传递</h4><p>我们解析读的代码，实际上我们也说过了，这是一种<code>inBound</code>的事件，我们看下<code>outBound</code>事件是如何传递的。<code>outBound</code>举个例子，就是<code>writeAndFlush</code>。这个操作和<code>write</code>类似，但是比<code>write</code>稍微复杂一点点，多了一步<code>flush</code>。</p>
+<p>例子就是调用<code>channel.writeAndFlush(pushInfo);</code>，第一次跳转到<code>AbstractChannel</code>的<code>writeAndFlush</code>，委托给<code>pipeline</code>的<code>writeAndFlush</code>，然后调用<code>tail.writeAndFlush(msg);</code>。</p>
+<p>这里注意一点就是，无论我们在pipeline中的哪个位置调用<code>channel.writeAndFlush(pushInfo);</code>，都会从整个管道的最尾端开始向前传递（<code>pipeline</code>的<code>writeAndFlush</code>），如果我们调用<code>AbstractChannelHandlerContext</code>，则是从当前节点开始向前传递。这里注意一下。</p>
+<p>我们看下<code>AbstractChannelHandlerContext</code>的<code>writeAndFlush</code>：<code>write(msg, true, promise);</code>，这个true就表示写过之后<code>flush</code>缓存，直接写回远端。</p>
+<p>看下这个方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">AbstractChannelHandlerContext next = findContextOutbound();</span><br><span class="line"><span class="keyword">final</span> Object m = pipeline.touch(msg, next);</span><br><span class="line">EventExecutor executor = next.executor();</span><br><span class="line"><span class="keyword">if</span> (executor.inEventLoop()) &#123;</span><br><span class="line">    <span class="keyword">if</span> (flush) &#123;</span><br><span class="line">        next.invokeWriteAndFlush(m, promise);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        next.invokeWrite(m, promise);</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    AbstractWriteTask task;</span><br><span class="line">    <span class="keyword">if</span> (flush) &#123;</span><br><span class="line">        task = WriteAndFlushTask.newInstance(next, m, promise);</span><br><span class="line">    &#125;  <span class="keyword">else</span> &#123;</span><br><span class="line">        task = WriteTask.newInstance(next, m, promise);</span><br><span class="line">    &#125;</span><br><span class="line">    safeExecute(executor, task, promise, m);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里会把<code>write</code>和<code>flush</code>封装成一个task，然后由<code>Reactor</code>线程去执行，这里我们在之前的文章<code>Reacotr的task</code>那篇中已经讲过了。</p>
+<p><code>writeAndFlushTask</code>实际上会调用<code>super.write(ctx, msg, promise);</code>和<code>ctx.invokeFlush();</code>，父类的write实际上调用的是<code>ctx.invokeWrite(msg, promise);</code>，其实我们就可以看到，都是同一个套路，都是调用<code>AbstractChannelHandlerContext</code>的对应方法。这个我们之前也说了，实际上是从当前context节点开始，向前传递<code>outBound</code>事件，我们之前同样也说过，最外层的<code>outBoundHandler</code>就是我们的<code>HeadContext</code>，我们看下<code>HeadContext</code>的<code>write</code>方法：<code>unsafe.write(msg, promise);</code>，这里委托给unsafe，写入缓存中，而<code>HeadContext</code>的<code>flush</code>，同样把<code>flush</code>操作委托给了<code>unsafe</code>。</p>
+<p>这里同样总结一下，<code>HeadContext</code>同样也是所有写出的出口。</p>
+<p>那么<code>HeadContext</code>和<code>TailContext</code>的作用就已经很清楚了。</p>
+<p>至此，我们已经把pipelin中的事件传播讲完了。其实除了出入两种事件，pipeline中还包扩一种异常事件传播，这个我们后面会单独拿出来说一下。敬请期待吧~</p>
+
       
     </div>
     
@@ -583,7 +598,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty源码分析——pipeline事件传递"><span class="nav-number">1.</span> <span class="nav-text">Netty源码分析——pipeline事件传递</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HeadContext"><span class="nav-number">1.2.</span> <span class="nav-text">HeadContext</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#TailContext"><span class="nav-number">1.3.</span> <span class="nav-text">TailContext</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty源码分析——pipeline事件传递"><span class="nav-number">1.</span> <span class="nav-text">Netty源码分析——pipeline事件传递</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HeadContext"><span class="nav-number">1.2.</span> <span class="nav-text">HeadContext</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#TailContext"><span class="nav-number">1.3.</span> <span class="nav-text">TailContext</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#outBound事件传递"><span class="nav-number">1.4.</span> <span class="nav-text">outBound事件传递</span></a></li></ol></li></ol></div>
             
 
           </div>
