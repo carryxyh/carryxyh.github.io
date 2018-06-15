@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="一时无两">
 <meta property="og:description" content="Netty源码分析——Boss和Worker之前说过Netty的Reactor之后，我们来具体看看Worker和Boss两种Reactor线程。其实Reactor线程做什么事我们已经讲过了，今天主要看的是Boss和Worker的启动及注册流程。事实上，Netty在新版本里已经没有Boss和Worker的概念了，我们这里依然沿用这种叫法只是为了区分两种线程。当然了，代码分析依然建立在Netty的最新">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-05-29T07:43:02.528Z">
+<meta property="og:updated_time" content="2018-06-15T03:14:13.355Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Netty源码分析——Boss和Worker">
 <meta name="twitter:description" content="Netty源码分析——Boss和Worker之前说过Netty的Reactor之后，我们来具体看看Worker和Boss两种Reactor线程。其实Reactor线程做什么事我们已经讲过了，今天主要看的是Boss和Worker的启动及注册流程。事实上，Netty在新版本里已经没有Boss和Worker的概念了，我们这里依然沿用这种叫法只是为了区分两种线程。当然了，代码分析依然建立在Netty的最新">
@@ -385,7 +385,7 @@
 <p>最后就是走到<code>beginRead（）</code>了（<code>pipeline.fireChannelRegistered();</code>不说了），<code>beginRead</code>这里最终会调用到<code>AbstractNioChannel#doBeginRead（）</code>里：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> SelectionKey selectionKey = <span class="keyword">this</span>.selectionKey;</span><br><span class="line"><span class="keyword">if</span> (!selectionKey.isValid()) &#123;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">readPending = <span class="keyword">true</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">int</span> interestOps = selectionKey.interestOps();</span><br><span class="line"><span class="keyword">if</span> ((interestOps &amp; readInterestOp) == <span class="number">0</span>) &#123;</span><br><span class="line">    selectionKey.interestOps(interestOps | readInterestOp);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这里的<code>readInterestOp</code>，我们之前在<code>NioSocketChannel</code>初始化的时候说过，这里是<code>SelectionKey.OP_READ</code>。也就是说<code>NioSocketChannel</code>已经准备好进行处理读事件了。</p>
-<p>以上的流程非常多，也非常负责，写个总结。</p>
+<p>以上的流程非常多，也非常复杂，写个总结。</p>
 <h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ol>
 <li>Boss Reactor线程启动（这时候还没Worker）</li>
 <li>Boss Reactor线程轮询到一个Accept事件</li>
