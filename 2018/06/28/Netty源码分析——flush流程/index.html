@@ -90,7 +90,7 @@
 <meta property="og:image" content="http://wyj.shiwuliang.com/images/15298212104338.jpg">
 <meta property="og:image" content="http://wyj.shiwuliang.com/images/15300983904652.jpg">
 <meta property="og:image" content="http://wyj.shiwuliang.com/images/15300992666722.jpg">
-<meta property="og:updated_time" content="2018-06-28T13:04:47.292Z">
+<meta property="og:updated_time" content="2018-06-28T13:07:08.936Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Netty源码分析——flush流程">
 <meta name="twitter:description" content="Netty源码分析——flush流程前言承接上篇写流程，这篇看下flush流程。之前文章中我们已经提到过，writeAndFlush操作实际上是通过pipeline分别进行了write和flush操作。具体我们就不看了，我们直接看下flush。 flushflush操作同样是通过pipeline最终传递给HeadContext：unsafe.flush();： 123456789101112pub">
@@ -410,7 +410,7 @@
 <p>如果失败了，就去<code>setOpWrite</code>，其实就是给<code>Channel</code>注册了一个<code>OP_WRITE</code>，然后就return了。</p>
 <p>这里为什么要打上<code>OP_WRITE</code>呢，打上有什么用呢？还记得上文中我提出的问题么，关于为什么<code>flush0</code>之前要进行判断<code>isFlushPending</code>，这里让我细细说来（为什么判断<code>isFlushPending</code>的疑惑已经解开了，这篇文章拖了几天，这几天中来来回回的看源码、请教大神、debug。。终于有所突破）。</p>
 <p>先放下<code>isFlushPending</code>，继续说这个<code>OP_WRITE</code>。这里还记得什么时候打上<code>OP_WRITE</code>么，是<code>Channel</code>写失败的时候！我们先不管这个<code>OP_WRITE</code>的具体含义，就认为是一个标记，标记这个管道不可用，这时候，请问：管道不可用的情况下，如果我还想进行Flush操作，即向管道中写数据，这时候能成功么？答案是不行！怎么优化？太简单了，提前返回就可以了，每次Flush的时候先看看管道是否可用！</p>
-<p>到这，<code>isFlushPending</code>的作用就提现出来了！<code>OP_WRITE</code>我们就把它当成一个普通的标记，如果<code>Channel</code>上有这个标记，就表示不可写。</p>
+<p>到这，<code>isFlushPending</code>的作用就体现出来了！<code>OP_WRITE</code>我们就把它当成一个普通的标记，如果<code>Channel</code>上有这个标记，就表示不可写。</p>
 <p>那么为什么用<code>OP_WRITE</code>标识不可写呢，命名<code>OP_WRITE</code>的含义就是可写啊！这里就要说回到<code>Reacotr</code>要做的三件事中的处理<code>select</code>到的事件了，看一下<code>processSelectedKey</code>：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ((readyOps &amp; SelectionKey.OP_WRITE) != <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// Call forceFlush which will also take care of clear the OP_WRITE once there is nothing left to write</span></span><br><span class="line">    ch.unsafe().forceFlush();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>其中有这么一句，这里的注释我也抄过来了，就是说，如果轮训到写事件，就去执行<code>forceFlush</code>，然后清理掉<code>OP_WRITE</code>。</p>
