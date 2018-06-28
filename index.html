@@ -262,6 +262,156 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/06/28/Netty源码分析——flush流程/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/06/28/Netty源码分析——flush流程/" itemprop="url">Netty源码分析——flush流程</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-06-28T21:01:53+08:00">
+                2018-06-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty源码分析/" itemprop="url" rel="index">
+                    <span itemprop="name">Netty源码分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+          Netty源码分析——flush流程前言承接上篇写流程，这篇看下flush流程。之前文章中我们已经提到过，writeAndFlush操作实际上是通过pipeline分别进行了write和flush操作。具体我们就不看了，我们直接看下flush。
+flushflush操作同样是通过pipeline最终传递给HeadContext：unsafe.flush();：
+123456789101112public final void flush() &#123;    //确保不是外部调用    assertEventLoop();    ChannelOutboundBuffer outboundB
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2018/06/28/Netty源码分析——flush流程/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/06/24/Netty源码分析——写流程/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1605,154 +1755,6 @@ processrun方法中：
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/05/24/Netty源码分析——拆包和粘包/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="时无两">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="一时无两">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/05/24/Netty源码分析——拆包和粘包/" itemprop="url">Netty源码分析——拆包和粘包</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-05-24T17:03:53+08:00">
-                2018-05-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Netty源码分析/" itemprop="url" rel="index">
-                    <span itemprop="name">Netty源码分析</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-          Netty源码分析——拆包和粘包
-          
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2018/05/24/Netty源码分析——拆包和粘包/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1807,7 +1809,7 @@ processrun方法中：
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">55</span>
+                  <span class="site-state-item-count">56</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
