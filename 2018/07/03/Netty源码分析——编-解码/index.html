@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="netty," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Netty源码分析——编/解码前言这一篇看一下Netty的编码和解码的工作原理。编码解码器其实都是一种特殊的Handler，既然是Handler，那就有inBound和outBound的区别。 我们这篇主要是梳理一下，从入站解码到业务处理，再到出站编码的过程，让大家对编解码的流程有个了解。 Decoder我们随便挑选一种Decoder看一下实现就可以了，比较简单。这篇的内容相比之前的都简单一些、轻">
+<meta name="keywords" content="netty">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty源码分析——编&#x2F;解码">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2018/07/03/Netty源码分析——编-解码/index.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Netty源码分析——编/解码前言这一篇看一下Netty的编码和解码的工作原理。编码解码器其实都是一种特殊的Handler，既然是Handler，那就有inBound和outBound的区别。 我们这篇主要是梳理一下，从入站解码到业务处理，再到出站编码的过程，让大家对编解码的流程有个了解。 Decoder我们随便挑选一种Decoder看一下实现就可以了，比较简单。这篇的内容相比之前的都简单一些、轻">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-07-03T13:13:28.391Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Netty源码分析——编&#x2F;解码">
+<meta name="twitter:description" content="Netty源码分析——编/解码前言这一篇看一下Netty的编码和解码的工作原理。编码解码器其实都是一种特殊的Handler，既然是Handler，那就有inBound和outBound的区别。 我们这篇主要是梳理一下，从入站解码到业务处理，再到出站编码的过程，让大家对编解码的流程有个了解。 Decoder我们随便挑选一种Decoder看一下实现就可以了，比较简单。这篇的内容相比之前的都简单一些、轻">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2018/07/03/Netty源码分析——编-解码/"/>
+
+
+
+
+
+  <title>Netty源码分析——编/解码 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/07/03/Netty源码分析——编-解码/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Netty源码分析——编/解码</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-03T21:13:53+08:00">
+                2018-07-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty源码分析/" itemprop="url" rel="index">
+                    <span itemprop="name">Netty源码分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Netty源码分析——编-解码"><a href="#Netty源码分析——编-解码" class="headerlink" title="Netty源码分析——编/解码"></a>Netty源码分析——编/解码</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>这一篇看一下Netty的编码和解码的工作原理。编码解码器其实都是一种特殊的<code>Handler</code>，既然是<code>Handler</code>，那就有<code>inBound</code>和<code>outBound</code>的区别。</p>
+<p>我们这篇主要是梳理一下，从入站解码到业务处理，再到出站编码的过程，让大家对编解码的流程有个了解。</p>
+<h4 id="Decoder"><a href="#Decoder" class="headerlink" title="Decoder"></a>Decoder</h4><p>我们随便挑选一种Decoder看一下实现就可以了，比较简单。这篇的内容相比之前的都简单一些、轻松一些。</p>
+<p>选<code>ByteToMessageDecoder</code>看一下，首先这个<code>Decoder</code>继承自<code>ChannelInboundHandlerAdapter</code>，这个类其实是一个<code>InBoundHandler</code>，实际上处理的是读事件。</p>
+<p>那么看看这个Decoder是怎么把数据转成我们想要的类对象的。先看下<code>channelRead</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 只能处理ByteBuf</span></span><br><span class="line"><span class="keyword">if</span> (msg <span class="keyword">instanceof</span> ByteBuf) &#123;</span><br><span class="line">    <span class="comment">// 这是一个继承自ArrayList的数据结构</span></span><br><span class="line">    CodecOutputList out = CodecOutputList.newInstance();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        ByteBuf data = (ByteBuf) msg;</span><br><span class="line">        first = cumulation == <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">if</span> (first) &#123;</span><br><span class="line">            <span class="comment">//第一次解码，cumulation是之前没解码完成的数据</span></span><br><span class="line">            cumulation = data;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">//把这次的数据加到cumulation里等待被解码</span></span><br><span class="line">            cumulation = cumulator.cumulate(ctx.alloc(), cumulation, data);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//真正解码的部分</span></span><br><span class="line">        callDecode(ctx, cumulation, out);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (DecoderException e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> e;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> DecoderException(e);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (cumulation != <span class="keyword">null</span> &amp;&amp; !cumulation.isReadable()) &#123;</span><br><span class="line">            numReads = <span class="number">0</span>;</span><br><span class="line">            cumulation.release();</span><br><span class="line">            cumulation = <span class="keyword">null</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (++ numReads &gt;= discardAfterReads) &#123;</span><br><span class="line">            <span class="comment">// channelRead执行了如果大于16次，但是数据仍然还存在在cumulation里，这里跳过这些字节，避免OOM</span></span><br><span class="line">            numReads = <span class="number">0</span>;</span><br><span class="line">            discardSomeReadBytes();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> size = out.size();</span><br><span class="line">        decodeWasNull = !out.insertSinceRecycled();</span><br><span class="line">        <span class="comment">//最后还是会执行一次channelRead把out里的数据向后传递</span></span><br><span class="line">        fireChannelRead(ctx, out, size);</span><br><span class="line">        out.recycle();</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    ctx.fireChannelRead(msg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的步骤拆解一下。首先，<code>ByteToMessageDecoder</code>只能处理<code>ByteBuf</code>。然后创建一个<code>CodecOutputList</code>这个数据结构。这里这个结构其实就是一个<code>ArrayList</code>，但是其中的所有方法都重写了。区别不是很大，但是这个类有一个<code>getUnsafe</code>方法，传入的index不会被校验。这里这个数据结构主要是为了提升性能。</p>
+<p>然后把数据放到<code>cumulation</code>里。这其实是一个<code>ByteBuf</code>，保存的是所有还没被解码的数据。</p>
+<p>然后进行真正的解码操作。这里需要注意<code>finally</code>里的一段代码，是避免OOM的，这说的是一种场景。如果这个<code>cumulation</code>一直有数据可以读（一直没被解码），<code>channelRead</code>调用了超过16次，这个<code>cumulation</code>中的数据还没被读完，这里基本认为是发生了内存泄露。我举个例子，比如我有个<code>Decoder</code>继承了个这个<code>ByteToMessageDecoder</code>，但是<code>decode</code>方法我不从<code>ByteBuf</code>里读数据，而是直接向<code>out</code>里写一个数据，那这个<code>cumulation</code>就会越来越大。<br>Netty为了避免这种情况产生OOM，会扔掉这部分数据（执行<code>discardSomeReadBytes</code>）。</p>
+<p>我们看下<code>callDecode</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> (in.isReadable()) &#123;</span><br><span class="line">    <span class="comment">//第一次out是new出来的 没有数据</span></span><br><span class="line">    <span class="keyword">int</span> outSize = out.size();</span><br><span class="line">    <span class="keyword">if</span> (outSize &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        fireChannelRead(ctx, out, outSize);</span><br><span class="line">        out.clear();</span><br><span class="line">        <span class="keyword">if</span> (ctx.isRemoved()) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        outSize = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">int</span> oldInputLength = in.readableBytes();</span><br><span class="line">    <span class="comment">//调用decode方法，被解码的数据放到out里</span></span><br><span class="line">    decodeRemovalReentryProtection(ctx, in, out);</span><br><span class="line">    <span class="comment">// 如果这个节点被移除了，就不继续操作数据了</span></span><br><span class="line">    <span class="keyword">if</span> (ctx.isRemoved()) &#123;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (outSize == out.size()) &#123;</span><br><span class="line">        <span class="keyword">if</span> (oldInputLength == in.readableBytes()) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (oldInputLength == in.readableBytes()) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> DecoderException(“...<span class="string">");</span></span><br><span class="line"><span class="string">    &#125;</span></span><br><span class="line"><span class="string">    if (isSingleDecode()) &#123;</span></span><br><span class="line"><span class="string">        break;</span></span><br><span class="line"><span class="string">    &#125;</span></span><br><span class="line"><span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>这里简单看一下，如果<code>out</code>里本来就有数据，就触发<code>channelRead</code>，把数据向后传递：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">fireChannelRead</span><span class="params">(ChannelHandlerContext ctx, List&lt;Object&gt; msgs, <span class="keyword">int</span> numElements)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (msgs <span class="keyword">instanceof</span> CodecOutputList) &#123;</span><br><span class="line">        <span class="comment">// 这里的方法就是下面的fireChannelRead</span></span><br><span class="line">        fireChannelRead(ctx, (CodecOutputList) msgs, numElements);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; numElements; i++) &#123;</span><br><span class="line">            ctx.fireChannelRead(msgs.get(i));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//把out中的数据都向后传递</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">fireChannelRead</span><span class="params">(ChannelHandlerContext ctx, CodecOutputList msgs, <span class="keyword">int</span> numElements)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; numElements; i ++) &#123;</span><br><span class="line">        ctx.fireChannelRead(msgs.getUnsafe(i));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意这里是把<code>out</code>里的每个数据都向后传递。注意这里第二个<code>fireChannelRead</code>用的是<code>CodecOutputList.getUnsafe</code>，这个<code>Unsafe</code>方法的入参就是数组下标，跟<code>ArrayList</code>一样，但是不会校验下标的合法性，主要是为了提升性能。</p>
+<p>注意我们在<code>channelRead</code>的<code>finally</code>块中，不管怎样都会触发一次<code>fireChannelRead</code>。</p>
+<h4 id="Encoder"><a href="#Encoder" class="headerlink" title="Encoder"></a>Encoder</h4><p>同样选<code>MessageToByteEncoder</code>，实际上是一个<code>outBoundHandler</code>。看<code>write</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">ByteBuf buf = <span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (acceptOutboundMessage(msg)) &#123;</span><br><span class="line">        <span class="comment">// 出站msg是否能够被encoder处理。。</span></span><br><span class="line">        I cast = (I) msg;</span><br><span class="line">        buf = allocateBuffer(ctx, cast, preferDirect);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 编码</span></span><br><span class="line">            encode(ctx, cast, buf);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="comment">//编码之后释放之前的msg</span></span><br><span class="line">            ReferenceCountUtil.release(cast);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (buf.isReadable()) &#123;</span><br><span class="line">            <span class="comment">// 向后传递</span></span><br><span class="line">            ctx.write(buf, promise);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 如果不可读，则向后传递一个buffer</span></span><br><span class="line">            buf.release();</span><br><span class="line">            ctx.write(Unpooled.EMPTY_BUFFER, promise);</span><br><span class="line">        &#125;</span><br><span class="line">        buf = <span class="keyword">null</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 不能处理直接向后传递</span></span><br><span class="line">        ctx.write(msg, promise);</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">catch</span> (EncoderException e) &#123;</span><br><span class="line">    <span class="keyword">throw</span> e;</span><br><span class="line">&#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> EncoderException(e);</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="comment">// 释放一下</span></span><br><span class="line">    <span class="keyword">if</span> (buf != <span class="keyword">null</span>) &#123;</span><br><span class="line">        buf.release();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里比较简单了。没有很多细节，看上面基本能够看懂，就不细说了。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/netty/" rel="tag"># netty</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/07/02/Dubbo配置覆盖的实现/" rel="next" title="Dubbo配置覆盖的实现">
+                <i class="fa fa-chevron-left"></i> Dubbo配置覆盖的实现
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">58</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">15</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">51</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty源码分析——编-解码"><span class="nav-number">1.</span> <span class="nav-text">Netty源码分析——编/解码</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Decoder"><span class="nav-number">1.2.</span> <span class="nav-text">Decoder</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Encoder"><span class="nav-number">1.3.</span> <span class="nav-text">Encoder</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
