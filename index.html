@@ -356,10 +356,9 @@
         
           
           Dubbo源码解析——异步支持之Consumer端前言之前版本的异步非常不优雅，需要各种配置、各种坑不说，获取Future的方式还是需要从Context里获取，这次的改动在原有的基础上，主要提供了更加便捷的异步使用方式。
-目前dubbo已经支持Consumer端和Provider端异步。Provider端的异步是类似Servlet 3.0的异步方式做的。这篇文章就来解读一下dubbo对异步的实现方式。
+目前dubbo已经支持Consumer端和Provider端异步。Provider端的异步是类似Servlet 3.0的异步方式做的。这篇文章就来解读一下dubbo的Consumer对异步的实现方式。
 对异步的使用，可以参考一下文档：地址
-Consumer先看C端的异步。
-这里看个例子，非常简单：
+Consumer这里看个例子，非常简单：
 1234567891011121314151617// 接口：public interface 
           ...
           <!--noindex-->
