@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="dubbo,异步," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Dubbo源码解析——异步支持之异步带来的问题面临的问题承接我之前的两篇文章，异步虽好，但是也为框架带来了新的复杂性。第一个问题是Filter问题，第二个问题是上下文问题。第二个问题其实比较容易理解，我们在Invoke的时候，有一个RpcContext，我们以P端异步为例，这时候Invoke里开了一个新线程去执行真正的业务逻辑，这时候我们就无法从新线程里获取RpcContext了（ThreadLo">
+<meta name="keywords" content="dubbo,异步">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Dubbo源码解析——异步支持之异步带来的问题">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2018/07/18/Dubbo源码解析——异步支持之异步带来的问题/index.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Dubbo源码解析——异步支持之异步带来的问题面临的问题承接我之前的两篇文章，异步虽好，但是也为框架带来了新的复杂性。第一个问题是Filter问题，第二个问题是上下文问题。第二个问题其实比较容易理解，我们在Invoke的时候，有一个RpcContext，我们以P端异步为例，这时候Invoke里开了一个新线程去执行真正的业务逻辑，这时候我们就无法从新线程里获取RpcContext了（ThreadLo">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-07-18T12:25:33.767Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Dubbo源码解析——异步支持之异步带来的问题">
+<meta name="twitter:description" content="Dubbo源码解析——异步支持之异步带来的问题面临的问题承接我之前的两篇文章，异步虽好，但是也为框架带来了新的复杂性。第一个问题是Filter问题，第二个问题是上下文问题。第二个问题其实比较容易理解，我们在Invoke的时候，有一个RpcContext，我们以P端异步为例，这时候Invoke里开了一个新线程去执行真正的业务逻辑，这时候我们就无法从新线程里获取RpcContext了（ThreadLo">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2018/07/18/Dubbo源码解析——异步支持之异步带来的问题/"/>
+
+
+
+
+
+  <title>Dubbo源码解析——异步支持之异步带来的问题 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/07/18/Dubbo源码解析——异步支持之异步带来的问题/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Dubbo源码解析——异步支持之异步带来的问题</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-18T20:25:53+08:00">
+                2018-07-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
+                    <span itemprop="name">dubbo源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Dubbo源码解析——异步支持之异步带来的问题"><a href="#Dubbo源码解析——异步支持之异步带来的问题" class="headerlink" title="Dubbo源码解析——异步支持之异步带来的问题"></a>Dubbo源码解析——异步支持之异步带来的问题</h3><h4 id="面临的问题"><a href="#面临的问题" class="headerlink" title="面临的问题"></a>面临的问题</h4><p>承接我之前的两篇文章，异步虽好，但是也为框架带来了新的复杂性。第一个问题是<code>Filter</code>问题，第二个问题是上下文问题。第二个问题其实比较容易理解，我们在<code>Invoke</code>的时候，有一个<code>RpcContext</code>，我们以P端异步为例，这时候<code>Invoke</code>里开了一个新线程去执行真正的业务逻辑，这时候我们就无法从新线程里获取<code>RpcContext</code>了（<code>ThreadLocal</code>不一样了）。</p>
+<p>第一个问题比第二个复杂一点，解决方式也复杂一点点。我举个例子，P端有一些<code>Filter</code>，比如<code>ExceptionFilter</code>。<code>Filter</code>的<code>invoke</code>逻辑是这样的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Result <span class="title">invoke</span><span class="params">(Invoker&lt;?&gt; invoker, Invocation invocation)</span> <span class="keyword">throws</span> RpcException </span>&#123;</span><br><span class="line">    <span class="comment">// before invoke...</span></span><br><span class="line">    Result r = invoker.invoke(invocation);</span><br><span class="line">    <span class="comment">// after invoke... Example: deal with 'r'</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以在执行前和后分别做一些事情，跟Spring的AOP有点像。<code>ExceptionFilter</code>的作用记录<code>invoke</code>结束之后的<code>Result</code>中的异常。问题来了：如果是P端异步，<code>invoker.invoke(invocation)</code>这步会立刻返回一个<code>AsyncRpcResult</code>（为什么会返回这个类型的<code>Result</code>在P端异步支持中说了，这里不细说），但是这个<code>AsyncRpcResult</code>中是没有结果的，因为可能业务还没执行结束，那么这个时候很明显也没有异常需要记录，如果这时候过滤器就执行结束，那么很明显，有些功能就缺失了。</p>
+<h4 id="Filter失效问题代码分析"><a href="#Filter失效问题代码分析" class="headerlink" title="Filter失效问题代码分析"></a>Filter失效问题代码分析</h4><p>我们先看第一种，过滤器失效问题。</p>
+<p>这里Dubbo引入了一种新的接口：<code>PostProcessFilter</code>，里面也只有一个方法：<code>Result postProcessResult(Result result, Invoker&lt;?&gt; invoker, Invocation invocation);</code>。</p>
+<p>实现这个接口的类有一个<code>AbstractPostProcessFilter</code>，主要的逻辑就是在这里实现的，我们看下这个类的<code>postProcessResult</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (result <span class="keyword">instanceof</span> AsyncRpcResult) &#123;</span><br><span class="line">    AsyncRpcResult asyncResult = (AsyncRpcResult) result;</span><br><span class="line">    asyncResult.thenApplyWithContext(r -&gt; doPostProcess(r, invoker, invocation));</span><br><span class="line">    <span class="keyword">return</span> asyncResult;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> doPostProcess(result, invoker, invocation);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果结果是同步的，就直接执行<code>doPostProcess</code>，如果是异步的，就给<code>asyncResult</code>增加一个回调（<code>asyncResult.thenApplyWithContext</code>），回调中执行<code>doPostProcess</code>。继续看下这个<code>asyncResult.thenApplyWithContext</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">thenApplyWithContext</span><span class="params">(Function&lt;Result, Result&gt; fn)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.resultFuture = resultFuture.thenApply(fn.compose(beforeContext).andThen(afterContext));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里这里把<code>resultFuture</code>也就是<code>ResultFuture</code>替换成了新的<code>Future</code>，并且增加了回调，当<code>resultFuture</code>结束的时候，会执行我们传入的<code>Function</code>（传入的<code>Function</code>主要是执行<code>doPostProcess</code>方法）和两个上下文切换的<code>Function</code>。</p>
+<p>上下文切换的<code>Function</code>我们一会再说。这里其实主要目的就是一个：在<code>AsyncRpcResult</code>结束的时候，执行<code>doPostProcess</code>方法。</p>
+<p>我们再看看<code>ExceptionFilter</code>的<code>invoke</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这里跟源码有出入，为了看着更清晰。源码是把两句改成了一句，及没有局部变量r</span></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    Result r = invoker.invoke(invocation);</span><br><span class="line">    <span class="keyword">return</span> postProcessResult(r, invoker, invocation);</span><br><span class="line">&#125; <span class="keyword">catch</span> (RuntimeException e) &#123;</span><br><span class="line">    <span class="comment">// logger...</span></span><br><span class="line">    <span class="keyword">throw</span> e;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里就是把<code>invoke</code>的结果传递给<code>postProcessResult</code>，而根据我们刚说的，<code>postProcessResult</code>就是给<code>AsyncRpcResult</code>增加一个回调，让这个异步Result结束以后调用<code>doPostProcess</code>。那么我们可以看一下<code>ExceptionFilter</code>的<code>doPostProcess</code>方法，其实里面就是执行了记录日志的逻辑。</p>
+<p>至此我们就明白，<code>Filter</code>失效问题的解决方案，给<code>AsyncRpcResult</code>增加回调（最终这个回调会被加到我们上一篇说的<code>ResultFuture</code>方法上），在回调中执行<code>doPostProcess</code>方法，<code>doPostProcess</code>方法就是我们希望在执行结束后做的事情，这里的执行结束是指的真正的业务逻辑结束。</p>
+<p>既然原理都清楚了，那么大家就清楚了：如果要扩展一个Dubbo的过滤器，还要能够处理异步的结果该怎么办了吧——继承一下<code>AbstractPostProcessFilter</code>即可（参考<code>ExceptionFilter</code>）</p>
+<h4 id="RpcContext失效问题代码分析"><a href="#RpcContext失效问题代码分析" class="headerlink" title="RpcContext失效问题代码分析"></a>RpcContext失效问题代码分析</h4><p>再看<code>RpcContext</code>。Dubbo调用其实是<code>Dubbo线程</code>，用户在P端开启异步实际上是<code>用户线程</code>，我们用<code>D线程</code>代表<code>Dubbo线程</code>，<code>U线程</code>代表<code>用户线程</code>。</p>
+<p>这里其实解决思路比较简单，D线程里的<code>RpcContext</code>，我们取出来放到<code>U线程</code>里就可以解决这个问题了。</p>
+<p>看看Dubbo的解决方案，先看<code>AsyncContextImpl</code>的构造函数，这个<code>AsyncContextImpl</code>我们在P端异步的时候说过，如果xml里配置<code>&lt;dubbo:service async=true&gt;</code>，C端调用这个服务的时候，就会提前在<code>RpcContext</code>里初始化一个<code>AsyncContextImpl</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AsyncContextImpl</span><span class="params">(CompletableFuture&lt;Object&gt; future)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.future = future;</span><br><span class="line">    <span class="keyword">this</span>.storedContext = RpcContext.getContext();</span><br><span class="line">    <span class="keyword">this</span>.storedServerContext = RpcContext.getServerContext();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>除了我们上篇说的设置<code>Future</code>，还初始化了两个<code>RpcContext</code>。注意，<code>AsyncContextImpl</code>是在D线程里被初始化的，这时候<code>RpcContext</code>还是生效的！</p>
+<p>然后我们在使用的时候，可以在新线程里执行<code>AsyncContext#signalContextSwitch</code>方法，切换上下文：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">signalContextSwitch</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    RpcContext.restoreContext(storedContext);</span><br><span class="line">    RpcContext.restoreServerContext(storedServerContext);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">restoreContext</span><span class="params">(RpcContext oldContext)</span> </span>&#123;</span><br><span class="line">    LOCAL.set(oldContext);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里<code>storedContext</code>就是D线程中，那个有各种值的<code>Context</code>，在U线程中执行，就会把当前线程的Context设置成D线程中的那个。这样，我们在新线程里就可以愉快的使用<code>RpcContext</code>了。</p>
+<p>同样可以在<code>AsyncRpcResult</code>中发现类似的操作，这里就不展开说了，大家可以看看，其实是一样的套路，只不过改成用回调的方式设置，具体可以看看<code>AsyncRpcResult#thenApplyWithContext</code>方法。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/dubbo/" rel="tag"># dubbo</a>
+          
+            <a href="/tags/异步/" rel="tag"># 异步</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/07/17/Dubbo源码解析——异步支持之Provider端/" rel="next" title="Dubbo源码解析——异步支持之Provider端">
+                <i class="fa fa-chevron-left"></i> Dubbo源码解析——异步支持之Provider端
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">62</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">16</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">53</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Dubbo源码解析——异步支持之异步带来的问题"><span class="nav-number">1.</span> <span class="nav-text">Dubbo源码解析——异步支持之异步带来的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#面临的问题"><span class="nav-number">1.1.</span> <span class="nav-text">面临的问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Filter失效问题代码分析"><span class="nav-number">1.2.</span> <span class="nav-text">Filter失效问题代码分析</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#RpcContext失效问题代码分析"><span class="nav-number">1.3.</span> <span class="nav-text">RpcContext失效问题代码分析</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
