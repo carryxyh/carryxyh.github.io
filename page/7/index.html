@@ -262,7 +262,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Perspective – 全链路监控系统/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — filter和listener/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -281,7 +281,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/25/Perspective – 全链路监控系统/" itemprop="url">Perspective -- 全链路监控系统</a></h1>
+                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — filter和listener/" itemprop="url"> Dubbo源码解析 --- filter和listener</a></h1>
         
 
         <div class="post-meta">
@@ -316,8 +316,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/全链路监控/" itemprop="url" rel="index">
-                    <span itemprop="name">全链路监控</span>
+                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
+                    <span itemprop="name">dubbo源码</span>
                   </a>
                 </span>
 
@@ -355,15 +355,14 @@
       
         
           
-          Perspective – 全链路监控系统
-解决的问题：最初版本，只解决购物车以下的链路监控。后面考虑适用在二维火其他系统。
-相比于CAT、ZIPKIN：更加轻量级。
-处理异步线程的全局ID传递：在进行线程操作的时候，使用统一提供的线程模型。包装一个线程类，创建之前从中央IDFactory中申请一个（没有则创建）全局ID，然后自己生成一个当前Branch的ID。线程池执行的其实只是一个代理类，finally中将全局ID和BranchID回传，用于绑定一个Trace和Branch。
-进程间全局ID传递：第一版本只针对Dubbo做扩展，使用类似CAT的方式，增加过滤器，同样把invoker.inv
+          Dubbo源码解析 — filter和listener
+前言有一句说一句，这个标题的有点标题党的意思，我们在这里并不想给大家讲解filter和listener的概念、实现、功能等等。而是想给大家讲解filter和listener的注入过程，具体filter和listener请大家看一下官方文档，或者可以查看一下dubbo已知扩展点的实现。
+问题我们看一下消费方执行流程：
+1ReferenceBean --&gt; ReferenceConfig --&gt;  RegistryProtocol --&gt; DubboProtocol  --&gt;  invoker  --&gt;  exp
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2017/02/25/Perspective – 全链路监控系统/#more" rel="contents">
+            <a class="btn" href="/2017/02/25/Dubbo源码解析 — filter和listener/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -414,7 +413,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/synchronized 关键字/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/02/25/Dubbo源码解析 — 服务的创建和暴露/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -433,7 +432,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/02/25/synchronized 关键字/" itemprop="url">synchronized 关键字</a></h1>
+                <a class="post-title-link" href="/2017/02/25/Dubbo源码解析 — 服务的创建和暴露/" itemprop="url">Dubbo源码解析 --- 服务的创建和暴露</a></h1>
         
 
         <div class="post-meta">
@@ -468,8 +467,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java源码/" itemprop="url" rel="index">
-                    <span itemprop="name">java源码</span>
+                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
+                    <span itemprop="name">dubbo源码</span>
                   </a>
                 </span>
 
@@ -507,20 +506,14 @@
       
         
           
-          synchronized 关键字
-实现原理在java1.6中对synchronized进行了一系列优化，在之前的版本中，lock性能远比synchronized关键字好，测试数据这里不放了。重点关注下实现原理。
-先说几个概念：
-
-普通同步方法，锁当前实例（相当于synchronize（this））。
-静态同步方法，锁当前类的class对象。（任何该class的实例全都会阻塞）
-synchronized（object）锁object对象。
-
-当一个线程访问同步代码块时，它首先是需要得到锁才能执行同步代码，当退出或者抛出异常时必须要释放锁，那么它是如何来实现这个机制的呢？我们先看一段简单的代码：
-
+          Dubbo源码解析 — 服务的创建和暴露
+前言本文主要就dubbo基础的XML解析开始，到服务的创建和发布，最终延展到底层netty的调用，给出一个初始化流程的解读。在这里你能看到dubbo一些优秀的抽象设计，以及底层源代码的解读。如有语义不明，联系紫苑。或者邮件ziyuan@2dfire.com。
+service和server首先，当发布一个服务的Server时，我们需要编写一个Spring配置文件，形如以下：
+123456&lt;beans xmlns=&quot;...&quot;&gt;    &lt;dubbo:application name=&quot;hello-world-a
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2017/02/25/synchronized 关键字/#more" rel="contents">
+            <a class="btn" href="/2017/02/25/Dubbo源码解析 — 服务的创建和暴露/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
