@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="编译OPENJDK," />
+  <meta name="keywords" content="路漫漫其修远兮，吾将上蹿下跳来回折腾！" />
 
 
 
@@ -79,21 +79,19 @@
 
 
 
-<meta name="description" content="编译OPENJDK小记前言先说下笔者的环境。系统：MAC OS 10.13.2Xcode版本：9.2 jdk的源码管理工具，官方使用的是mercurial可以通过homebrew安装。笔者的jdk源码直接从github下载的：https://github.com/dmlloyd/openjdk 下载好之后就可以进行编译了。 编译下载好进入目录下面，执行脚本： 1./configure --with">
-<meta name="keywords" content="编译OPENJDK">
+<meta name="description" content="深入理解JAVA虚拟机读书笔记 关于CMS收集器CMS用的是标记-清除算法，分为四个阶段：初始标记（CMS initial mark），并发标记（CMS concurrent mark），重新标记（CMS remark），并发清除（CMS concurrent sweep）。并发标记和并发清除的速度最慢，但是是与用户线程同时进行的。另外两个阶段比较快，但是需要STW。CMS的缺点：  CPU敏感。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="编译OPENJDK小记">
-<meta property="og:url" content="http://wyj.shiwuliang.com/2018/07/04/编译OPENJDK小记/index.html">
+<meta property="og:title" content="一时无两">
+<meta property="og:url" content="http://wyj.shiwuliang.com/2017/09/28/深入理解jvm读书笔记/index.html">
 <meta property="og:site_name" content="一时无两">
-<meta property="og:description" content="编译OPENJDK小记前言先说下笔者的环境。系统：MAC OS 10.13.2Xcode版本：9.2 jdk的源码管理工具，官方使用的是mercurial可以通过homebrew安装。笔者的jdk源码直接从github下载的：https://github.com/dmlloyd/openjdk 下载好之后就可以进行编译了。 编译下载好进入目录下面，执行脚本： 1./configure --with">
+<meta property="og:description" content="深入理解JAVA虚拟机读书笔记 关于CMS收集器CMS用的是标记-清除算法，分为四个阶段：初始标记（CMS initial mark），并发标记（CMS concurrent mark），重新标记（CMS remark），并发清除（CMS concurrent sweep）。并发标记和并发清除的速度最慢，但是是与用户线程同时进行的。另外两个阶段比较快，但是需要STW。CMS的缺点：  CPU敏感。">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://wyj.shiwuliang.com/images/15307069145878.jpg">
-<meta property="og:image" content="http://wyj.shiwuliang.com/images/15307070529628.jpg">
-<meta property="og:updated_time" content="2018-07-04T12:30:54.828Z">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/YGC.png">
+<meta property="og:updated_time" content="2018-08-06T07:04:28.610Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="编译OPENJDK小记">
-<meta name="twitter:description" content="编译OPENJDK小记前言先说下笔者的环境。系统：MAC OS 10.13.2Xcode版本：9.2 jdk的源码管理工具，官方使用的是mercurial可以通过homebrew安装。笔者的jdk源码直接从github下载的：https://github.com/dmlloyd/openjdk 下载好之后就可以进行编译了。 编译下载好进入目录下面，执行脚本： 1./configure --with">
-<meta name="twitter:image" content="http://wyj.shiwuliang.com/images/15307069145878.jpg">
+<meta name="twitter:title" content="一时无两">
+<meta name="twitter:description" content="深入理解JAVA虚拟机读书笔记 关于CMS收集器CMS用的是标记-清除算法，分为四个阶段：初始标记（CMS initial mark），并发标记（CMS concurrent mark），重新标记（CMS remark），并发清除（CMS concurrent sweep）。并发标记和并发清除的速度最慢，但是是与用户线程同时进行的。另外两个阶段比较快，但是需要STW。CMS的缺点：  CPU敏感。">
+<meta name="twitter:image" content="http://wyj.shiwuliang.com/images/YGC.png">
 
 
 
@@ -123,13 +121,13 @@
 
 
 
-  <link rel="canonical" href="http://wyj.shiwuliang.com/2018/07/04/编译OPENJDK小记/"/>
+  <link rel="canonical" href="http://wyj.shiwuliang.com/2017/09/28/深入理解jvm读书笔记/"/>
 
 
 
 
 
-  <title>编译OPENJDK小记 | 一时无两</title>
+  <title> | 一时无两</title>
   
 
 
@@ -266,7 +264,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/07/04/编译OPENJDK小记/">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2017/09/28/深入理解jvm读书笔记/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -283,7 +281,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">编译OPENJDK小记</h1>
+          <h1 class="post-title" itemprop="name headline"></h1>
         
 
         <div class="post-meta">
@@ -295,8 +293,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-04T20:29:53+08:00">
-                2018-07-04
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-28T10:25:18+08:00">
+                2017-09-28
               </time>
             
 
@@ -305,28 +303,6 @@
             
           </span>
 
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/编译OPENJDK/" itemprop="url" rel="index">
-                    <span itemprop="name">编译OPENJDK</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
           
 
           
@@ -355,25 +331,20 @@
       
 
       
-        <h3 id="编译OPENJDK小记"><a href="#编译OPENJDK小记" class="headerlink" title="编译OPENJDK小记"></a>编译OPENJDK小记</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>先说下笔者的环境。<br>系统：MAC OS 10.13.2<br>Xcode版本：9.2</p>
-<p>jdk的源码管理工具，官方使用的是<code>mercurial</code>可以通过<code>homebrew</code>安装。笔者的jdk源码直接从github下载的：<a href="https://github.com/dmlloyd/openjdk" target="_blank" rel="noopener">https://github.com/dmlloyd/openjdk</a></p>
-<p>下载好之后就可以进行编译了。</p>
-<h4 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h4><p>下载好进入目录下面，执行脚本：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./configure --with-target-bits=64 --with-freetype=/usr/local/Cellar/freetype/2.8.1 --enable-ccache --with-jvm-variants=server,client --with-boot-jdk-jvmargs="-Xlint:deprecation -Xlint:unchecked" --disable-zip-debug-info --disable-warnings-as-errors --with-debug-level=slowdebug 2&gt;&amp;1 | tee configure_mac_x64.log</span><br></pre></td></tr></table></figure>
-<p>注意，上面的<code>freetype</code>，需要替换成本机实际安装的版本。<br>再注意，如果编译中出错，内容提示你：你的<code>freetype</code>是”system”的并且是”bundled”的，这时候不要尝试更改<code>freetype</code>的文件夹权限，直接把上述脚本中<code>--with-freetype</code>的值改为<code>bundled</code>即可。</p>
-<p>还有一个比较坑的地方。以前编译过虚拟机的同学应该都知道，编译虚拟机需要一个<code>boot jdk</code>，即为引导jdk。这个<code>boot jdk</code>是如果要编译1.8版本的jdk，需要1.7版本的jdk。</p>
-<p>但是笔者编译<code>openjdk1.9</code>的时候，总是报错<code>boot jdk</code>版本不对，非常蛋疼（笔者机器上装的1.8）。一开始我以为是路径不对，改了几次发现，其实编译会自动扫描<code>JAVA_HOME</code>下的jdk版本并且找一个合适的，在此提醒各位，如果发现有类似的问题，赶紧按照提示用<code>brew cask install java</code>下载一个最新版本的jdk就好了。</p>
-<p>配置如果出现形如下图：</p>
-<p><img src="/images/15307069145878.jpg" alt=""></p>
-<p>即为配置ok，可以进行编译了。</p>
-<p>再执行<code>make</code>脚本：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">export LANG=C</span><br><span class="line">make all LOG=debug  2&gt;&amp;1 | tee make_mac_x64.log</span><br></pre></td></tr></table></figure>
-<p>编译会比较旧，电脑会比较烫，等一下。成功以后会在jdk目录下的build目录下生成一个文件夹，目录形式类似：</p>
-<p><img src="/images/15307070529628.jpg" alt=""></p>
-<p>红框就是源码的jdk目录结构。我们进入到图中红色标记的jdk文件夹的bin目录下，执行<code>./java -version</code>。注意不要执行<code>java -version</code>，这样运行的是本机<code>JAVA_HOME</code>里那个java，不是编译的。</p>
-<p>执行之后结果类似：</p>
-<figure class="highlight plain"><figcaption><span>version "11-internal" 2018-09-25</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">OpenJDK Runtime Environment (slowdebug build 11-internal+0-adhoc.xxx.openjdk)</span><br><span class="line">OpenJDK 64-Bit Server VM (slowdebug build 11-internal+0-adhoc.xxx.openjdk, mixed mode)</span><br></pre></td></tr></table></figure>
-<p>结果中能找到你的主机名，比如<code>OpenJDK Runtime Environment (slowdebug build 11-internal+0-adhoc.主机名/用户名.openjdk)</code>。至此，你就有个属于自己的jdk了~</p>
+        <h3 id="深入理解JAVA虚拟机读书笔记"><a href="#深入理解JAVA虚拟机读书笔记" class="headerlink" title="深入理解JAVA虚拟机读书笔记"></a>深入理解JAVA虚拟机读书笔记</h3><hr>
+<h4 id="关于CMS收集器"><a href="#关于CMS收集器" class="headerlink" title="关于CMS收集器"></a>关于CMS收集器</h4><p>CMS用的是<code>标记-清除</code>算法，分为四个阶段：初始标记（CMS initial mark），并发标记（CMS concurrent mark），重新标记（CMS remark），并发清除（CMS concurrent sweep）。并发标记和并发清除的速度最慢，但是是与用户线程同时进行的。另外两个阶段比较快，但是需要STW。<br>CMS的缺点：</p>
+<ol>
+<li>CPU敏感。默认启动的线程数是（CPU数量+3）/4，如果只有两个，那么就要分出一个核去执行垃圾回收，速度直接慢了一半。</li>
+<li>无法处理浮动垃圾。可能出现<code>Concurrent Mode Failure</code>，由于并发清除的时候用户线程也在运行，CMS无法在本次GC中清理新的垃圾，只能留待下一次的GC，而且还需要流出足够的空间在收集垃圾的时候给用户使用，如果预留的空间不足就会出现上面说的<code>CMF</code>。这是虚拟机将启动备案：临时使用<code>Serial Old</code>重新对老年代回收。</li>
+<li>会产生很多碎片。不过虚拟机默认每次CMS收集老年代的时候都会进行一次碎片整理。我们可以设置每进行多少次不压缩的CMS GC，跟着进行一次整理的。</li>
+</ol>
+<h4 id="关于GC日志"><a href="#关于GC日志" class="headerlink" title="关于GC日志"></a>关于GC日志</h4><p>FullGC仅仅表示这次GC过程中发生了STW，而一般的GC则表示没有停顿。新生代的ParNew的日志也会出现Full GC（一般是出现了分配担保失败之类的问题）。<br>后面紧跟着的就是GC发生的代，这个代的名称跟收集器名称是密切相关的，比如：DefNew -&gt; Serial，ParNew -&gt; Parallel New，PSYoungGen -&gt; Parallel Scavenge。然后就是这个区回收前后的大小，然后是JAVA堆回收前后的大小，再然后表示GC所占时间，单位是秒，有的收集器会给出更具体的时间，比如:[Times : user=0.01 sys=0.00 real=0.02]，分别代表用户态、内核态和墙钟时间。一般关注real就可以。这里有个小case，user + sys &gt; real是完全正常的，因为cpu多核的情况下，cpu时间会叠加。</p>
+<h4 id="对象晋升"><a href="#对象晋升" class="headerlink" title="对象晋升"></a>对象晋升</h4><p>对象优先分配在年轻带，年轻代不足会产生一次YGC，YGC会把eden和survivor中有对象的一个区域一起GC，然后存活的放到survivor的另外一个区域中。如果存活的对象比较多，from或者to区域放不下，会因为分配担保机制，对象提前进入老年代。<br>对象大小如果超过一个阈值也会进入老年代，PretenureSizeThreshold。但是这个参数在收集器使用Parallel Scavenge的时候不生效。<br>对象长时间存活也会晋升到老年代，每熬过一次minor gc，年龄加一，默认达到15的时候就晋升到老年代。<br>如果Survivor空间中相同年龄所有对象大小的综合大于Survivor区域的一半，年龄大于或等于该年龄的对象可以直接进入老年代。</p>
+<h4 id="空间分配担保"><a href="#空间分配担保" class="headerlink" title="空间分配担保"></a>空间分配担保</h4><p>minor gc之前，虚拟机会先检查<code>老年代最大可用的连续空间</code>是否大于<code>新生代所有对象总大小</code>，如果大于，那么minor gc就是安全的。如果小于，那么会查看<code>XX:HandlePromotionFailure</code>设置值是否允许担保失败，如果允许，那么会检查老年代<code>最大可用的连续空间</code>是否大于<code>历次晋升到老年代对象的平均大小</code>。如果大于，尝试进行一次minor gc，虽然有风险，如果小于或者设置不允许冒险，改为进行一次Full gc。</p>
+<h4 id="类的加载"><a href="#类的加载" class="headerlink" title="类的加载"></a>类的加载</h4><p>虚拟机规定5种必须初始化类的情况（当然加载、验证、准备、解析都在初始化之前也必须进行）：<br>1.遇到new、getstatic、putstatic或invokestatic这4条字节码指令时，没有初始化就必须初始化。<br>2.使用java.lang.reflect包的方法对类进行反射调用的时候。<br>3.当初始化一个类的时候，父类未初始化，则先初始化父类<br>4.main函数的类必须初始化<br>5.如果一个java.lang.invoke.MethodHandle实例最后的解析结果是REF_getStatic、REF_putStatic、REF_invokeStaitc的时候。这是对动态语言的支持。</p>
+<h4 id="关于YGC"><a href="#关于YGC" class="headerlink" title="关于YGC"></a>关于YGC</h4><p>这里就不班门弄斧了，直接从狼神的文章中copy一张图下来，可以说是非常的明白：<br><img src="/images/YGC.png" alt="ygc"></p>
+<h4 id="关于类加载器的双亲委派模型"><a href="#关于类加载器的双亲委派模型" class="headerlink" title="关于类加载器的双亲委派模型"></a>关于类加载器的双亲委派模型</h4><p>破坏类的双亲委派，可以通过给Thread设置contextClassLoader。如果创建线程时没有则从父线程继承一个。这个设计的主要原因是为了让父类加载器能够识别子加载器的类。</p>
+<h4 id="关于线上GC问题排查的参数"><a href="#关于线上GC问题排查的参数" class="headerlink" title="关于线上GC问题排查的参数"></a>关于线上GC问题排查的参数</h4><p>-XX:+PrintGC 输出GC日志<br>-XX:+PrintGCDetails 输出GC的详细日志<br>-XX:+PrintGCTimeStamps 输出GC的时间戳（以基准时间的形式）<br>-XX:+PrintGCDateStamps 输出GC的时间戳（以日期的形式，如2013-05-04T21:53:59.234+0800）<br>-XX:+PrintHeapAtGC 在进行GC的前后打印出堆的信息<br>-Xloggc:../logs/gc.log 日志文件的输出路径</p>
 
       
     </div>
@@ -389,12 +360,6 @@
 
     <footer class="post-footer">
       
-        <div class="post-tags">
-          
-            <a href="/tags/编译OPENJDK/" rel="tag"># 编译OPENJDK</a>
-          
-        </div>
-      
 
       
       
@@ -404,8 +369,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2018/07/03/Netty源码分析——编-解码/" rel="next" title="Netty源码分析——编/解码">
-                <i class="fa fa-chevron-left"></i> Netty源码分析——编/解码
+              <a href="/2017/09/12/JAVA - AQS源码解读/" rel="next" title="JAVA - AQS源码解读">
+                <i class="fa fa-chevron-left"></i> JAVA - AQS源码解读
               </a>
             
           </div>
@@ -414,8 +379,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2018/07/07/Dubbo源码解析——dubbo的配置覆盖/" rel="prev" title="Dubbo源码解析——dubbo的配置覆盖">
-                Dubbo源码解析——dubbo的配置覆盖 <i class="fa fa-chevron-right"></i>
+              <a href="/2017/11/03/JAVA线程池源码解析/" rel="prev" title="JAVA线程池源码解析">
+                JAVA线程池源码解析 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -568,7 +533,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#编译OPENJDK小记"><span class="nav-number">1.</span> <span class="nav-text">编译OPENJDK小记</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#编译"><span class="nav-number">1.2.</span> <span class="nav-text">编译</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#深入理解JAVA虚拟机读书笔记"><span class="nav-number">1.</span> <span class="nav-text">深入理解JAVA虚拟机读书笔记</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#关于CMS收集器"><span class="nav-number">1.1.</span> <span class="nav-text">关于CMS收集器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#关于GC日志"><span class="nav-number">1.2.</span> <span class="nav-text">关于GC日志</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#对象晋升"><span class="nav-number">1.3.</span> <span class="nav-text">对象晋升</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#空间分配担保"><span class="nav-number">1.4.</span> <span class="nav-text">空间分配担保</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#类的加载"><span class="nav-number">1.5.</span> <span class="nav-text">类的加载</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#关于YGC"><span class="nav-number">1.6.</span> <span class="nav-text">关于YGC</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#关于类加载器的双亲委派模型"><span class="nav-number">1.7.</span> <span class="nav-text">关于类加载器的双亲委派模型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#关于线上GC问题排查的参数"><span class="nav-number">1.8.</span> <span class="nav-text">关于线上GC问题排查的参数</span></a></li></ol></li></ol></div>
             
 
           </div>
