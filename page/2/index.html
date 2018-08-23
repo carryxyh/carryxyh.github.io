@@ -262,6 +262,156 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/07/10/Netty源码分析——AUTOREAD/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/07/10/Netty源码分析——AUTOREAD/" itemprop="url">Netty源码分析——AUTOREAD</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-10T21:30:53+08:00">
+                2018-07-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty源码分析/" itemprop="url" rel="index">
+                    <span itemprop="name">Netty源码分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+          Netty源码分析——AUTOREAD前言这个是设置在Channel上的一个属性，主要控制管道的自动读。可能对于很多初学者来说，都对这个Channel的自动读表示困惑，这篇文章主要来看下这个自动读如何工作以及什么时候关闭自动读（自动读默认开启）。
+上代码这个要追溯到我们的读操作了，我们以服务端为例，服务端先是有个叫Boss的Reacotr线程，不断的轮训ACCEPT事件，如果轮训到，就创建一个Channel并且注册READ事件，把这个Channel分配给一个叫Worker的Reactor线程。这个逻辑不说了，详细的内容看之前的：Boss和Worker。
+分配给Worker的Channel，在N
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2018/07/10/Netty源码分析——AUTOREAD/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/07/07/Dubbo源码解析——dubbo的配置覆盖/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1604,159 +1754,6 @@ HeadContext这是我们pipeline的起点。跟TailContext一样，HeadContext也
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/2018/05/31/Netty源码分析——服务端启动流程解析/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="时无两">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="一时无两">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/05/31/Netty源码分析——服务端启动流程解析/" itemprop="url">Netty源码分析——服务端启动流程解析</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-05-31T16:41:53+08:00">
-                2018-05-31
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Netty源码分析/" itemprop="url" rel="index">
-                    <span itemprop="name">Netty源码分析</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-          Netty源码分析——服务端启动流程解析废话不多说，直接看个例子：
-
-这也是官方给出的server端示例。
-其中我们在Boss和Worker这篇文章中已经说过了，服务端会有两个Group，分别具体做什么可以参考那篇文章。childHandler方法指定子pipeline中的数据处理handler，关于这个设置方式，同样可以看一下Boss和Worker这篇文章。
-代码分析我们直接跟这个bind方法，一直可以追到AbstractBootstrap#doBind：
-12345678910111213141516private ChannelFuture doBind(final SocketAddr
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2018/05/31/Netty源码分析——服务端启动流程解析/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1811,7 +1808,7 @@ HeadContext这是我们pipeline的起点。跟TailContext一样，HeadContext也
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">69</span>
+                  <span class="site-state-item-count">70</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1833,7 +1830,7 @@ HeadContext这是我们pipeline的起点。跟TailContext一样，HeadContext也
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">64</span>
+                  <span class="site-state-item-count">66</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
