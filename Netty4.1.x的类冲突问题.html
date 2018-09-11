@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="类冲突,jar包冲突," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Netty4.1.x的类冲突问题间接问题直接进主题。最近在搞一个大项目，来来回回涉及到几十个工程。其中有八个工程是新工程。部署的时候一直报错NoSuchMethodException：ByteToMessageDecoder.ensureNotSharable。看到这个异常基本上可以断定是类冲突问题，所以解决思路也应该先往排除相同依赖之类的方向上走。 目前我们这边的RPC使用的是Netty的4.1">
+<meta name="keywords" content="类冲突,jar包冲突">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty4.1.x的类冲突问题">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Netty4.1.x的类冲突问题.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Netty4.1.x的类冲突问题间接问题直接进主题。最近在搞一个大项目，来来回回涉及到几十个工程。其中有八个工程是新工程。部署的时候一直报错NoSuchMethodException：ByteToMessageDecoder.ensureNotSharable。看到这个异常基本上可以断定是类冲突问题，所以解决思路也应该先往排除相同依赖之类的方向上走。 目前我们这边的RPC使用的是Netty的4.1">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-08-23T07:57:53.584Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Netty4.1.x的类冲突问题">
+<meta name="twitter:description" content="Netty4.1.x的类冲突问题间接问题直接进主题。最近在搞一个大项目，来来回回涉及到几十个工程。其中有八个工程是新工程。部署的时候一直报错NoSuchMethodException：ByteToMessageDecoder.ensureNotSharable。看到这个异常基本上可以断定是类冲突问题，所以解决思路也应该先往排除相同依赖之类的方向上走。 目前我们这边的RPC使用的是Netty的4.1">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Netty4.1.x的类冲突问题.html"/>
+
+
+
+
+
+  <title>Netty4.1.x的类冲突问题 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Netty4.1.x的类冲突问题.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Netty4.1.x的类冲突问题</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-23T15:57:53+08:00">
+                2018-08-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/线上问题排查/" itemprop="url" rel="index">
+                    <span itemprop="name">线上问题排查</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Netty4-1-x的类冲突问题"><a href="#Netty4-1-x的类冲突问题" class="headerlink" title="Netty4.1.x的类冲突问题"></a>Netty4.1.x的类冲突问题</h3><h4 id="间接问题"><a href="#间接问题" class="headerlink" title="间接问题"></a>间接问题</h4><p>直接进主题。最近在搞一个大项目，来来回回涉及到几十个工程。其中有八个工程是新工程。部署的时候一直报错<code>NoSuchMethodException：ByteToMessageDecoder.ensureNotSharable</code>。看到这个异常基本上可以断定是类冲突问题，所以解决思路也应该先往排除相同依赖之类的方向上走。</p>
+<p>目前我们这边的RPC使用的是Netty的4.1.7版本，而且确实也间接的使用到了<code>ByteToMessageDecoder</code>（业务解码器继承<code>LengthFieldBasedFrameDecoder</code>，<code>LengthFieldBasedFrameDecoder</code>继承<code>ByteToMessageDecoder</code>）。查看4.1.7版本<code>ByteToMessageDecoder</code>的构造函数：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="title">ByteToMessageDecoder</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    CodecUtil.ensureNotSharable(<span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>并没有使用<code>CodecUtil</code>的<code>ensureNotSharable</code>方法，而是说没有<code>ByteToMessageDecoder</code>的<code>ensureNotSharable</code>方法。查询项目中也只有4.1.7版本的Netty在使用。非常奇怪。</p>
+<p>继续看日志，发现异常是从Netty的4.1.11版本中的<code>ByteToMessageDecoder</code>抛出来的。现跑去看了一下4.1.11版本的<code>ByteToMessageDecoder</code>构造函数：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="title">ByteToMessageDecoder</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ensureNotSharable();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>还是很奇怪，为啥项目中包括<code>mvn</code>的依赖树工具都没有找到Netty 4.1.11版本（但是有3.x版本，这也误导了我一下，一开始以为是3.x和4.x版本的<code>ByteToMessageDecoder</code>冲突了，后来发现3.x版本没有这个类），但是错误居然会从4.1.11版本中的<code>ByteToMessageDecoder</code>抛出来。</p>
+<p>这个只是间接原因，但是还是列出来并且讲一下为啥会冲突。从表现来看，我们只能“假设我们用到了Netty 4.1.11版本”。如果用了，为啥会产生这个问题呢？</p>
+<p>本篇主要是给大家看下解决问题的思路，并非讲解类加载器，所以我们这里不细说类加载的东西，我们就把假设所有的已经被加载了的类被放在一个盒子里，我们需要的时候就去取一个出来用。往这个盒子里放类加载器的规则就是：如果盒子里目前没有这个类，就加载了以后放进去。取的规则也很简单：如果我想要的类已经有了，就直接从盒子里取出来用。</p>
+<p>规则定完了，我们看看为啥会出现上述的问题。首先，我们需要用到我们自己的业务解码器，这个解码器见解继承了<code>ByteToMessageDecoder</code>，那么我们使用的是Netty 4.1.7版本，所以就把4.1.7版本的类加载了并且放到了我们的盒子里。</p>
+<p>然后我们之前假设，我们的工程中也用到了4.1.11版本，可能是其他工程也有一个解码器，继承的是4.1.11版本的那个<code>ByteToMessageDecoder</code>：</p>
+<table>
+<thead>
+<tr>
+<th>父类ByteToMessageDecoder的版本</th>
+<th>4.1.7</th>
+<th>4.1.11</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>子类</td>
+<td>Decoder1</td>
+<td>Decoder2</td>
+<td></td>
+<td>Decoder2</td>
+</tr>
+</tbody>
+</table>
+<p>加载<code>Decoder2</code>的时候，也需要加载他的父类，及4.1.11版本的<code>ByteToMessageDecoder</code>。这时候，会先去盒子里捞一把，发现，咦，这个<code>ByteToMessageDecoder</code>已经存在了！这个时候，就认为4.1.11版本的<code>ByteToMessageDecoder</code>已经被加载了，就返回了。</p>
+<p>然后我们开始执行<code>new Decoder1</code>（执行<code>new Decoder1</code>会执行其父类的<code>new</code>方法，这个地方不细说了），没有任何问题，因为<code>Decoder1</code>本来就是继承的4.1.7版本的<code>ByteToMessageDecoder</code>，执行4.1.7版本的class的字节码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="title">ByteToMessageDecoder</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    CodecUtil.ensureNotSharable(<span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>继而调用了一下<code>CodecUtil.ensureNotSharable(this);</code>。OK，一切正常。</p>
+<p>然后执行<code>new Decoder2</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="title">ByteToMessageDecoder</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ensureNotSharable();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这时候，字节码里要求我们执行<code>ByteToMessageDecoder.ensureNotSharable</code>方法，然后我们去找加载了的<code>ByteToMessageDecoder</code>的<code>ensureNotSharable</code>方法，这个时候我们实际上加载了的是4.1.7版本的<code>ByteToMessageDecoder</code>，在这个4.1.7版本里，<code>ensureNotSharable</code>方法并不属于<code>ByteToMessageDecoder</code>！这时候，理所当然我们就会报错了，这也是为什么错误是从4.1.11版本中抛出来的。</p>
+<h4 id="直接原因"><a href="#直接原因" class="headerlink" title="直接原因"></a>直接原因</h4><p>说了4.1.7和4.1.11类冲突问题，还有个奇怪的地方——之前我们是假设用到，但是实际上在本地的mvn的dependency tree里完全看不到4.1.11版本。</p>
+<p>这个问题的排查过程我就不细说了，直接说结果吧。</p>
+<p>我们直接登录到了打包服务器上，mvn dependency tree了一把，居然在打包服务器上发现了4.1.11的依赖。那么现在问题就简化为，为什么本地命名没有依赖4.1.11的情况下，打包服务器上一直有依赖4.1.11。</p>
+<p>最后定位是这样的，我们的工程A依赖一个工程B的RPC接口，B工程由于一些特殊需要，把Netty的4.1.11打在包里暴露出来了，依赖关系：</p>
+<p><code>A --&gt; B --&gt; Netty 4.1.11</code></p>
+<p>但是我们明明在本地看不到B依赖了4.1.11，为什么打包服务器上可以看到依赖了Netty 4.1.11。毕竟我们是部署在服务器上，如果打包服务器上有4.1.11，那么还是会把4.1.11打入到项目里。</p>
+<p>这个问题其实基本可以断定是maven的拉包问题，maven有一个强制拉包的选项<code>-U</code>，maven默认是没有开启的，及如果发现有一个快照包在打包服务器上，就直接用这个快照包，不去中央仓库拉取最新的快照包。我们的测试环境的打包服务器是没有加这个参数的，原因是测试环境打包频繁，一直强制更新非常浪费带宽。</p>
+<p>我们去询问了一下B工程的负责人，之前确实打了一个快照版本的包依赖了Netty 4.1.11。我们直接把B工程的快照包版本升级了一下，就不再出现这个问题了。</p>
+<h4 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h4><p>通过这篇文章其实主要是提供两个思路，第一个是如果碰到了<code>NoSuchMethod</code>、<code>ClassNotFound</code>以及<code>NoClassDefFound</code>等等异常，基本上断定是一个包冲突问题，我们要从报错的类推导出到底依赖的项目中哪几个包产生了冲突，以及是哪几个地方把这些包依赖进来了。这里一般<code>mvn dependency:tree &gt;&gt; tree.txt</code>，会在本地项目里生成一个文件，可以从里面看到各种依赖关系。</p>
+<p>如果我们发现快照包里没有的，打包的时候却被打进来了，或者快照包里有的，打包的时候没有被打进来，这里很有可能是出现了没有强制拉包的问题，可以开启<code>-U</code>或者升级快照包的方式解决。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/类冲突/" rel="tag"># 类冲突</a>
+          
+            <a href="/tags/jar包冲突/" rel="tag"># jar包冲突</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/MySQL为什么需要主键 .html" rel="next" title="MySQL为什么需要主键">
+                <i class="fa fa-chevron-left"></i> MySQL为什么需要主键
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Dubbo源码解析——mock .html" rel="prev" title="Dubbo源码解析——mock">
+                Dubbo源码解析——mock <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">74</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">70</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty4-1-x的类冲突问题"><span class="nav-number">1.</span> <span class="nav-text">Netty4.1.x的类冲突问题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#间接问题"><span class="nav-number">1.1.</span> <span class="nav-text">间接问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#直接原因"><span class="nav-number">1.2.</span> <span class="nav-text">直接原因</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#后记"><span class="nav-number">1.3.</span> <span class="nav-text">后记</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

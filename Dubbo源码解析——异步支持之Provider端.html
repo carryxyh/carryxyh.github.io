@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="dubbo,异步," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Dubbo源码解析——异步支持之Provider端前言继上篇Consumer端的异步，我们再看看Provider端如何异步。先看个例子： 123&amp;lt;bean id=&quot;asyncService&quot; class=&quot;com.alibaba.dubbo.samples.async.impl.AsyncServiceImpl&quot;/&amp;gt;&amp;lt;dubbo:service async=&quot;true&quot; inte">
+<meta name="keywords" content="dubbo,异步">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Dubbo源码解析——异步支持之Provider端">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Dubbo源码解析——异步支持之Provider端.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Dubbo源码解析——异步支持之Provider端前言继上篇Consumer端的异步，我们再看看Provider端如何异步。先看个例子： 123&amp;lt;bean id=&quot;asyncService&quot; class=&quot;com.alibaba.dubbo.samples.async.impl.AsyncServiceImpl&quot;/&amp;gt;&amp;lt;dubbo:service async=&quot;true&quot; inte">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-07-17T13:58:24.041Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Dubbo源码解析——异步支持之Provider端">
+<meta name="twitter:description" content="Dubbo源码解析——异步支持之Provider端前言继上篇Consumer端的异步，我们再看看Provider端如何异步。先看个例子： 123&amp;lt;bean id=&quot;asyncService&quot; class=&quot;com.alibaba.dubbo.samples.async.impl.AsyncServiceImpl&quot;/&amp;gt;&amp;lt;dubbo:service async=&quot;true&quot; inte">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Dubbo源码解析——异步支持之Provider端.html"/>
+
+
+
+
+
+  <title>Dubbo源码解析——异步支持之Provider端 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Dubbo源码解析——异步支持之Provider端.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Dubbo源码解析——异步支持之Provider端</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-17T21:53:53+08:00">
+                2018-07-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
+                    <span itemprop="name">dubbo源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Dubbo源码解析——异步支持之Provider端"><a href="#Dubbo源码解析——异步支持之Provider端" class="headerlink" title="Dubbo源码解析——异步支持之Provider端"></a>Dubbo源码解析——异步支持之Provider端</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>继上篇<code>Consumer</code>端的异步，我们再看看<code>Provider</code>端如何异步。先看个例子：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"asyncService"</span> <span class="attr">class</span>=<span class="string">"com.alibaba.dubbo.samples.async.impl.AsyncServiceImpl"</span>/&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">dubbo:service</span> <span class="attr">async</span>=<span class="string">"true"</span> <span class="attr">interface</span>=<span class="string">"com.alibaba.dubbo.samples.async.api.AsyncService"</span> <span class="attr">ref</span>=<span class="string">"asyncService"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+<p>注意这里<code>async=true</code>表明这是一个开启P端异步的服务。P端的代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AsyncServiceImpl</span> <span class="keyword">implements</span> <span class="title">AsyncService</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">sayHello</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> AsyncContext asyncContext = RpcContext.startAsync();</span><br><span class="line">        <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">            <span class="comment">// 切换线程上下文</span></span><br><span class="line">            asyncContext.signalContextSwitch();</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                Thread.sleep(<span class="number">500</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">            asyncContext.write(<span class="string">"Hello "</span> + name + <span class="string">", response from provider."</span>);</span><br><span class="line">        &#125;).start();</span><br><span class="line">        <span class="comment">// 这里return什么都无所谓</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的用法，如果使用过<code>Servlet 3.0</code>的同学应该会比较熟悉，用法很类似。注意这里我们在P端新开了一个线程，如果直接用<code>RpcContext.getContext</code>是拿不到原来的上下文的，需要<code>asyncContext.signalContextSwitch</code>一下，把调用的上下文切换到新线程里。关于最后的<code>return</code>，其实这里return什么都无所谓的，因为最终内容会使用<code>asyncContext.write</code>写出去的内容。</p>
+<h4 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h4><p>看完了使用我们分析一下P端异步的实现方式。我们在XML中给P的<code>Service</code>打了一个<code>async=true</code>，这个表示可以开启异步。</p>
+<p>我们看下<code>DubboProtocol</code>中的内部类，其中有一个<code>requestHandler</code>，这个类是真正处理之后把值返回的地方，看下这个类的<code>reply</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (message <span class="keyword">instanceof</span> Invocation) &#123;</span><br><span class="line">    Invocation inv = (Invocation) message;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 拿到对应的Invoker</span></span><br><span class="line">    Invoker&lt;?&gt; invoker = getInvoker(channel, inv);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// do sth...</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// rpc context</span></span><br><span class="line">    RpcContext rpcContext = RpcContext.getContext();</span><br><span class="line">    <span class="comment">// 是否支持异步，这里判断的依据就是我们的xml中，这个服务是否有 async = true 标识</span></span><br><span class="line">    <span class="keyword">boolean</span> supportServerAsync = invoker.getUrl().getMethodParameter(inv.getMethodName(), Constants.ASYNC_KEY, <span class="keyword">false</span>);</span><br><span class="line">    <span class="keyword">if</span> (supportServerAsync) &#123;</span><br><span class="line">        <span class="comment">// 如果支持异步，在RpcContext设置一个AsyncContextImpl</span></span><br><span class="line">        CompletableFuture&lt;Object&gt; future = <span class="keyword">new</span> CompletableFuture&lt;&gt;();</span><br><span class="line">        rpcContext.setAsyncContext(<span class="keyword">new</span> AsyncContextImpl(future));</span><br><span class="line">    &#125;</span><br><span class="line">    rpcContext.setRemoteAddress(channel.getRemoteAddress());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 真正的invoke过程，因为是异步的，所以会迅速返回</span></span><br><span class="line">    Result result = invoker.invoke(inv);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为是异步的，这里返回的是AsyncRpcResult</span></span><br><span class="line">    <span class="keyword">if</span> (result <span class="keyword">instanceof</span> AsyncRpcResult) &#123;</span><br><span class="line">        <span class="comment">// 这里getResultFuture返回的是CompletableFuture&lt;Result&gt;，而要求是CompletableFuture&lt;Object&gt;，这里只是做了一个转化，实际上还是返回了一个CompletableFuture&lt;Result&gt;</span></span><br><span class="line">        <span class="keyword">return</span> ((AsyncRpcResult) result).getResultFuture().thenApply(r -&gt; (Object) r);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> CompletableFuture.completedFuture(result);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们要看下<code>AbstractProxyInvoker#invoke</code>方法了，P端的<code>ServiceImpl</code>其实也是代理，是<code>AbstractProxyInvoker</code>的实现类，里面有这样一段代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">RpcContext rpcContext = RpcContext.getContext();</span><br><span class="line"><span class="comment">// doInvoke实际上就是执行某个方法</span></span><br><span class="line">Object obj = doInvoke(proxy, invocation.getMethodName(), invocation.getParameterTypes(), invocation.getArguments());</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (RpcUtils.isFutureReturnType(invocation)) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> AsyncRpcResult((CompletableFuture&lt;Object&gt;) obj);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (rpcContext.isAsyncStarted()) &#123;</span><br><span class="line">    <span class="comment">// 我们这种情况会进入这里，当我们在P端执行RpcContext.startAsync()时，表示开启异步</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> AsyncRpcResult(rpcContext.getAsyncContext().getInternalFuture());</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> RpcResult(obj);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们看到，如果开启异步，真正的执行的结果会是一个<code>AsyncRpcResult</code>，这个<code>AsyncRpcResult</code>包含了一个<code>Future</code>，我们回到<code>reply</code>方法中，可以看到，这个<code>Future</code>是一个<code>CompletableFuture&lt;Object&gt; future = new CompletableFuture&lt;&gt;();</code>。</p>
+<p>那好了，总结上面的几步，就是开启异步的时候，我们会在<code>AsyncContextImpl</code>里面初始化一个<code>CompletableFuture</code>，真正执行<code>doInvoke</code>之后，会把这个<code>CompletableFuture</code>包裹在<code>AsyncRpcResult</code>中返回。</p>
+<p>看下<code>AsyncRpcResult</code>的构造函数：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在我们开启服务端异步的情况下，三个入参的情况：</span></span><br><span class="line"><span class="comment">// 入参第一个参数，就是AsyncContextImpl中的那个Future</span></span><br><span class="line"><span class="comment">// 第二个rFuture是new出来的</span></span><br><span class="line"><span class="comment">// 第三个参数为true</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AsyncRpcResult</span><span class="params">(CompletableFuture&lt;Object&gt; future, CompletableFuture&lt;Result&gt; rFuture, <span class="keyword">boolean</span> registerCallback)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (rFuture == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">""</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    resultFuture = rFuture;</span><br><span class="line">    <span class="keyword">if</span> (registerCallback) &#123;</span><br><span class="line">        future.whenComplete((v, t) -&gt; &#123;</span><br><span class="line">            RpcResult rpcResult;</span><br><span class="line">            <span class="keyword">if</span> (t != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">if</span> (t <span class="keyword">instanceof</span> CompletionException) &#123;</span><br><span class="line">                    rpcResult = <span class="keyword">new</span> RpcResult(t.getCause());</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    rpcResult = <span class="keyword">new</span> RpcResult(t);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                rpcResult = <span class="keyword">new</span> RpcResult(v);</span><br><span class="line">            &#125;</span><br><span class="line">            rFuture.complete(rpcResult);</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">this</span>.valueFuture = future;</span><br><span class="line">    <span class="keyword">this</span>.storedContext = RpcContext.getContext();</span><br><span class="line">    <span class="keyword">this</span>.storedServerContext = RpcContext.getServerContext();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>解释一下，入参第一个<code>Future</code>，就是我们<code>AsyncContextImpl</code>中的那个<code>Future</code>，在我们的P端执行<code>asyncContext.write</code>时，就会触发它的<code>whenComplete</code>回调。这里其实就是把我们P端服务实现的值传递给一个<code>rFuture</code>。</p>
+<p>这里其实就是把我们的<code>AsyncContextImpl</code>中的<code>Future</code>（又可以称为<code>值Future</code>表示维护的是一个值，即服务端执行结果，比如一个String）和<code>resultFuture</code>（可以称为<code>ResultFuture</code>，即Dubbo一次Rpc执行的<code>Result</code>，这里是一个<code>RpcResult</code>）关联起来，具体的联系就是：当<code>值Future</code>执行完成时（P端调用<code>asyncContext.write</code>时），调用<code>ResultFuture</code>的<code>complete</code>，并且把<code>write</code>进去的值包装城<code>RpcResult</code>传递给<code>ResultFuture</code>。</p>
+<p>这样我们的关系就理顺了，这里其实还是有点绕的，原因还是由于Dubbo自身的设计问题（写出去的都必须是<code>Result</code>）。P端异步的流程总结一下就是：</p>
+<ol>
+<li>P端开启异步，这里会设置一个<code>值Future</code>在<code>AsyncContextImpl</code>里，用来监听P端执行的结果。</li>
+<li>这个<code>值Future</code>同样被设置到一个新创建的<code>AsyncRpcResult</code>中，并且同时在<code>AsyncRpcResult</code>中初始化了一个<code>ResultFuture</code>。</li>
+<li>给<code>值Future</code>设置回调，当<code>值Future</code>完成的时候，就把这个值包装成一个<code>RpcResult</code>，并且执行<code>ResultFuture</code>的<code>complete</code>方法，把<code>ResultFuture</code>给结束掉。</li>
+</ol>
+<p>顺着我们的思路，那是不是说<code>ResultFuture</code>应该有一个回调（<code>whenComplete</code>函数），当<code>ResultFuture</code>结束的时候，就把<code>Result</code>写回到C端呢？</p>
+<p>继续看回到dubbo执行完成之后的部分，及<code>reply</code>返回给上级之后干了什么，这里看下<code>HeaderExchangeHandler#handleRequest</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这个future是AsyncRpcResult中的ResultFuture</span></span><br><span class="line">CompletableFuture&lt;Object&gt; future = handler.reply(channel, msg);</span><br><span class="line"><span class="comment">// 如果这个future已经结束了，就直接写回Consumer</span></span><br><span class="line"><span class="keyword">if</span> (future.isDone()) &#123;</span><br><span class="line">    res.setStatus(Response.OK);</span><br><span class="line">    res.setResult(future.get());</span><br><span class="line">    channel.send(res);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 如果还没结束，就给这个ResultFuture设置一个回调，写回Consumer</span></span><br><span class="line">future.whenComplete((result, t) -&gt; &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (t == <span class="keyword">null</span>) &#123;</span><br><span class="line">            res.setStatus(Response.OK);</span><br><span class="line">            res.setResult(result);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            res.setStatus(Response.SERVICE_ERROR);</span><br><span class="line">            res.setErrorMessage(StringUtils.toString(t));</span><br><span class="line">        &#125;</span><br><span class="line">        channel.send(res);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (RemotingException e) &#123;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p>果然就像我们说的那样，我们<code>handler.reply(channel, msg)</code>会返回一个<code>CompletableFuture</code>，这个<code>CompletableFuture</code>结束时就把内容写回C端。</p>
+<p>而这个<code>CompletableFuture</code>，我们看回到<code>AsyncRpcResult</code>中，就是入参的第二个参数，是被new出来的<code>CompletableFuture</code>。这个<code>CompletableFuture</code>是在<code>AsyncRpcResult</code>构造函数里的第一个入参（<code>值Future</code>）执行<code>whenComplete</code>回调时，被<code>complete</code>的。</p>
+<p>而第一个入参是我们<code>AsyncContextImpl</code>中的那个<code>Future</code>，二者是同一个引用。这个<code>AsyncContextImpl</code>就是我们在P端实现类里执行<code>asyncContext.write</code>时被<code>complete</code>的，这样，我们就从正反两个方向明白了整个异步的执行过程。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/dubbo/" rel="tag"># dubbo</a>
+          
+            <a href="/tags/异步/" rel="tag"># 异步</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Dubbo源码解析——异步支持之Consumer端.html" rel="next" title="Dubbo源码解析——异步支持之Consumer端">
+                <i class="fa fa-chevron-left"></i> Dubbo源码解析——异步支持之Consumer端
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Dubbo源码解析——异步支持之异步带来的问题.html" rel="prev" title="Dubbo源码解析——异步支持之异步带来的问题">
+                Dubbo源码解析——异步支持之异步带来的问题 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">74</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">70</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Dubbo源码解析——异步支持之Provider端"><span class="nav-number">1.</span> <span class="nav-text">Dubbo源码解析——异步支持之Provider端</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#代码"><span class="nav-number">1.2.</span> <span class="nav-text">代码</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="netty," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Netty源码分析——pipeline事件传递前言上一篇我们讲了pipeline如何增减节点。这篇文章主要看一下pipeline如何处理事件传播。伴随着事件传播，还会讲一些零零散散的细节。比如HeadContext和TailContext。 HeadContext这是我们pipeline的起点。跟TailContext一样，HeadContext也是一种特殊的Context： 1234567891">
+<meta name="keywords" content="netty">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty源码分析——pipeline事件传递">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Netty源码分析——pipeline事件传递.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Netty源码分析——pipeline事件传递前言上一篇我们讲了pipeline如何增减节点。这篇文章主要看一下pipeline如何处理事件传播。伴随着事件传播，还会讲一些零零散散的细节。比如HeadContext和TailContext。 HeadContext这是我们pipeline的起点。跟TailContext一样，HeadContext也是一种特殊的Context： 1234567891">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-06-13T11:38:09.990Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Netty源码分析——pipeline事件传递">
+<meta name="twitter:description" content="Netty源码分析——pipeline事件传递前言上一篇我们讲了pipeline如何增减节点。这篇文章主要看一下pipeline如何处理事件传播。伴随着事件传播，还会讲一些零零散散的细节。比如HeadContext和TailContext。 HeadContext这是我们pipeline的起点。跟TailContext一样，HeadContext也是一种特殊的Context： 1234567891">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Netty源码分析——pipeline事件传递.html"/>
+
+
+
+
+
+  <title>Netty源码分析——pipeline事件传递 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Netty源码分析——pipeline事件传递.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Netty源码分析——pipeline事件传递</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-06-12T21:22:53+08:00">
+                2018-06-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty源码分析/" itemprop="url" rel="index">
+                    <span itemprop="name">Netty源码分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Netty源码分析——pipeline事件传递"><a href="#Netty源码分析——pipeline事件传递" class="headerlink" title="Netty源码分析——pipeline事件传递"></a>Netty源码分析——pipeline事件传递</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>上一篇我们讲了pipeline如何增减节点。这篇文章主要看一下pipeline如何处理事件传播。伴随着事件传播，还会讲一些零零散散的细节。比如<code>HeadContext</code>和<code>TailContext</code>。</p>
+<h4 id="HeadContext"><a href="#HeadContext" class="headerlink" title="HeadContext"></a>HeadContext</h4><p>这是我们pipeline的起点。跟<code>TailContext</code>一样，<code>HeadContext</code>也是一种特殊的<code>Context</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">HeadContext</span> <span class="keyword">extends</span> <span class="title">AbstractChannelHandlerContext</span></span></span><br><span class="line"><span class="class">        <span class="keyword">implements</span> <span class="title">ChannelOutboundHandler</span>, <span class="title">ChannelInboundHandler</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Unsafe unsafe;</span><br><span class="line"></span><br><span class="line">    HeadContext(DefaultChannelPipeline pipeline) &#123;</span><br><span class="line">        <span class="comment">//注意这里，第四个参数是是否是inbound，HeadContext这里直接给了false</span></span><br><span class="line">        <span class="keyword">super</span>(pipeline, <span class="keyword">null</span>, HEAD_NAME, <span class="keyword">false</span>, <span class="keyword">true</span>);</span><br><span class="line">        unsafe = pipeline.channel().unsafe();</span><br><span class="line">        setAddComplete();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>相比tail更特殊的是，这个<code>HeadContext</code>同时实现了<code>ChannelOutboundHandler</code>和<code>ChannelInboundHandler</code>，但是更有意思的是，<code>HeadContext</code>继承了<code>ChannelInboundHandler</code>但是却在构造函数里，把自己设置为了不是inbound的context。这就好比，我虽然继承了接口A，但是我说我不是A。</p>
+<p>这个原因，我们在后面的分析中也会讲讲（原谅我功力尚浅只能猜测一下作者的意思了~）。</p>
+<p>我们回忆一下，服务端在收到请求后，会启动一个<code>NioEventLoop</code>，这是一个Reacotr线程，同样会执行我们在Reacotr中提到的三个工作。其中一个工作就是处理read事件，具体的流程我就不重复分析了，直接看代码，来自<code>processSelectedKey</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ((readyOps &amp; (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != <span class="number">0</span> || readyOps == <span class="number">0</span>) &#123;</span><br><span class="line">    unsafe.read();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里会传递给<code>unsafe</code>。注意这里的<code>Channel</code>我们说的是服务端的<code>Worker</code>（<code>Boss</code>主要做接收），<code>Worker</code>对应的<code>Channel</code>是<code>NioSocketChannel</code>，对应的unsafe是<code>NioByteUnsafe</code>，具体来说是<code>NioSocketChannelUnsafe</code>。这个初始化我们可以在<code>NioSocketChannel</code>的构造方法中，跟随其中的super构造函数一路追进去就看到了，不展开说了。</p>
+<p>我们看下这个<code>NioByteUnsafe</code>的<code>read</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> ChannelConfig config = config();</span><br><span class="line"><span class="keyword">if</span> (shouldBreakReadReady(config)) &#123;</span><br><span class="line">    clearReadPending();</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">final</span> ChannelPipeline pipeline = pipeline();</span><br><span class="line"><span class="comment">// ByteBuf分配器</span></span><br><span class="line"><span class="keyword">final</span> ByteBufAllocator allocator = config.getAllocator();</span><br><span class="line"><span class="keyword">final</span> RecvByteBufAllocator.Handle allocHandle = recvBufAllocHandle();</span><br><span class="line">allocHandle.reset(config);</span><br><span class="line"></span><br><span class="line">ByteBuf byteBuf = <span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">boolean</span> close = <span class="keyword">false</span>;</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="comment">// 分配一个ByteBuf</span></span><br><span class="line">        byteBuf = allocHandle.allocate(allocator);</span><br><span class="line">        <span class="comment">// 将数据读取到分配的ByteBuf中去</span></span><br><span class="line">        allocHandle.lastBytesRead(doReadBytes(byteBuf));</span><br><span class="line">        <span class="keyword">if</span> (allocHandle.lastBytesRead() &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="comment">//没有可读的数据，释放byteBuf</span></span><br><span class="line">            byteBuf.release();</span><br><span class="line">            byteBuf = <span class="keyword">null</span>;</span><br><span class="line">            close = allocHandle.lastBytesRead() &lt; <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">if</span> (close) &#123;</span><br><span class="line">                readPending = <span class="keyword">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        allocHandle.incMessagesRead(<span class="number">1</span>);</span><br><span class="line">        readPending = <span class="keyword">false</span>;</span><br><span class="line">        <span class="comment">//触发读</span></span><br><span class="line">        pipeline.fireChannelRead(byteBuf);</span><br><span class="line">        byteBuf = <span class="keyword">null</span>;</span><br><span class="line">    &#125; <span class="keyword">while</span> (allocHandle.continueReading());</span><br><span class="line"></span><br><span class="line">    allocHandle.readComplete();</span><br><span class="line">    <span class="comment">//触发读完毕</span></span><br><span class="line">    pipeline.fireChannelReadComplete();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (close) &#123;</span><br><span class="line">        closeOnRead(pipeline);</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">    handleReadException(pipeline, byteBuf, t, close, allocHandle);</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!readPending &amp;&amp; !config.isAutoRead()) &#123;</span><br><span class="line">        removeReadOp();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以上的过程，基本上是：</p>
+<ol>
+<li>拿到<code>ByteBuf</code>分配器，用分配器来分配一个<code>ByteBuf</code>。</li>
+<li>把<code>Channel</code>中的数据读入到<code>ByteBuf</code>中。（<code>doReadBytes</code>方法）</li>
+<li>调用<code>fireChannelRead</code>触发pipeline的读事件，将读取到的<code>ByteBuf</code>在管道中传播。</li>
+<li>数据读完之后，调用<code>pipeline.fireChannelReadComplete</code>从<code>head</code>节点开始传播至整个pipeline。</li>
+</ol>
+<p>关于读的部分，我们先忽略。主要看<code>pipeline</code>。这里读取的时候会执行<code>pipeline.fireChannelRead</code>：<code>AbstractChannelHandlerContext.invokeChannelRead(head, msg);</code>，简单的一句话。</p>
+<p>继续追进去：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">invokeChannelRead</span><span class="params">(<span class="keyword">final</span> AbstractChannelHandlerContext next, Object msg)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> Object m = next.pipeline.touch(ObjectUtil.checkNotNull(msg, <span class="string">"msg"</span>), next);</span><br><span class="line">    EventExecutor executor = next.executor();</span><br><span class="line">    <span class="keyword">if</span> (executor.inEventLoop()) &#123;</span><br><span class="line">        <span class="comment">//这里的next 就是 HeadContext</span></span><br><span class="line">        next.invokeChannelRead(m);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        executor.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                next.invokeChannelRead(m);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">invokeChannelRead</span><span class="params">(Object msg)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (invokeHandler()) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 这里的handler()方法会返回HeadContext自己</span></span><br><span class="line">            <span class="comment">// 其实就是调用了HeadContext.channelRead方法</span></span><br><span class="line">            ((ChannelInboundHandler) handler()).channelRead(<span class="keyword">this</span>, msg);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            notifyHandlerException(t);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        fireChannelRead(msg);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>综合上面的代码合注释，这里会传递到<code>HeadContext</code>的<code>channelRead</code>方法里。注意<code>channelRead</code>方法是实现了<code>inBoundHandler</code>接口。</p>
+<p>这里我们回顾前面提出的问题，为什么<code>HeadContext</code>同时实现了<code>inBoundHandler</code>和<code>outBoundHandler</code>，却只认为自己是一个<code>outBoundContext</code>。这里我直接反过来说，如果<code>HeadContext</code>不继承<code>inBoundHandler</code>会怎样：<code>invokeChannelRead</code>中<code>(ChannelInboundHandler) handler()</code>这一句强转会直接报错。那么实现就比较麻烦了，可能代码应该这么写：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( handler() <span class="keyword">instanceof</span> HeadContext) &#123;</span><br><span class="line">    (HeandContext)handler() . invokeRead</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    ((ChannelInboundHandler) handler()).channelRead(<span class="keyword">this</span>, msg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样做是显然不优雅的。怎么解决呢？很简单，让HeadContext继承一下<code>inboundHandler</code>接口即可，这样我们可以对所有的<code>handler</code>统一处理。</p>
+<p>继续回来看，现在已经把方法传递给<code>HeadContext</code>了，<code>HeadContext</code>的<code>channelRead</code>很简单：<code>ctx.fireChannelRead(msg);</code>。对Netty有基本了解的同学应该知道，这里其实就是从ctx节点开始往后传递<code>read</code>事件，我们看下<code>AbstractChannelHandlerContext#fireChannelRead</code>和涉及到的几个方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ChannelHandlerContext <span class="title">fireChannelRead</span><span class="params">(<span class="keyword">final</span> Object msg)</span> </span>&#123;</span><br><span class="line">    invokeChannelRead(findContextInbound(), msg);</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//找到下一个inbound节点</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> AbstractChannelHandlerContext <span class="title">findContextInbound</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    AbstractChannelHandlerContext ctx = <span class="keyword">this</span>;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        ctx = ctx.next;</span><br><span class="line">    &#125; <span class="keyword">while</span> (!ctx.inbound);</span><br><span class="line">    <span class="keyword">return</span> ctx;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//执行这个节点的invokeChannelRead</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">invokeChannelRead</span><span class="params">(<span class="keyword">final</span> AbstractChannelHandlerContext next, Object msg)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> Object m = next.pipeline.touch(ObjectUtil.checkNotNull(msg, <span class="string">"msg"</span>), next);</span><br><span class="line">    EventExecutor executor = next.executor();</span><br><span class="line">    <span class="keyword">if</span> (executor.inEventLoop()) &#123;</span><br><span class="line">        <span class="comment">//这里next是一个context，invokeChannelRead会委托给这个context对应的handler</span></span><br><span class="line">        next.invokeChannelRead(m);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        executor.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                next.invokeChannelRead(m);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面的步骤：</p>
+<ol>
+<li>先找到下一个inbound节点，这里的节点是<code>AbstractChannelHandlerContext</code>。</li>
+<li>执行这个节点的<code>invokeChannelRead</code>。这个方法会把数据传递给这个节点（context）包含的handler</li>
+<li>handler对数据处理之后可以考虑写回（write）或者继续向后传递。</li>
+</ol>
+<p>读完成之后，会调用<code>pipeline.fireChannelReadComplete</code>，最终还是会跑到<code>headContext</code>里：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelReadComplete</span><span class="params">(ChannelHandlerContext ctx)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    ctx.fireChannelReadComplete();</span><br><span class="line">    readIfIsAutoRead();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里多了一步<code>readIfIsAutoRead</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">readIfIsAutoRead</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 默认情况下，Channel都是默认开启自动读取模式的</span></span><br><span class="line">    <span class="comment">// channel关闭是自动读</span></span><br><span class="line">    <span class="keyword">if</span> (channel.config().isAutoRead()) &#123;</span><br><span class="line">        channel.read();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> Channel <span class="title">read</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    pipeline.read();</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//tail read会从tail开始往前执行read</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> ChannelPipeline <span class="title">read</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    tail.read();</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>channel.config().isAutoRead()</code>是Channel自动读，即只要<code>Channel</code>是active的，读完一波数据之后就继续<strong>向selector注册读事件</strong>，这样就可以连续不断得读取数据，最终，通过pipeline，还是传递到head节点，执行<code>unsafe.beginRead();</code>，最终会走到：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doBeginRead</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> SelectionKey selectionKey = <span class="keyword">this</span>.selectionKey;</span><br><span class="line">    <span class="keyword">if</span> (!selectionKey.isValid()) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    readPending = <span class="keyword">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> interestOps = selectionKey.interestOps();</span><br><span class="line">    <span class="keyword">if</span> ((interestOps &amp; readInterestOp) == <span class="number">0</span>) &#123;</span><br><span class="line">        selectionKey.interestOps(interestOps | readInterestOp);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>selectionKey</code>若在某个地方被移除了<code>readInterestOp</code>操作，则加上。</p>
+<p>一般<code>Channel</code>关闭自动读，是当前<code>Channel</code>的缓冲区（OutboundBuffer）大小超过了<code>WRITE_BUFFER_HIGH_WATER_MARK</code>时。这个我们暂且不说。</p>
+<p>总结一下，Head节点就是整个读的开始。</p>
+<h4 id="TailContext"><a href="#TailContext" class="headerlink" title="TailContext"></a>TailContext</h4><p>tail的代码就不贴了，tail作为很多事件的截止位置（很多方法是空实现），这里主要看一下tail的两个特殊的方法：<code>exceptionCaught()</code>和<code>channelRead()</code>。</p>
+<p>两个方法的实现类似，我们拿出一个看，看下<code>channelRead</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    logger.debug(</span><br><span class="line">            <span class="string">"Discarded inbound message &#123;&#125; that reached at the tail of the pipeline. "</span> +</span><br><span class="line">                    <span class="string">"Please check your pipeline configuration."</span>, msg);</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    ReferenceCountUtil.release(msg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>记录一个日志，说明消息没有被处理，并且被传递到了pipeline的尾部。然后释放消息。</p>
+<h4 id="outBound事件传递"><a href="#outBound事件传递" class="headerlink" title="outBound事件传递"></a>outBound事件传递</h4><p>我们解析读的代码，实际上我们也说过了，这是一种<code>inBound</code>的事件，我们看下<code>outBound</code>事件是如何传递的。<code>outBound</code>举个例子，就是<code>writeAndFlush</code>。这个操作和<code>write</code>类似，但是比<code>write</code>稍微复杂一点点，多了一步<code>flush</code>。</p>
+<p>例子就是调用<code>channel.writeAndFlush(pushInfo);</code>，第一次跳转到<code>AbstractChannel</code>的<code>writeAndFlush</code>，委托给<code>pipeline</code>的<code>writeAndFlush</code>，然后调用<code>tail.writeAndFlush(msg);</code>。</p>
+<p>这里注意一点就是，无论我们在pipeline中的哪个位置调用<code>channel.writeAndFlush(pushInfo);</code>，都会从整个管道的最尾端开始向前传递（<code>pipeline</code>的<code>writeAndFlush</code>），如果我们调用<code>AbstractChannelHandlerContext</code>，则是从当前节点开始向前传递。这里注意一下。</p>
+<p>我们看下<code>AbstractChannelHandlerContext</code>的<code>writeAndFlush</code>：<code>write(msg, true, promise);</code>，这个true就表示写过之后<code>flush</code>缓存，直接写回远端。</p>
+<p>看下这个方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">AbstractChannelHandlerContext next = findContextOutbound();</span><br><span class="line"><span class="keyword">final</span> Object m = pipeline.touch(msg, next);</span><br><span class="line">EventExecutor executor = next.executor();</span><br><span class="line"><span class="keyword">if</span> (executor.inEventLoop()) &#123;</span><br><span class="line">    <span class="keyword">if</span> (flush) &#123;</span><br><span class="line">        next.invokeWriteAndFlush(m, promise);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        next.invokeWrite(m, promise);</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    AbstractWriteTask task;</span><br><span class="line">    <span class="keyword">if</span> (flush) &#123;</span><br><span class="line">        task = WriteAndFlushTask.newInstance(next, m, promise);</span><br><span class="line">    &#125;  <span class="keyword">else</span> &#123;</span><br><span class="line">        task = WriteTask.newInstance(next, m, promise);</span><br><span class="line">    &#125;</span><br><span class="line">    safeExecute(executor, task, promise, m);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里会把<code>write</code>和<code>flush</code>封装成一个task，然后由<code>Reactor</code>线程去执行，这里我们在之前的文章<code>Reacotr的task</code>那篇中已经讲过了。</p>
+<p><code>writeAndFlushTask</code>实际上会调用<code>super.write(ctx, msg, promise);</code>和<code>ctx.invokeFlush();</code>，父类的write实际上调用的是<code>ctx.invokeWrite(msg, promise);</code>，其实我们就可以看到，都是同一个套路，都是调用<code>AbstractChannelHandlerContext</code>的对应方法。这个我们之前也说了，实际上是从当前context节点开始，向前传递<code>outBound</code>事件，我们之前同样也说过，最外层的<code>outBoundHandler</code>就是我们的<code>HeadContext</code>，我们看下<code>HeadContext</code>的<code>write</code>方法：<code>unsafe.write(msg, promise);</code>，这里委托给unsafe，写入缓存中，而<code>HeadContext</code>的<code>flush</code>，同样把<code>flush</code>操作委托给了<code>unsafe</code>。</p>
+<p>这里同样总结一下，<code>HeadContext</code>同样也是所有写出的出口。</p>
+<p>那么<code>HeadContext</code>和<code>TailContext</code>的作用就已经很清楚了。</p>
+<p>至此，我们已经把pipelin中的事件传播讲完了。其实除了出入两种事件，pipeline中还包扩一种异常事件传播，这个我们后面会单独拿出来说一下。敬请期待吧~</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/netty/" rel="tag"># netty</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Netty源码分析——pipeline增减节点.html" rel="next" title="Netty源码分析——pipeline增减节点">
+                <i class="fa fa-chevron-left"></i> Netty源码分析——pipeline增减节点
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Netty源码分析——写流程.html" rel="prev" title="Netty源码分析——写流程">
+                Netty源码分析——写流程 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">74</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">70</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty源码分析——pipeline事件传递"><span class="nav-number">1.</span> <span class="nav-text">Netty源码分析——pipeline事件传递</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HeadContext"><span class="nav-number">1.2.</span> <span class="nav-text">HeadContext</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#TailContext"><span class="nav-number">1.3.</span> <span class="nav-text">TailContext</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#outBound事件传递"><span class="nav-number">1.4.</span> <span class="nav-text">outBound事件传递</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

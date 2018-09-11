@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="rocketmq," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="RocketMQ源码解读——message顺序发送前言RocketMQ提供了两种顺序级别：  普通顺序消息：Producer将相关联的消息发送到相同的消息队列。 严格顺序消息：在 普通顺序消息 的基础上，Consumer严格顺序消费。  目前已知的严格顺序消息，只使用在数据库binlog同步中。 Producer顺序普通顺序消息是使用MessageQueueSelector来实现的： 123456">
+<meta name="keywords" content="rocketmq">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocketMQ源码解读——message顺序发送">
+<meta property="og:url" content="http://wyj.shiwuliang.com/RocketMQ源码解读——message顺序发送.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="RocketMQ源码解读——message顺序发送前言RocketMQ提供了两种顺序级别：  普通顺序消息：Producer将相关联的消息发送到相同的消息队列。 严格顺序消息：在 普通顺序消息 的基础上，Consumer严格顺序消费。  目前已知的严格顺序消息，只使用在数据库binlog同步中。 Producer顺序普通顺序消息是使用MessageQueueSelector来实现的： 123456">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-04-12T09:00:42.793Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RocketMQ源码解读——message顺序发送">
+<meta name="twitter:description" content="RocketMQ源码解读——message顺序发送前言RocketMQ提供了两种顺序级别：  普通顺序消息：Producer将相关联的消息发送到相同的消息队列。 严格顺序消息：在 普通顺序消息 的基础上，Consumer严格顺序消费。  目前已知的严格顺序消息，只使用在数据库binlog同步中。 Producer顺序普通顺序消息是使用MessageQueueSelector来实现的： 123456">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/RocketMQ源码解读——message顺序发送.html"/>
+
+
+
+
+
+  <title>RocketMQ源码解读——message顺序发送 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/RocketMQ源码解读——message顺序发送.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">RocketMQ源码解读——message顺序发送</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-04-12T23:34:17+08:00">
+                2018-04-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/rocketmq源码/" itemprop="url" rel="index">
+                    <span itemprop="name">rocketmq源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="RocketMQ源码解读——message顺序发送"><a href="#RocketMQ源码解读——message顺序发送" class="headerlink" title="RocketMQ源码解读——message顺序发送"></a>RocketMQ源码解读——message顺序发送</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>RocketMQ提供了两种顺序级别：</p>
+<ul>
+<li>普通顺序消息：Producer将相关联的消息发送到相同的消息队列。</li>
+<li>严格顺序消息：在 普通顺序消息 的基础上，Consumer严格顺序消费。</li>
+</ul>
+<p>目前已知的<code>严格顺序消息</code>，只使用在数据库<code>binlog</code>同步中。</p>
+<h4 id="Producer顺序"><a href="#Producer顺序" class="headerlink" title="Producer顺序"></a>Producer顺序</h4><p>普通顺序消息是使用<code>MessageQueueSelector</code>来实现的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">SendResult sendResult = producer.send(msg, <span class="keyword">new</span> MessageQueueSelector() &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> MessageQueue <span class="title">select</span><span class="params">(List&lt;MessageQueue&gt; mqs, Message msg, Object arg)</span> </span>&#123;</span><br><span class="line">        Integer id = (Integer) arg;</span><br><span class="line">        <span class="keyword">int</span> index = id % mqs.size();</span><br><span class="line">        <span class="keyword">return</span> mqs.get(index);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;, orderId);</span><br></pre></td></tr></table></figure>
+<p>以上的例子来自rocketmq的官方文档，把<code>orderId</code>作为选择队列的条件，让相同的<code>orderId</code>进入相同的队列。</p>
+<p>这里的源码就不看了，就是使用我们提供的<code>MessageQueueSelector</code>来选择一个我们想要的队列，然后发送消息。</p>
+<h4 id="Consumer顺序"><a href="#Consumer顺序" class="headerlink" title="Consumer顺序"></a>Consumer顺序</h4><p>consumer在严格顺序消费时，通过三把锁保证严格顺序消费：</p>
+<ul>
+<li><code>Broker消息队列锁</code>（分布式锁）：集群模式下，Consumer从Broker获得该锁后，才能进行消息拉取、消费。广播模式下，Consumer无需该锁（对于广播模式的Consumer来说，所有的队列在自己眼里就是属于自己的，所以不需要一个锁）。</li>
+<li><code>Consumer消息队列锁</code>（本地锁）：Consumer获得该锁才能操作消息队列。</li>
+<li><code>Consumer消息处理队列消费锁</code>（本地锁） ：Consumer获得该锁才能消费消息队列</li>
+</ul>
+<p>RocketMQ的消息拉取之前已经说过了是通过一个队列，不停地从里面去PullRequest来进行消息拉取的。初始化一条队列的拉取是在rebalance过程中进行的，我们看一下<code>updateProcessQueueTableInRebalance</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">List&lt;PullRequest&gt; pullRequestList = <span class="keyword">new</span> ArrayList&lt;PullRequest&gt;();</span><br><span class="line"><span class="keyword">for</span> (MessageQueue mq : mqSet) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!<span class="keyword">this</span>.processQueueTable.containsKey(mq)) &#123;</span><br><span class="line">        <span class="comment">//如果是严格顺序，则尝试锁住远端的队列，如果没锁住，下次rebalance的时候还会尝试获取锁，但是本次就continue掉了</span></span><br><span class="line">        <span class="keyword">if</span> (isOrder &amp;&amp; !<span class="keyword">this</span>.lock(mq)) &#123;</span><br><span class="line">            log.warn(<span class="string">"doRebalance, &#123;&#125;, add a new mq failed, &#123;&#125;, because lock failed"</span>, consumerGroup, mq);</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">this</span>.removeDirtyOffset(mq);</span><br><span class="line">        ProcessQueue pq = <span class="keyword">new</span> ProcessQueue();</span><br><span class="line">        <span class="keyword">long</span> nextOffset = <span class="keyword">this</span>.computePullFromWhere(mq);</span><br><span class="line">        <span class="keyword">if</span> (nextOffset &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">            ProcessQueue pre = <span class="keyword">this</span>.processQueueTable.putIfAbsent(mq, pq);</span><br><span class="line">            <span class="keyword">if</span> (pre != <span class="keyword">null</span>) &#123;</span><br><span class="line">                log.info(<span class="string">"doRebalance, &#123;&#125;, mq already exists, &#123;&#125;"</span>, consumerGroup, mq);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                log.info(<span class="string">"doRebalance, &#123;&#125;, add a new mq, &#123;&#125;"</span>, consumerGroup, mq);</span><br><span class="line">                <span class="comment">//初始化拉取操作</span></span><br><span class="line">                PullRequest pullRequest = <span class="keyword">new</span> PullRequest();</span><br><span class="line">                pullRequest.setConsumerGroup(consumerGroup);</span><br><span class="line">                pullRequest.setNextOffset(nextOffset);</span><br><span class="line">                pullRequest.setMessageQueue(mq);</span><br><span class="line">                pullRequest.setProcessQueue(pq);</span><br><span class="line">                pullRequestList.add(pullRequest);</span><br><span class="line">                changed = <span class="keyword">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            log.warn(<span class="string">"doRebalance, &#123;&#125;, add new mq failed, &#123;&#125;"</span>, consumerGroup, mq);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//拉取</span></span><br><span class="line"><span class="keyword">this</span>.dispatchPullRequest(pullRequestList);</span><br></pre></td></tr></table></figure>
+<p>继续看一下如何锁住队列的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">lock</span><span class="params">(<span class="keyword">final</span> MessageQueue mq)</span> </span>&#123;</span><br><span class="line">    FindBrokerResult findBrokerResult = <span class="keyword">this</span>.mQClientFactory.findBrokerAddressInSubscribe(mq.getBrokerName(), MixAll.MASTER_ID, <span class="keyword">true</span>);</span><br><span class="line">    <span class="keyword">if</span> (findBrokerResult != <span class="keyword">null</span>) &#123;</span><br><span class="line">        LockBatchRequestBody requestBody = <span class="keyword">new</span> LockBatchRequestBody();</span><br><span class="line">        requestBody.setConsumerGroup(<span class="keyword">this</span>.consumerGroup);</span><br><span class="line">        requestBody.setClientId(<span class="keyword">this</span>.mQClientFactory.getClientId());</span><br><span class="line">        requestBody.getMqSet().add(mq);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 请求Broker获得指定消息队列的分布式锁</span></span><br><span class="line">            Set&lt;MessageQueue&gt; lockedMq =</span><br><span class="line">                <span class="keyword">this</span>.mQClientFactory.getMQClientAPIImpl().lockBatchMQ(findBrokerResult.getBrokerAddr(), requestBody, <span class="number">1000</span>);</span><br><span class="line">                </span><br><span class="line">            <span class="comment">// 获取远端的锁定的队列，然后锁住本地的processQueue    </span></span><br><span class="line">            <span class="keyword">for</span> (MessageQueue mmqq : lockedMq) &#123;</span><br><span class="line">                ProcessQueue processQueue = <span class="keyword">this</span>.processQueueTable.get(mmqq);</span><br><span class="line">                <span class="keyword">if</span> (processQueue != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    processQueue.setLocked(<span class="keyword">true</span>);</span><br><span class="line">                    processQueue.setLastLockTimestamp(System.currentTimeMillis());</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//如果远端锁定的队列里包含要锁的这个队列，则返回成功</span></span><br><span class="line">            <span class="keyword">boolean</span> lockOK = lockedMq.contains(mq);</span><br><span class="line">            <span class="keyword">return</span> lockOK;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里有个问题，我们看到：<strong>最终是否锁定成功的判断是远端锁定的队列是否包含我们希望锁住的队列</strong>。这个判断是否有问题呢？如果远端锁住这个mq的并不是当前的consumer，而是另外一个consumer呢？</p>
+<p>这里我们看一下获取锁定队列的条件其实有三个：<code>consumerGroup</code>、<code>mQClientFactory.getClientId()</code>和<code>MessageQueue</code>。这里是根据自己的clientId去获取的远端锁定队列，也就是获取当前consumer的锁定队列，所以不会出现上面的问题。</p>
+<p>锁有过期时间：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (MessageModel.CLUSTERING.equals(ConsumeMessageOrderlyService.<span class="keyword">this</span>.defaultMQPushConsumerImpl.messageModel())) &#123;</span><br><span class="line">        <span class="keyword">this</span>.scheduledExecutorService.scheduleAtFixedRate(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                ConsumeMessageOrderlyService.<span class="keyword">this</span>.lockMQPeriodically();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;, <span class="number">1000</span> * <span class="number">1</span>, ProcessQueue.REBALANCE_LOCK_INTERVAL, TimeUnit.MILLISECONDS);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>客户端会启动一个定时任务去刷新锁定时间，而一旦某个锁定了队列的consumer挂掉，也可以释放锁，保证这个队列不会一直处在锁死的状态。我们看一下lockAll：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//去远端锁住队列</span></span><br><span class="line">Set&lt;MessageQueue&gt; lockOKMQSet =</span><br><span class="line">    <span class="keyword">this</span>.mQClientFactory.getMQClientAPIImpl().lockBatchMQ(findBrokerResult.getBrokerAddr(), requestBody, <span class="number">1000</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (MessageQueue mq : lockOKMQSet) &#123;</span><br><span class="line">    ProcessQueue processQueue = <span class="keyword">this</span>.processQueueTable.get(mq);</span><br><span class="line">    <span class="keyword">if</span> (processQueue != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (!processQueue.isLocked()) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">        processQueue.setLocked(<span class="keyword">true</span>);</span><br><span class="line">        processQueue.setLastLockTimestamp(System.currentTimeMillis());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">for</span> (MessageQueue mq : mqs) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!lockOKMQSet.contains(mq)) &#123;</span><br><span class="line">        <span class="comment">//释放远端释放了锁，但是本地仍然持有锁的队列</span></span><br><span class="line">        ProcessQueue processQueue = <span class="keyword">this</span>.processQueueTable.get(mq);</span><br><span class="line">        <span class="keyword">if</span> (processQueue != <span class="keyword">null</span>) &#123;</span><br><span class="line">            processQueue.setLocked(<span class="keyword">false</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>先去获取一下broker的地址，然后去批量的锁住队列和解锁远端已经释放锁的队列。</p>
+<h4 id="移除消息队列"><a href="#移除消息队列" class="headerlink" title="移除消息队列"></a>移除消息队列</h4><p>集群模式下，Consumer移除自己的消息队列时，会让Broker解锁该队列：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 同步队列的消费进度并移除</span></span><br><span class="line"><span class="keyword">this</span>.defaultMQPushConsumerImpl.getOffsetStore().persist(mq);</span><br><span class="line"><span class="keyword">this</span>.defaultMQPushConsumerImpl.getOffsetStore().removeOffset(mq);</span><br><span class="line"><span class="comment">// 集群模式下并且是严格顺序时，解锁对队列的锁定</span></span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">this</span>.defaultMQPushConsumerImpl.isConsumeOrderly()</span><br><span class="line">    &amp;&amp; MessageModel.CLUSTERING.equals(<span class="keyword">this</span>.defaultMQPushConsumerImpl.messageModel())) &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">//尝试锁住本地的queue</span></span><br><span class="line">        <span class="keyword">if</span> (pq.getLockConsume().tryLock(<span class="number">1000</span>, TimeUnit.MILLISECONDS)) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//解锁mq（broker上处理）</span></span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">this</span>.unlockDelay(mq, pq);</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                <span class="comment">//解锁本地的processQueue</span></span><br><span class="line">                pq.getLockConsume().unlock();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">//这个process queue正在被消费</span></span><br><span class="line">            pq.incTryUnlockTimes();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> <span class="keyword">true</span>;</span><br></pre></td></tr></table></figure>
+<p>先获取消息队列消费锁。避免和消息队列消费冲突。如果获取锁失败，则移除消息队列失败，等待下次重新分配消费队列时（Rebalance），再进行移除。</p>
+<p>如果未获得锁而进行移除，则可能出现正在消费消息时就把队列移除掉了。如果消费出问题，没法保证严格顺序。</p>
+<p>看一下<code>unlockDelay</code>（延迟解锁Broker消息队列锁，当消息处理队列不存在消息，则直接解锁）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//解锁Broker消息队列锁。如果消息处理队列存在剩余消息，则延迟解锁Broker消息队列锁。</span></span><br><span class="line"><span class="keyword">if</span> (pq.hasTempMessage()) &#123;</span><br><span class="line">    <span class="keyword">this</span>.defaultMQPushConsumerImpl.getmQClientFactory().getScheduledExecutorService().schedule(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            RebalancePushImpl.<span class="keyword">this</span>.unlock(mq, <span class="keyword">true</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;, UNLOCK_DELAY_TIME_MILLS, TimeUnit.MILLISECONDS);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">this</span>.unlock(mq, <span class="keyword">true</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> <span class="keyword">true</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="消费消息"><a href="#消费消息" class="headerlink" title="消费消息"></a>消费消息</h4><p>主要看一下<code>ConsumeRequest</code>（在<code>ConsumeMessageOrderlyService</code>中），代码有点多，分段来看，最开始是获取<code>MessageQueue</code>的锁：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> Object objLock = messageQueueLock.fetchLockObject(<span class="keyword">this</span>.messageQueue);</span><br></pre></td></tr></table></figure>
+<p>仍然是一个本地锁，<code>MessageQueue</code>是远端队列的一个抽象，这个地方的锁保证这个队列只被当前线程消费。</p>
+<p>然后是校验锁状态的部分：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//如果这个队列没有被锁定，则提交分布式锁，下次消费</span></span><br><span class="line"><span class="keyword">if</span> (MessageModel.CLUSTERING.equals(ConsumeMessageOrderlyService.<span class="keyword">this</span>.defaultMQPushConsumerImpl.messageModel())</span><br><span class="line">    &amp;&amp; !<span class="keyword">this</span>.processQueue.isLocked()) &#123;</span><br><span class="line">    log.warn(<span class="string">"the message queue not locked, so consume later, &#123;&#125;"</span>, <span class="keyword">this</span>.messageQueue);</span><br><span class="line">    ConsumeMessageOrderlyService.<span class="keyword">this</span>.tryLockLaterAndReconsume(<span class="keyword">this</span>.messageQueue, <span class="keyword">this</span>.processQueue, <span class="number">10</span>);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//如果这个队列的锁过期了，同样提交分布式锁，下次消费</span></span><br><span class="line"><span class="keyword">if</span> (MessageModel.CLUSTERING.equals(ConsumeMessageOrderlyService.<span class="keyword">this</span>.defaultMQPushConsumerImpl.messageModel())</span><br><span class="line">    &amp;&amp; <span class="keyword">this</span>.processQueue.isLockExpired()) &#123;</span><br><span class="line">    log.warn(<span class="string">"the message queue lock expired, so consume later, &#123;&#125;"</span>, <span class="keyword">this</span>.messageQueue);</span><br><span class="line">    ConsumeMessageOrderlyService.<span class="keyword">this</span>.tryLockLaterAndReconsume(<span class="keyword">this</span>.messageQueue, <span class="keyword">this</span>.processQueue, <span class="number">10</span>);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后是消费延时的部分，这里是考虑到一次消费的时间不能太长，如果提交锁花费了时间比较长，则会提交一个优先级比较低的消费消息的任务：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//这里这个beginTime是在进入循环之前的时间</span></span><br><span class="line"><span class="keyword">long</span> interval = System.currentTimeMillis() - beginTime;</span><br><span class="line"><span class="keyword">if</span> (interval &gt; MAX_TIME_CONSUME_CONTINUOUSLY) &#123;</span><br><span class="line">    ConsumeMessageOrderlyService.<span class="keyword">this</span>.submitConsumeRequestLater(processQueue, messageQueue, <span class="number">10</span>);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后获取要消费的消息：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//和并发消费获得消息不同。并发消费请求在请求创建时，已经设置好消费哪些消息。</span></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">int</span> consumeBatchSize = ConsumeMessageOrderlyService.<span class="keyword">this</span>.defaultMQPushConsumer.getConsumeMessageBatchMaxSize();</span><br><span class="line">List&lt;MessageExt&gt; msgs = <span class="keyword">this</span>.processQueue.takeMessags(consumeBatchSize);</span><br></pre></td></tr></table></figure>
+<p>然后是初始化上下文等，最终执行消费逻辑的代码我们看一下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">this</span>.processQueue.getLockConsume().lock();</span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">this</span>.processQueue.isDropped()) &#123;</span><br><span class="line">    log.warn(<span class="string">"consumeMessage, the message queue not be able to consume, because it's dropped. &#123;&#125;"</span>,</span><br><span class="line">        <span class="keyword">this</span>.messageQueue);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br><span class="line">status = messageListener.consumeMessage(Collections.unmodifiableList(msgs), context);</span><br></pre></td></tr></table></figure>
+<p>这里是先获取锁，后消费(<code>this.processQueue.getLockConsume().lock()</code>)，之前我们在移除队列的地方说过，为什么移除前要获取锁，就是这个原因：因为消费时要先获取锁，如果移除时获取锁失败，说明这个队列正在被消费，需要过一会再移除。</p>
+<h4 id="处理消费结果"><a href="#处理消费结果" class="headerlink" title="处理消费结果"></a>处理消费结果</h4><p>主要是<code>ConsumeMessageOrderlyService.this.processConsumeResult</code>，<code>ConsumeOrderlyStatus</code>有四种状态：</p>
+<ul>
+<li><code>SUCCESS</code>：消费成功但不提交。</li>
+<li><code>ROLLBACK</code>：消费失败，消费回滚。</li>
+<li><code>COMMIT</code>：消费成功提交并且提交。</li>
+<li><code>SUSPEND_CURRENT_QUEUE_A_MOMENT</code>：消费失败，挂起消费队列一会会，稍后继续消费。</li>
+</ul>
+<p>在并发消费场景时，如果消费失败，Consumer会将消费失败消息发回到 Broker重试队列，跳过当前消息，等待下次拉取该消息再进行消费。</p>
+<p>但是在完全严格顺序消费消费时，这样做显然不行。也因此，消费失败的消息，会挂起队列一会会，稍后继续消费。</p>
+<p>不过消费失败的消息一直失败，也不可能一直消费。当超过消费重试上限时，Consumer会将消费失败超过上限的消息发回到Broker死信队列。</p>
+<p>看下源码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (context.isAutoCommit()) &#123;</span><br><span class="line">    <span class="keyword">switch</span> (status) &#123;</span><br><span class="line">        <span class="keyword">case</span> COMMIT:</span><br><span class="line">        <span class="keyword">case</span> ROLLBACK:</span><br><span class="line">            log.warn(<span class="string">"the message queue consume result is illegal, we think you want to ack these message &#123;&#125;"</span>,</span><br><span class="line">                consumeRequest.getMessageQueue());</span><br><span class="line">        <span class="keyword">case</span> SUCCESS:</span><br><span class="line">            <span class="comment">//提交消费进度</span></span><br><span class="line">            commitOffset = consumeRequest.getProcessQueue().commit();</span><br><span class="line">            <span class="comment">// 统计</span></span><br><span class="line">            <span class="keyword">this</span>.getConsumerStatsManager().incConsumeOKTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), msgs.size());</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> SUSPEND_CURRENT_QUEUE_A_MOMENT:</span><br><span class="line">            <span class="comment">//统计</span></span><br><span class="line">            <span class="keyword">this</span>.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), msgs.size());</span><br><span class="line">            <span class="comment">//这个方法中会把消费次数大于最大次数的消息发到broker中的死信队列。</span></span><br><span class="line">            <span class="keyword">if</span> (checkReconsumeTimes(msgs)) &#123;</span><br><span class="line">                <span class="comment">//设置可以再次消费（重新放回map中）</span></span><br><span class="line">                consumeRequest.getProcessQueue().makeMessageToCosumeAgain(msgs);</span><br><span class="line">                <span class="comment">//提交延迟消费请求，一会再消费（及挂起一会）</span></span><br><span class="line">                <span class="keyword">this</span>.submitConsumeRequestLater(</span><br><span class="line">                    consumeRequest.getProcessQueue(),</span><br><span class="line">                    consumeRequest.getMessageQueue(),</span><br><span class="line">                    context.getSuspendCurrentQueueTimeMillis());</span><br><span class="line">                continueConsume = <span class="keyword">false</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">//如果消息消费次数大于最大次数且被成功放入死信队列，则提交进度，不需要挂起</span></span><br><span class="line">                commitOffset = consumeRequest.getProcessQueue().commit();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">switch</span> (status) &#123;</span><br><span class="line">        <span class="keyword">case</span> SUCCESS:</span><br><span class="line">            <span class="keyword">this</span>.getConsumerStatsManager().incConsumeOKTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), msgs.size());</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> COMMIT:</span><br><span class="line">            commitOffset = consumeRequest.getProcessQueue().commit();</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> ROLLBACK:</span><br><span class="line">            <span class="comment">// 设置消息重新消费</span></span><br><span class="line">            consumeRequest.getProcessQueue().rollback();</span><br><span class="line">            <span class="keyword">this</span>.submitConsumeRequestLater(</span><br><span class="line">                consumeRequest.getProcessQueue(),</span><br><span class="line">                consumeRequest.getMessageQueue(),</span><br><span class="line">                context.getSuspendCurrentQueueTimeMillis());</span><br><span class="line">            continueConsume = <span class="keyword">false</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> SUSPEND_CURRENT_QUEUE_A_MOMENT:</span><br><span class="line">            <span class="keyword">this</span>.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), msgs.size());</span><br><span class="line">            <span class="keyword">if</span> (checkReconsumeTimes(msgs)) &#123;</span><br><span class="line">                consumeRequest.getProcessQueue().makeMessageToCosumeAgain(msgs);</span><br><span class="line">                <span class="keyword">this</span>.submitConsumeRequestLater(</span><br><span class="line">                    consumeRequest.getProcessQueue(),</span><br><span class="line">                    consumeRequest.getMessageQueue(),</span><br><span class="line">                    context.getSuspendCurrentQueueTimeMillis());</span><br><span class="line">                continueConsume = <span class="keyword">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里，自动提交和非自动提交差别不大，我们看一下<code>checkReconsumeTimes</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">boolean</span> suspend = <span class="keyword">false</span>;</span><br><span class="line"><span class="keyword">if</span> (msgs != <span class="keyword">null</span> &amp;&amp; !msgs.isEmpty()) &#123;</span><br><span class="line">    <span class="keyword">for</span> (MessageExt msg : msgs) &#123;</span><br><span class="line">        <span class="keyword">if</span> (msg.getReconsumeTimes() &gt;= getMaxReconsumeTimes()) &#123;</span><br><span class="line">            MessageAccessor.setReconsumeTime(msg, String.valueOf(msg.getReconsumeTimes()));</span><br><span class="line">            <span class="comment">//如果发回失败，则返回中断，需要下次再处理</span></span><br><span class="line">            <span class="keyword">if</span> (!sendMessageBack(msg)) &#123;</span><br><span class="line">                suspend = <span class="keyword">true</span>;</span><br><span class="line">                msg.setReconsumeTimes(msg.getReconsumeTimes() + <span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            suspend = <span class="keyword">true</span>;</span><br><span class="line">            msg.setReconsumeTimes(msg.getReconsumeTimes() + <span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> suspend;</span><br></pre></td></tr></table></figure>
+<p>这个方法中，校验消息的是否可以再次消费，如果不可以，尝试发回broker的死信队列，如果可以重新消费，返回挂起（suspend = true）。</p>
+<p>我们看一下<code>sendMessageBack</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">// max reconsume times exceeded then send to dead letter queue.</span></span><br><span class="line">    Message newMsg = <span class="keyword">new</span> Message(MixAll.getRetryTopic(<span class="keyword">this</span>.defaultMQPushConsumer.getConsumerGroup()), msg.getBody());</span><br><span class="line">    String originMsgId = MessageAccessor.getOriginMessageId(msg);</span><br><span class="line">    MessageAccessor.setOriginMessageId(newMsg, UtilAll.isBlank(originMsgId) ? msg.getMsgId() : originMsgId);</span><br><span class="line">    newMsg.setFlag(msg.getFlag());</span><br><span class="line">    MessageAccessor.setProperties(newMsg, msg.getProperties());</span><br><span class="line">    MessageAccessor.putProperty(newMsg, MessageConst.PROPERTY_RETRY_TOPIC, msg.getTopic());</span><br><span class="line">    MessageAccessor.setReconsumeTime(newMsg, String.valueOf(msg.getReconsumeTimes()));</span><br><span class="line">    MessageAccessor.setMaxReconsumeTimes(newMsg, String.valueOf(getMaxReconsumeTimes()));</span><br><span class="line">    newMsg.setDelayTimeLevel(<span class="number">3</span> + msg.getReconsumeTimes());</span><br><span class="line">    <span class="keyword">this</span>.defaultMQPushConsumer.getDefaultMQPushConsumerImpl().getmQClientFactory().getDefaultMQProducer().send(newMsg);</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    log.error(<span class="string">"sendMessageBack exception, group: "</span> + <span class="keyword">this</span>.consumerGroup + <span class="string">" msg: "</span> + msg.toString(), e);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> <span class="keyword">false</span>;</span><br></pre></td></tr></table></figure>
+<p>我们看一下这里，这里并不是直接发送给私信队列，而是发送给RETRY队列，这部分代码逻辑在Broker里，需要我确认一下，应该是Broker识别到一个消息的当前已消费次数 &gt;= 最大可消费次数时，会直接把消息放入到死信队列而不是重试队列。</p>
+<h4 id="ProccessQueue相关方法解析"><a href="#ProccessQueue相关方法解析" class="headerlink" title="ProccessQueue相关方法解析"></a>ProccessQueue相关方法解析</h4><p>先看属性：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> TreeMap&lt;Long, MessageExt&gt; msgTreeMap = <span class="keyword">new</span> TreeMap&lt;Long, MessageExt&gt;();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * A subset of msgTreeMap, will only be used when orderly consume</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> TreeMap&lt;Long, MessageExt&gt; consumingMsgOrderlyTreeMap = <span class="keyword">new</span> TreeMap&lt;Long, MessageExt&gt;();</span><br></pre></td></tr></table></figure>
+<p><code>msgTreeMap</code>是所有消息，<code>consumingMsgOrderlyTreeMap</code>是正在被消费的消息的副本。</p>
+<p><strong>rollback</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">this</span>.lockTreeMap.writeLock().lockInterruptibly();</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">//回滚消费中的消息，重新把消息放回主map中，然后清理备份的map</span></span><br><span class="line">    <span class="keyword">this</span>.msgTreeMap.putAll(<span class="keyword">this</span>.consumingMsgOrderlyTreeMap);</span><br><span class="line">    <span class="keyword">this</span>.consumingMsgOrderlyTreeMap.clear();</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="keyword">this</span>.lockTreeMap.writeLock().unlock();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>commit</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//返回offset，清理consumingMsgOrderlyTreeMap</span></span><br><span class="line">Long offset = <span class="keyword">this</span>.consumingMsgOrderlyTreeMap.lastKey();</span><br><span class="line">msgCount.addAndGet(<span class="number">0</span> - <span class="keyword">this</span>.consumingMsgOrderlyTreeMap.size());</span><br><span class="line"><span class="keyword">for</span> (MessageExt msg : <span class="keyword">this</span>.consumingMsgOrderlyTreeMap.values()) &#123;</span><br><span class="line">    msgSize.addAndGet(<span class="number">0</span> - msg.getBody().length);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">this</span>.consumingMsgOrderlyTreeMap.clear();</span><br><span class="line"><span class="keyword">if</span> (offset != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> offset + <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>makeMessageToCosumeAgain</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (MessageExt msg : msgs) &#123;</span><br><span class="line">    <span class="comment">//把一批消息放回到主map里，并且从备份map中移除</span></span><br><span class="line">    <span class="keyword">this</span>.consumingMsgOrderlyTreeMap.remove(msg.getQueueOffset());</span><br><span class="line">    <span class="keyword">this</span>.msgTreeMap.put(msg.getQueueOffset(), msg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/rocketmq/" rel="tag"># rocketmq</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/关于缓存使用的一点经验之谈.html" rel="next" title="关于缓存使用的一点经验之谈">
+                <i class="fa fa-chevron-left"></i> 关于缓存使用的一点经验之谈
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Dubbo源码——集群策略.html" rel="prev" title="Dubbo源码——集群策略">
+                Dubbo源码——集群策略 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">74</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">70</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocketMQ源码解读——message顺序发送"><span class="nav-number">1.</span> <span class="nav-text">RocketMQ源码解读——message顺序发送</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Producer顺序"><span class="nav-number">1.2.</span> <span class="nav-text">Producer顺序</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Consumer顺序"><span class="nav-number">1.3.</span> <span class="nav-text">Consumer顺序</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#移除消息队列"><span class="nav-number">1.4.</span> <span class="nav-text">移除消息队列</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#消费消息"><span class="nav-number">1.5.</span> <span class="nav-text">消费消息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#处理消费结果"><span class="nav-number">1.6.</span> <span class="nav-text">处理消费结果</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ProccessQueue相关方法解析"><span class="nav-number">1.7.</span> <span class="nav-text">ProccessQueue相关方法解析</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="阻塞队列,blocking queue," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Java阻塞队列的原理分析 先看看BlockingQueue接口的文档说明：  add：添加元素到队列里，添加成功返回true，由于容量满了添加失败会抛出IllegalStateException异常； offer：添加元素到队列里，添加成功返回true，添加失败返回false； put：添加元素到队列里，如果容量满了会阻塞直到容量不满； poll：删除队列头部元素，如果队列为空，返回null。否">
+<meta name="keywords" content="阻塞队列,blocking queue">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java阻塞队列的原理分析">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Java阻塞队列的原理分析.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Java阻塞队列的原理分析 先看看BlockingQueue接口的文档说明：  add：添加元素到队列里，添加成功返回true，由于容量满了添加失败会抛出IllegalStateException异常； offer：添加元素到队列里，添加成功返回true，添加失败返回false； put：添加元素到队列里，如果容量满了会阻塞直到容量不满； poll：删除队列头部元素，如果队列为空，返回null。否">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2017-04-11T12:41:52.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java阻塞队列的原理分析">
+<meta name="twitter:description" content="Java阻塞队列的原理分析 先看看BlockingQueue接口的文档说明：  add：添加元素到队列里，添加成功返回true，由于容量满了添加失败会抛出IllegalStateException异常； offer：添加元素到队列里，添加成功返回true，添加失败返回false； put：添加元素到队列里，如果容量满了会阻塞直到容量不满； poll：删除队列头部元素，如果队列为空，返回null。否">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Java阻塞队列的原理分析.html"/>
+
+
+
+
+
+  <title>Java阻塞队列的原理分析 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Java阻塞队列的原理分析.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Java阻塞队列的原理分析</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-04-11T20:41:56+08:00">
+                2017-04-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java源码/" itemprop="url" rel="index">
+                    <span itemprop="name">java源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Java阻塞队列的原理分析"><a href="#Java阻塞队列的原理分析" class="headerlink" title="Java阻塞队列的原理分析"></a>Java阻塞队列的原理分析</h3><hr>
+<p>先看看<code>BlockingQueue</code>接口的文档说明：<br></p>
+<ol>
+<li>add：添加元素到队列里，添加成功返回true，由于容量满了添加失败会抛出<code>IllegalStateException</code>异常；<br></li>
+<li>offer：添加元素到队列里，添加成功返回true，添加失败返回false；<br></li>
+<li>put：添加元素到队列里，如果容量满了会阻塞直到容量不满；<br></li>
+<li>poll：删除队列头部元素，如果队列为空，返回null。否则返回元素；<br></li>
+<li>remove：基于对象找到对应的元素，并删除。删除成功返回true，否则返回false；<br></li>
+<li>take：删除队列头部元素，如果队列为空，一直阻塞到队列有元素并删除。<br></li>
+</ol>
+<p>先看一个简单的<code>ArrayBlockingQueue</code>，<strong>ArrayBlockingQueue的原理就是使用一个可重入锁和这个锁生成的两个条件对象进行并发控制(classic two-condition algorithm)</strong>。<br></p>
+<h4 id="ArrayBlockingQueue"><a href="#ArrayBlockingQueue" class="headerlink" title="ArrayBlockingQueue"></a>ArrayBlockingQueue<br></h4><p>ArrayBlockingQueue是一个带有长度的阻塞队列，初始化的时候必须要指定队列长度，且指定长度之后不允许进行修改。<br></p>
+<p>属性如下：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">/** The queued items item的集合 */</span><br><span class="line">   final Object[] items;</span><br><span class="line"></span><br><span class="line">   /** items index for next take, poll, peek or remove 拿数据的索引 */</span><br><span class="line">   int takeIndex;</span><br><span class="line"></span><br><span class="line">   /** items index for next put, offer, or add 放数据的索引 */</span><br><span class="line">   int putIndex;</span><br><span class="line"></span><br><span class="line">   /** Number of elements in the queue 队列元素的个数 */</span><br><span class="line">   int count;</span><br><span class="line"></span><br><span class="line">   /** Main lock guarding all access 可重入的锁 */</span><br><span class="line">   final ReentrantLock lock;</span><br><span class="line"></span><br><span class="line">   /** Condition for waiting takes 条件对象 */</span><br><span class="line">   private final Condition notEmpty;</span><br><span class="line"></span><br><span class="line">   /** Condition for waiting puts 条件对象 */</span><br><span class="line">   private final Condition notFull;</span><br></pre></td></tr></table></figure>
+<p>先看一下add方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">public boolean add(E e) &#123;</span><br><span class="line">	if (offer(e))</span><br><span class="line">		return true;</span><br><span class="line">	else</span><br><span class="line">		throw new IllegalStateException(&quot;Queue full&quot;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>offer方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">public boolean offer(E e) &#123;</span><br><span class="line">	checkNotNull(e);</span><br><span class="line">	final ReentrantLock lock = this.lock;</span><br><span class="line">	lock.lock();</span><br><span class="line">	try &#123;</span><br><span class="line">		if (count == items.length)</span><br><span class="line">			return false;</span><br><span class="line">		else &#123;</span><br><span class="line">			insert(e);</span><br><span class="line">			return true;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; finally &#123;</span><br><span class="line">		lock.unlock();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们可以看到，如果满了返回false，如果没有满调用insert。整个方法是通过可重入锁来锁住的，并且最终释放。接着看一下<code>insert</code>方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">private void insert(E x) &#123;</span><br><span class="line">	items[putIndex] = x; // 元素添加到数组里</span><br><span class="line">	putIndex = inc(putIndex); // 放数据索引+1，当索引满了变成0</span><br><span class="line">	++count; // 元素个数+1</span><br><span class="line">	notEmpty.signal(); // 使用条件对象notEmpty通知</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里<code>insert</code>被调用的时候就会唤醒<code>notEmpty</code>上等待的线程进行<code>take</code>操作。<br></p>
+<p>再看一下<code>put</code>方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">public void put(E e) throws InterruptedException &#123;</span><br><span class="line">	checkNotNull(e); // 不允许元素为空</span><br><span class="line">	final ReentrantLock lock = this.lock;</span><br><span class="line">	lock.lockInterruptibly(); // 加锁，保证调用put方法的时候只有1个线程</span><br><span class="line">	try &#123;</span><br><span class="line">		while (count == items.length) // 如果队列满了，阻塞当前线程，while用来防止假唤醒</span><br><span class="line">			notFull.await(); // 线程阻塞并被挂起，同时释放锁</span><br><span class="line">		insert(e); // 调用insert方法</span><br><span class="line">	&#125; finally &#123;</span><br><span class="line">		lock.unlock(); // 释放锁，让其他线程可以调用put方法</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>add方法和offer方法不会阻塞线程，put方法如果队列满了会阻塞线程，直到有线程消费了队列里的数据才有可能被唤醒。<br></p>
+<p>继续看删除数据的相关操作，先看一下poll：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">public E poll() &#123;</span><br><span class="line">	final ReentrantLock lock = this.lock;</span><br><span class="line">	lock.lock(); // 加锁，保证调用poll方法的时候只有1个线程</span><br><span class="line">	try &#123;</span><br><span class="line">		return (count == 0) ? null : extract(); // 如果队列里没元素了，返回null，否则调用extract方法</span><br><span class="line">	&#125; finally &#123;</span><br><span class="line">		lock.unlock(); // 释放锁，让其他线程可以调用poll方法</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>看看这个<code>extract</code>方法（jdk源码的作者的起名水平真的非常高，代码素质好）：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">private E extract() &#123;</span><br><span class="line">	final Object[] items = this.items;</span><br><span class="line">	E x = this.&lt;E&gt;cast(items[takeIndex]); // 得到取索引位置上的元素</span><br><span class="line">	items[takeIndex] = null; // 对应取索引上的数据清空</span><br><span class="line">	takeIndex = inc(takeIndex); // 取数据索引+1，当索引满了变成0</span><br><span class="line">	--count; // 元素个数-1</span><br><span class="line">	notFull.signal(); // 使用条件对象notFull通知，原理同上面的insert中</span><br><span class="line">	return x; // 返回元素</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>看一下<code>take</code>方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">public E take() throws InterruptedException &#123;</span><br><span class="line">	final ReentrantLock lock = this.lock;</span><br><span class="line">	lock.lockInterruptibly(); // 加锁，保证调用take方法的时候只有1个线程</span><br><span class="line">	try &#123;</span><br><span class="line">		while (count == 0) // 如果队列空，阻塞当前线程，并加入到条件对象notEmpty的等待队列里</span><br><span class="line">			notEmpty.await(); // 线程阻塞并被挂起，同时释放锁</span><br><span class="line">		return extract(); // 调用extract方法</span><br><span class="line">	&#125; finally &#123;</span><br><span class="line">		lock.unlock(); // 释放锁，让其他线程可以调用take方法</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>再看一下<code>remove</code>方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">public boolean remove(Object o) &#123;</span><br><span class="line">	if (o == null) return false;</span><br><span class="line">	final Object[] items = this.items;</span><br><span class="line">	final ReentrantLock lock = this.lock;</span><br><span class="line">	lock.lock(); // 加锁，保证调用remove方法的时候只有1个线程</span><br><span class="line">	try &#123;</span><br><span class="line">		for (int i = takeIndex, k = count; k &gt; 0; i = inc(i), k--) &#123; // 遍历元素</span><br><span class="line">			if (o.equals(items[i])) &#123; // 两个对象相等的话</span><br><span class="line">				removeAt(i); // 调用removeAt方法</span><br><span class="line">				return true; // 删除成功，返回true</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		return false; // 删除成功，返回false</span><br><span class="line">	&#125; finally &#123;</span><br><span class="line">		lock.unlock(); // 释放锁，让其他线程可以调用remove方法</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>再看一下<code>removeAt</code>方法，这个方法反而比较有价值：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">private void removeAt(int i) &#123;</span><br><span class="line">	final Object[] items = this.items;</span><br><span class="line">	if (i == takeIndex) &#123; </span><br><span class="line">		// 如果要删除数据的索引是取索引位置，直接删除取索引位置上的数据，然后取索引+1即可</span><br><span class="line">		items[takeIndex] = null;</span><br><span class="line">		takeIndex = inc(takeIndex);</span><br><span class="line">	&#125; else &#123; </span><br><span class="line">		// 如果要删除数据的索引不是取索引位置，移动元素元素，更新取索引和放索引的值</span><br><span class="line">		for (;;) &#123;</span><br><span class="line">			int nexti = inc(i);</span><br><span class="line">			if (nexti != putIndex) &#123;</span><br><span class="line">				items[i] = items[nexti];</span><br><span class="line">				i = nexti;</span><br><span class="line">			&#125; else &#123;</span><br><span class="line">				items[i] = null;</span><br><span class="line">				putIndex = i;</span><br><span class="line">				break;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	--count; // 元素个数-1</span><br><span class="line">	notFull.signal(); // 使用条件对象notFull通知</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="LinkedBlockingQueue"><a href="#LinkedBlockingQueue" class="headerlink" title="LinkedBlockingQueue"></a>LinkedBlockingQueue<br></h4><p><code>LinkedBlockingQueue</code>是一个使用链表完成队列操作的阻塞队列。<strong>链表是单向链表，而不是双向链表</strong>。</p>
+<p>看一下属性：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">/** The capacity bound, or Integer.MAX_VALUE if none 容量大小 */</span><br><span class="line">private final int capacity;</span><br><span class="line"></span><br><span class="line">   /** Current number of elements 元素个数，因为有2个锁，存在竞态条件，使用AtomicInteger */</span><br><span class="line">   private final AtomicInteger count = new AtomicInteger(0);</span><br><span class="line"></span><br><span class="line">   /**</span><br><span class="line">    * Head of linked list.</span><br><span class="line">    * Invariant: head.item == null</span><br><span class="line">    * 头结点</span><br><span class="line">    */</span><br><span class="line">   private transient Node&lt;E&gt; head;</span><br><span class="line"></span><br><span class="line">   /**</span><br><span class="line">    * Tail of linked list.</span><br><span class="line">    * Invariant: last.next == null</span><br><span class="line">    * 尾节点</span><br><span class="line">    */</span><br><span class="line">   private transient Node&lt;E&gt; last;</span><br><span class="line"></span><br><span class="line">   /** Lock held by take, poll, etc 取元素的锁 */</span><br><span class="line">   private final ReentrantLock takeLock = new ReentrantLock();</span><br><span class="line"></span><br><span class="line">   /** Wait queue for waiting takes 取元素的条件对象 */</span><br><span class="line">   private final Condition notEmpty = takeLock.newCondition();</span><br><span class="line"></span><br><span class="line">   /** Lock held by put, offer, etc 放元素的锁 */</span><br><span class="line">   private final ReentrantLock putLock = new ReentrantLock();</span><br><span class="line"></span><br><span class="line">   /** Wait queue for waiting puts 放元素的条件对象 */</span><br><span class="line">   private final Condition notFull = putLock.newCondition();</span><br></pre></td></tr></table></figure>
+<p><code>ArrayBlockingQueue</code>只有1个锁，添加数据和删除数据的时候只能有1个被执行，不允许并行执行。<br></p>
+<p>而<code>LinkedBlockingQueue</code>有2个锁，放元素锁和取元素锁，添加数据和删除数据是可以并行进行的，当然添加数据和删除数据的时候只能有1个线程各自执行。<br></p>
+<p><code>add</code>方法内部调用<code>offer</code>方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">public boolean offer(E e) &#123;</span><br><span class="line">	if (e == null) throw new NullPointerException(); // 不允许空元素</span><br><span class="line">	final AtomicInteger count = this.count;</span><br><span class="line">	if (count.get() == capacity) // 如果容量满了，返回false</span><br><span class="line">		return false;</span><br><span class="line">	int c = -1;</span><br><span class="line">	Node&lt;E&gt; node = new Node(e); // 容量没满，以新元素构造节点</span><br><span class="line">	final ReentrantLock putLock = this.putLock;</span><br><span class="line">	putLock.lock(); // 放锁加锁，保证调用offer方法的时候只有1个线程</span><br><span class="line">	try &#123;</span><br><span class="line">		// 再次判断容量是否已满，因为可能取元素锁在进行消费数据，没满的话继续执行</span><br><span class="line">		if (count.get() &lt; capacity) &#123; </span><br><span class="line">			enqueue(node); // 节点添加到链表尾部</span><br><span class="line">			c = count.getAndIncrement(); // 元素个数+1</span><br><span class="line">			if (c + 1 &lt; capacity) // 如果容量还没满</span><br><span class="line">				notFull.signal(); // 在放锁的条件对象notFull上唤醒正在等待的线程，表示可以再次往队列里面加数据</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; finally &#123;</span><br><span class="line">		putLock.unlock(); // 释放放锁，让其他线程可以调用offer方法</span><br><span class="line">	&#125;</span><br><span class="line">	// 由于存在放元素锁和取元素锁，这里可能取元素锁一直在消费数据，count会变化。这里的if条件表示如果队列中还有1条数据</span><br><span class="line">	if (c == 0) </span><br><span class="line">		// 在拿锁的条件对象notEmpty上唤醒正在等待的1个线程，表示队列里还有1条数据，可以进行消费</span><br><span class="line">        signalNotEmpty(); </span><br><span class="line">	return c &gt;= 0; // 添加成功返回true，否则返回false</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>put</code>方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">public void put(E e) throws InterruptedException &#123;</span><br><span class="line">	if (e == null) throw new NullPointerException(); // 不允许空元素</span><br><span class="line">	int c = -1;</span><br><span class="line">	Node&lt;E&gt; node = new Node(e); // 以新元素构造节点</span><br><span class="line">	final ReentrantLock putLock = this.putLock;</span><br><span class="line">	final AtomicInteger count = this.count;</span><br><span class="line">	putLock.lockInterruptibly(); // 放锁加锁，保证调用put方法的时候只有1个线程</span><br><span class="line">	try &#123;</span><br><span class="line">		while (count.get() == capacity) &#123; // 如果容量满了</span><br><span class="line">			notFull.await(); // 阻塞并挂起当前线程</span><br><span class="line">		&#125;</span><br><span class="line">		enqueue(node); // 节点添加到链表尾部</span><br><span class="line">		c = count.getAndIncrement(); // 元素个数+1</span><br><span class="line">		if (c + 1 &lt; capacity) // 如果容量还没满</span><br><span class="line">			// 在放锁的条件对象notFull上唤醒正在等待的线程，表示可以再次往队列里面加数据了，队列还没满</span><br><span class="line">			notFull.signal();</span><br><span class="line">	&#125; finally &#123;</span><br><span class="line">		putLock.unlock(); // 释放放锁，让其他线程可以调用put方法</span><br><span class="line">	&#125;</span><br><span class="line">	// 由于存在放锁和拿锁，这里可能拿锁一直在消费数据，count会变化。这里的if条件表示如果队列中还有1条数据</span><br><span class="line">	if (c == 0)</span><br><span class="line">		// 在拿锁的条件对象notEmpty上唤醒正在等待的1个线程，表示队列里还有1条数据，可以进行消费</span><br><span class="line">		signalNotEmpty();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>ArrayBlockingQueue</code>中放入数据阻塞的时候，需要消费数据才能唤醒。<br></p>
+<p>而<strong><em><code>LinkedBlockingQueue</code>中放入数据阻塞的时候，因为它内部有2个锁，可以并行执行放入数据和消费数据，不仅在消费数据的时候进行唤醒插入阻塞的线程，同时在插入的时候如果容量还没满，也会唤醒插入阻塞的线程</em></strong>。<br></p>
+<p><code>poll</code>方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">public E poll() &#123;</span><br><span class="line">	final AtomicInteger count = this.count;</span><br><span class="line">	if (count.get() == 0) // 如果元素个数为0</span><br><span class="line">		return null; // 返回null</span><br><span class="line">	E x = null;</span><br><span class="line">	int c = -1;</span><br><span class="line">	final ReentrantLock takeLock = this.takeLock;</span><br><span class="line">	takeLock.lock(); // 拿锁加锁，保证调用poll方法的时候只有1个线程</span><br><span class="line">	try &#123;</span><br><span class="line">		if (count.get() &gt; 0) &#123; // 判断队列里是否还有数据</span><br><span class="line">			x = dequeue(); // 删除头结点</span><br><span class="line">			c = count.getAndDecrement(); // 元素个数-1</span><br><span class="line">			if (c &gt; 1) // 如果队列里还有元素</span><br><span class="line">				// 在拿锁的条件对象notEmpty上唤醒正在等待的线程，表示队列里还有数据，可以再次消费</span><br><span class="line">				notEmpty.signal();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">        takeLock.unlock(); // 释放拿锁，让其他线程可以调用poll方法</span><br><span class="line">    &#125;</span><br><span class="line">    // 由于存在放锁和拿锁，这里可能放锁一直在添加数据，count会变化。这里的if条件表示如果队列中还可以再插入数据</span><br><span class="line">    if (c == capacity)</span><br><span class="line">		// 在放锁的条件对象notFull上唤醒正在等待的1个线程，表示队列里还能再次添加数据</span><br><span class="line">		signalNotFull(); </span><br><span class="line">	return x;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>take</code>方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">public E take() throws InterruptedException &#123;</span><br><span class="line">	E x;</span><br><span class="line">	int c = -1;</span><br><span class="line">	final AtomicInteger count = this.count;</span><br><span class="line">	final ReentrantLock takeLock = this.takeLock;</span><br><span class="line">	takeLock.lockInterruptibly(); // 拿锁加锁，保证调用take方法的时候只有1个线程</span><br><span class="line">	try &#123;</span><br><span class="line">		while (count.get() == 0) &#123; // 如果队列里已经没有元素了</span><br><span class="line">			notEmpty.await(); // 阻塞并挂起当前线程</span><br><span class="line">		&#125;</span><br><span class="line">		x = dequeue(); // 删除头结点</span><br><span class="line">		c = count.getAndDecrement(); // 元素个数-1</span><br><span class="line">		if (c &gt; 1) // 如果队列里还有元素</span><br><span class="line">			// 在拿锁的条件对象notEmpty上唤醒正在等待的线程，表示队列里还有数据，可以再次消费</span><br><span class="line">			notEmpty.signal(); </span><br><span class="line">	&#125; finally &#123;</span><br><span class="line">		takeLock.unlock(); // 释放拿锁，让其他线程可以调用take方法</span><br><span class="line">	&#125;</span><br><span class="line">	// 由于存在放锁和拿锁，这里可能放锁一直在添加数据，count会变化。这里的if条件表示如果队列中还可以再插入数据</span><br><span class="line">	if (c == capacity) </span><br><span class="line">		// 在放锁的条件对象notFull上唤醒正在等待的1个线程，表示队列里还能再次添加数据</span><br><span class="line">		signalNotFull(); </span><br><span class="line">	return x;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>remove</code>方法：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">public boolean remove(Object o) &#123;</span><br><span class="line">	if (o == null) return false;</span><br><span class="line">	fullyLock(); // remove操作要移动的位置不固定，2个锁都需要加锁</span><br><span class="line">	try &#123;</span><br><span class="line">		for (Node&lt;E&gt; trail = head, p = trail.next; // 从链表头结点开始遍历</span><br><span class="line">			p != null;</span><br><span class="line">			trail = p, p = p.next) &#123;</span><br><span class="line">			if (o.equals(p.item)) &#123; // 判断是否找到对象</span><br><span class="line">				unlink(p, trail); // 修改节点的链接信息，同时调用notFull的signal方法</span><br><span class="line">				return true;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		return false;</span><br><span class="line">	&#125; finally &#123;</span><br><span class="line">		fullyUnlock(); // 2个锁解锁</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>LinkedBlockingQueue</code>的take方法对于没数据的情况下会阻塞，poll方法删除链表头结点，remove方法删除指定的对象。<br></p>
+<p><strong>需要注意的是remove方法由于要删除的数据的位置不确定，需要2个锁同时加锁。</strong><br></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/阻塞队列/" rel="tag"># 阻塞队列</a>
+          
+            <a href="/tags/blocking-queue/" rel="tag"># blocking queue</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Electrons使用文档.html" rel="next" title="Electrons使用指南">
+                <i class="fa fa-chevron-left"></i> Electrons使用指南
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/记一次并发场景下的问题排查.html" rel="prev" title="记一次并发场景下的问题排查">
+                记一次并发场景下的问题排查 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">74</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">70</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Java阻塞队列的原理分析"><span class="nav-number">1.</span> <span class="nav-text">Java阻塞队列的原理分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ArrayBlockingQueue"><span class="nav-number">1.1.</span> <span class="nav-text">ArrayBlockingQueue</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#LinkedBlockingQueue"><span class="nav-number">1.2.</span> <span class="nav-text">LinkedBlockingQueue</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

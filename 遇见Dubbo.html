@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="随笔," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="遇见Dubbo我是一个有Dubbo情节的程序员。 Dubbo以不同方式，陪伴了我时间不长的整个代码生涯。不久前，通过社区投票，我被选举为Committer。当时我在朋友圈发了一句话，也是贯穿我从开始使用Dubbo、研究Dubbo、贡献Dubbo到最后成为Committer的全过程，一直为我提供内心无与伦比愉悦的源泉：成长这种事，能看见脚印特别幸福。 今天来个回忆杀，把我和Dubbo的那些事拿出来说">
+<meta name="keywords" content="随笔">
+<meta property="og:type" content="article">
+<meta property="og:title" content="遇见Dubbo">
+<meta property="og:url" content="http://wyj.shiwuliang.com/遇见Dubbo.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="遇见Dubbo我是一个有Dubbo情节的程序员。 Dubbo以不同方式，陪伴了我时间不长的整个代码生涯。不久前，通过社区投票，我被选举为Committer。当时我在朋友圈发了一句话，也是贯穿我从开始使用Dubbo、研究Dubbo、贡献Dubbo到最后成为Committer的全过程，一直为我提供内心无与伦比愉悦的源泉：成长这种事，能看见脚印特别幸福。 今天来个回忆杀，把我和Dubbo的那些事拿出来说">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-08-31T09:41:31.885Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="遇见Dubbo">
+<meta name="twitter:description" content="遇见Dubbo我是一个有Dubbo情节的程序员。 Dubbo以不同方式，陪伴了我时间不长的整个代码生涯。不久前，通过社区投票，我被选举为Committer。当时我在朋友圈发了一句话，也是贯穿我从开始使用Dubbo、研究Dubbo、贡献Dubbo到最后成为Committer的全过程，一直为我提供内心无与伦比愉悦的源泉：成长这种事，能看见脚印特别幸福。 今天来个回忆杀，把我和Dubbo的那些事拿出来说">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/遇见Dubbo.html"/>
+
+
+
+
+
+  <title>遇见Dubbo | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/遇见Dubbo.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">遇见Dubbo</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-31T17:41:53+08:00">
+                2018-08-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/随笔/" itemprop="url" rel="index">
+                    <span itemprop="name">随笔</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="遇见Dubbo"><a href="#遇见Dubbo" class="headerlink" title="遇见Dubbo"></a>遇见Dubbo</h3><p>我是一个有Dubbo情节的程序员。</p>
+<p>Dubbo以不同方式，陪伴了我时间不长的整个代码生涯。不久前，通过社区投票，我被选举为<code>Committer</code>。当时我在朋友圈发了一句话，也是贯穿我从开始使用Dubbo、研究Dubbo、贡献Dubbo到最后成为<code>Committer</code>的全过程，一直为我提供内心无与伦比愉悦的源泉：成长这种事，能看见脚印特别幸福。</p>
+<p>今天来个回忆杀，把我和Dubbo的那些事拿出来说说。</p>
+<h4 id="相识"><a href="#相识" class="headerlink" title="相识"></a>相识</h4><p>就好像胎教一样，很多父母希望在孩子还没成型的时候，给他灌输一些东西，以此影响他出生之后的性格和爱好。我知道Dubbo，是在我大三翘课出去实习的时候，那个时候是懵懂的，我眼里最牛的人就是能熟练使用各种配置，精通SSH框架的人。</p>
+<p>当时在我眼中能够不查百度（对，那个时候我还在用百度）就把各种配置文件配好并且启动Tomcat不报错的人，就无愧为代码大神，要是还能一眼看出我的配置文件哪里错了并且随手修掉，那就是巨神了。见到一个我就想扑过去咔一个单膝跪地然后说：师傅在上，请受徒儿一拜！然后手里还端着一瓶AD钙奶，一仰头干了。</p>
+<p>就是在那种情况下，我外出实习，遇到了一群影响我至今的人。当时也是机缘巧合，我们进行了两个非常小的模块的服务化改造。那时的团队除了我们老大，全是一群新兵蛋子，老大指哪我们打哪。老大说，就用Dubbo吧——现在回想起来这个瞬间要是拍电影的话应该有个定格——从那时候开始，我才知道，哦！原来还有一种东西叫做RPC，还有个阿里巴巴的RPC框架叫Dubbo。</p>
+<p>我后来去搜了一下Dubbo，跳出的条目里基本都写着：阿里巴巴开源的RPC框架，经历过双十一流量的考验。</p>
+<p>完蛋，查完更着迷了。</p>
+<p>苦于当时非常有限的水平和高强度的工作，我和Dubbo的缘分也就停留在一面之缘的程度——要说认识吧谈不上，不认识吧也牵强。用文艺点的说法就是——在我的幼小心灵里种下了一粒种子。没想到最近开花了。</p>
+<p>后来公司业务线解散，大家各奔东西。我们这群人，有的去了阿里网易微医，还有的到了小公司当顶梁柱，非常优秀的一批人！向你们致敬！</p>
+<h4 id="相知"><a href="#相知" class="headerlink" title="相知"></a>相知</h4><p>第一次去搜一些源码解读的文章，是在面试二维火之前。当时很少看Dubbo的源码，自己看代码又不知从何下手，只能去网上搜（也养成了我后来先看网上别人的源码解读，然后自己看+debug，再自己写的风格）。林林总总看下来，就记住什么Invoker，什么这代理那代理，什么注册中心。细的一问三不知，三问九摇头。</p>
+<p>进了二维火可爽死我了，二维火当时自己维护了一个Dubbo的分支，有一些对Dubbo非常了解的人。那时候，工作结束搞Dubbo，周六加班研究Dubbo。看源码，看不懂就debug一下，debug也不明白就问，问人，问google。反正是折腾了个遍。这都是我自己的亲身经历，并非杜撰。我的博客里有一些Dubbo源码分析的文章，可以看到Dubbo的核心流程解读的部分，全是在2016年10月到2017年11月之间写的，就是我在二维火任职期间。</p>
+<p>那时第一次对整体的架构有了了解，但是细节上还是蒙圈。我印象比较深的是在面试网易云音乐的时候，面试官问：如果一个Provider上线或者下线，Consumer这边怎么感知到？我回答：巴拉巴拉。面试官继续问：如果一个Consumer调用的过程中，消息发过去了，Provider已经下线了会怎么样？我回答不知道。</p>
+<p>可以看到，在当时（2017年10月份），我对Dubbo的很多细节还理解不到位。你问我Dubbo的远程调用原理是什么，我可以说个大概，但涉及到某个非常具体的场景，或者某些异常场景，我就不知道了。但是在二维火这一年的折腾，算是我的Dubbo生涯里承上启下的阶段，在这个阶段里，很多细节我依然不甚明了，但是如果给我电脑，允许我debug，我就可以在非常短的时间内把问题了解个七七八八。</p>
+<p>这个阶段要是用谈恋爱来打比方，大概算是我认识你你也认识我，互相知根知底眉来眼去，但还没到捅破窗户纸那一层。也是从这时候开始，我基本可以摆脱其他人的源码解读，独立完成一些文章，写一写自己的理解。</p>
+<h4 id="搞在一起"><a href="#搞在一起" class="headerlink" title="搞在一起"></a>搞在一起</h4><p>2017年11月，我入职网易云音乐。这里不再使用Dubbo，而是内部自研的一套RPC。</p>
+<p>从这时开始进入了一个非常微妙的阶段。很多人跟我说过类似的话：真羡慕你们云音乐，流量那么大，肯定要解决很多并发问题，对性能要求很高。你看我们这里，流量小，用不到你们那些技术。</p>
+<p>我如果自此放弃Dubbo，我也可以用同样的话安慰自己：Dubbo你看，不是我不爱你哦，是我们这里用不到你，我也是忍痛割你。再抹上两滴眼泪可以说是戏份很足了。</p>
+<p><strong>人很善于自我合理化</strong>，用各种理由说服自己，不是我不努力，也不是我笨，只不过是我接触不到。我承认，万事无常，任命低头无可厚非。但是心中要明了，我们更鼓励的不是“算了，就这样吧”的人，我们更推崇的是“虽然是这个样子，但是我就是要硬着头皮上”的人。</p>
+<p>先不说这些鸡汤的东西，先说过程，主题我后面自会升华。</p>
+<p>一个非常非常偶然的机会，我第一次给Dubbo修了一个小Bug。第一次代码被合并之后我备受鼓舞，这种感觉很棒，就像第一次跟女神拉手一样——心里会不自觉的想着，下次是不是可以抱抱了呢？下次我的代码是不是还会被merge呢？</p>
+<p>然后慢慢的，贡献越来越多，被合并的代码越来越多。期间有的是修复已有的ISSUE，有的是看代码的时候发现了问题，也有一些新的Feature。有盼头有希望，其实也是一件非常美妙的事情。</p>
+<p>后来打交道的过程中认识了其他的Dubbo贡献者，在这里也很感谢他们。一开始我总有种人微言轻的感觉，一般都处在旁听的状态，毕竟这些贡献者基本上都是各大公司的精英人物。后来发现是我多虑了，大神们其实非常平易近人。</p>
+<p>再后来就像我开头说的那样，慢慢的解决问题，更深入的了解Dubbo，最后成为一名<code>Committer</code>。到这个阶段，我大概可以说我们是搞在一起了（怎么gay里gay气的）。这是一件非常有成就感的事——想象一下你的任何一行代码，都会运行在数万台服务器上，影响几亿的用户。</p>
+<p>从接触Dubbo，了解Dubbo，再到成为<code>Committer</code>，花费了差不多两年的时间。花了很多时间去解决各种问题，跟大家讨论问题，尝试着做出新东西。这是一个漫长的过程，一定要耐得住性子才能走出来，各位共勉，切忌急于求成！</p>
+<p>我希望自己可以继续做下去，陪着Dubbo成为Apache的一个顶级项目，成为RPC框架的标杆。标杆之一吧，配合一下广告法。。</p>
+<h4 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h4><p>我还是想回到之前提到的关于“用不到=不精通”的地方。</p>
+<p>人的主观能动性非常强，可能你自己都没意识到。我以前搞Dubbo，无非写写源码分析的文章，给有需要的朋友解决一下问题，并没有什么实质性的成绩，说话腰杆不硬。现在我可以说，去做就行了，两年以后又是一个<code>Committer</code>！</p>
+<p>一开始我也和很多人一样，觉得做开源高高在上，后来我和Dubbo偶然相遇，真正走上了这条路才发现其实并没有那么难。很多人没有这样的偶然，不经意间就错过了，希望各位看到我的文章以后，把偶然变成必然！</p>
+<p>我把我的经历拿出来说，并非希望别人去模仿，踩着我的脚印走。取法乎上使得其中，拿更牛的人做目标。我是想要告诉看文章的人一句话，<strong>做什么都没那么难，难的是下一个使出浑身解数、撒泼打滚、嗷嗷蹦高也要把事情做成的决心</strong>。</p>
+<p>最后用我以前的github签名做结束：天道酬勤，功不唐捐。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/随笔/" rel="tag"># 随笔</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Netty源码分析——connect vs active.html" rel="next" title="Netty源码分析——connect vs active">
+                <i class="fa fa-chevron-left"></i> Netty源码分析——connect vs active
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Dubbo源码解析——connections vs share connection.html" rel="prev" title="Dubbo源码解析——connections vs share connection">
+                Dubbo源码解析——connections vs share connection <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">74</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">70</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#遇见Dubbo"><span class="nav-number">1.</span> <span class="nav-text">遇见Dubbo</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#相识"><span class="nav-number">1.1.</span> <span class="nav-text">相识</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#相知"><span class="nav-number">1.2.</span> <span class="nav-text">相知</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#搞在一起"><span class="nav-number">1.3.</span> <span class="nav-text">搞在一起</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#后记"><span class="nav-number">1.4.</span> <span class="nav-text">后记</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

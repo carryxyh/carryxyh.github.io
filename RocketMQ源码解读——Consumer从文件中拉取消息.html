@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="rocketmq," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="RocketMQ源码解读——Consumer从文件中拉取消息@(rocketmq源码解读)  消费者拉取消息，使用的是PullMessageProcessor，看一下processRequest方法，一开始初始化response的相关数据，然后是校验，我们具体看一下：12345678910111213141516171819202122//校验Broker是否可读if (!PermName.isR">
+<meta name="keywords" content="rocketmq">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocketMQ源码解读——Consumer从文件中拉取消息">
+<meta property="og:url" content="http://wyj.shiwuliang.com/RocketMQ源码解读——Consumer从文件中拉取消息.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="RocketMQ源码解读——Consumer从文件中拉取消息@(rocketmq源码解读)  消费者拉取消息，使用的是PullMessageProcessor，看一下processRequest方法，一开始初始化response的相关数据，然后是校验，我们具体看一下：12345678910111213141516171819202122//校验Broker是否可读if (!PermName.isR">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-01-17T11:54:06.450Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RocketMQ源码解读——Consumer从文件中拉取消息">
+<meta name="twitter:description" content="RocketMQ源码解读——Consumer从文件中拉取消息@(rocketmq源码解读)  消费者拉取消息，使用的是PullMessageProcessor，看一下processRequest方法，一开始初始化response的相关数据，然后是校验，我们具体看一下：12345678910111213141516171819202122//校验Broker是否可读if (!PermName.isR">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/RocketMQ源码解读——Consumer从文件中拉取消息.html"/>
+
+
+
+
+
+  <title>RocketMQ源码解读——Consumer从文件中拉取消息 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/RocketMQ源码解读——Consumer从文件中拉取消息.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">RocketMQ源码解读——Consumer从文件中拉取消息</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-01-16T21:34:17+08:00">
+                2018-01-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/rocketmq源码/" itemprop="url" rel="index">
+                    <span itemprop="name">rocketmq源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="RocketMQ源码解读——Consumer从文件中拉取消息"><a href="#RocketMQ源码解读——Consumer从文件中拉取消息" class="headerlink" title="RocketMQ源码解读——Consumer从文件中拉取消息"></a>RocketMQ源码解读——Consumer从文件中拉取消息</h3><p>@(rocketmq源码解读)</p>
+<hr>
+<p>消费者拉取消息，使用的是<code>PullMessageProcessor</code>，看一下<code>processRequest</code>方法，一开始初始化<code>response</code>的相关数据，然后是校验，我们具体看一下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">//校验Broker是否可读</span><br><span class="line">if (!PermName.isReadable(this.brokerController.getBrokerConfig().getBrokerPermission())) &#123;</span><br><span class="line">    response.setCode(ResponseCode.NO_PERMISSION);</span><br><span class="line">    response.setRemark(String.format(&quot;the broker[%s] pulling message is forbidden&quot;, this.brokerController.getBrokerConfig().getBrokerIP1()));</span><br><span class="line">    return response;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 校验 consumer分组是否存在</span><br><span class="line">SubscriptionGroupConfig subscriptionGroupConfig =</span><br><span class="line">    this.brokerController.getSubscriptionGroupManager().findSubscriptionGroupConfig(requestHeader.getConsumerGroup());</span><br><span class="line">if (null == subscriptionGroupConfig) &#123;</span><br><span class="line">    response.setCode(ResponseCode.SUBSCRIPTION_GROUP_NOT_EXIST);</span><br><span class="line">    response.setRemark(String.format(&quot;subscription group [%s] does not exist, %s&quot;, requestHeader.getConsumerGroup(), FAQUrl.suggestTodo(FAQUrl.SUBSCRIPTION_GROUP_NOT_EXIST)));</span><br><span class="line">    return response;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 校验 consumer分组配置 是否可消费</span><br><span class="line">if (!subscriptionGroupConfig.isConsumeEnable()) &#123;</span><br><span class="line">    response.setCode(ResponseCode.NO_PERMISSION);</span><br><span class="line">    response.setRemark(&quot;subscription group no permission, &quot; + requestHeader.getConsumerGroup());</span><br><span class="line">    return response;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>第一和第三步校验的内容比较简单，我们主要看第二步，即校验<code>consumer</code>配置的部分：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">public SubscriptionGroupConfig findSubscriptionGroupConfig(final String group) &#123;</span><br><span class="line">    SubscriptionGroupConfig subscriptionGroupConfig = this.subscriptionGroupTable.get(group);</span><br><span class="line">    if (null == subscriptionGroupConfig) &#123;</span><br><span class="line">        if (brokerController.getBrokerConfig().isAutoCreateSubscriptionGroup() || MixAll.isSysConsumerGroup(group)) &#123;</span><br><span class="line">            subscriptionGroupConfig = new SubscriptionGroupConfig();</span><br><span class="line">            subscriptionGroupConfig.setGroupName(group);</span><br><span class="line">            SubscriptionGroupConfig preConfig = this.subscriptionGroupTable.putIfAbsent(group, subscriptionGroupConfig);</span><br><span class="line">            if (null == preConfig) &#123;</span><br><span class="line">                log.info(&quot;auto create a subscription group, &#123;&#125;&quot;, subscriptionGroupConfig.toString());</span><br><span class="line">            &#125;</span><br><span class="line">            this.dataVersion.nextVersion();</span><br><span class="line">            this.persist();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return subscriptionGroupConfig;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里有个小细节，如果<code>broker</code>可以自动创建订阅组的时候，会直接把订阅配置创建好，并且执行持久化步骤。</p>
+<p>接着说，往下还是校验：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">// 校验 topic配置 存在</span><br><span class="line">TopicConfig topicConfig = this.brokerController.getTopicConfigManager().selectTopicConfig(requestHeader.getTopic());</span><br><span class="line">if (null == topicConfig) &#123;</span><br><span class="line">    log.error(&quot;the topic &#123;&#125; not exist, consumer: &#123;&#125;&quot;, requestHeader.getTopic(), RemotingHelper.parseChannelRemoteAddr(channel));</span><br><span class="line">    response.setCode(ResponseCode.TOPIC_NOT_EXIST);</span><br><span class="line">    response.setRemark(String.format(&quot;topic[%s] not exist, apply first please! %s&quot;, requestHeader.getTopic(), FAQUrl.suggestTodo(FAQUrl.APPLY_TOPIC_URL)));</span><br><span class="line">    return response;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 校验 topic配置 权限可读</span><br><span class="line">if (!PermName.isReadable(topicConfig.getPerm())) &#123;</span><br><span class="line">    response.setCode(ResponseCode.NO_PERMISSION);</span><br><span class="line">    response.setRemark(&quot;the topic[&quot; + requestHeader.getTopic() + &quot;] pulling message is forbidden&quot;);</span><br><span class="line">    return response;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 校验 读取队列 在 topic配置 队列范围内</span><br><span class="line">if (requestHeader.getQueueId() &lt; 0 || requestHeader.getQueueId() &gt;= topicConfig.getReadQueueNums()) &#123;</span><br><span class="line">    String errorInfo = String.format(&quot;queueId[%d] is illegal, topic:[%s] topicConfig.readQueueNums:[%d] consumer:[%s]&quot;,</span><br><span class="line">        requestHeader.getQueueId(), requestHeader.getTopic(), topicConfig.getReadQueueNums(), channel.remoteAddress());</span><br><span class="line">    log.warn(errorInfo);</span><br><span class="line">    response.setCode(ResponseCode.SYSTEM_ERROR);</span><br><span class="line">    response.setRemark(errorInfo);</span><br><span class="line">    return response;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面的三个校验都很好理解，然后是在过滤订阅表达式的时候（<code>final boolean hasSubscriptionFlag = PullSysFlag.hasSubscriptionFlag(requestHeader.getSysFlag())</code>），会校验订阅关系，这个部分我们就不细看了，会校验几个信息：</p>
+<ol>
+<li>消费分组信息 是否存在。</li>
+<li>消费分组信息 消息模型是否匹配。</li>
+<li>订阅信息是否存在。</li>
+<li>版本。</li>
+</ol>
+<p>然后就是获取消息的部分了：<code>final GetMessageResult getMessageResult = this.brokerController.getMessageStore().getMessage(requestHeader.getConsumerGroup(), requestHeader.getTopic(),
+                requestHeader.getQueueId(), requestHeader.getQueueOffset(), requestHeader.getMaxMsgNums(), messageFilter);</code>。</p>
+<p>我们看一下<code>DefaultMessageStore</code>的<code>getMessage</code>。一开始还是校验各种各样的信息，我们略过看重点：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">ConsumeQueue consumeQueue = findConsumeQueue(topic, queueId);</span><br><span class="line"></span><br><span class="line">//看下这个findConsumeQueue方法：</span><br><span class="line">ConcurrentMap&lt;Integer, ConsumeQueue&gt; map = consumeQueueTable.get(topic);</span><br><span class="line">if (null == map) &#123;</span><br><span class="line">    ConcurrentMap&lt;Integer, ConsumeQueue&gt; newMap = new ConcurrentHashMap&lt;Integer, ConsumeQueue&gt;(128);</span><br><span class="line">    ConcurrentMap&lt;Integer, ConsumeQueue&gt; oldMap = consumeQueueTable.putIfAbsent(topic, newMap);</span><br><span class="line">    if (oldMap != null) &#123;</span><br><span class="line">        map = oldMap;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        map = newMap;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">ConsumeQueue logic = map.get(queueId);</span><br><span class="line">if (null == logic) &#123;</span><br><span class="line">    ConsumeQueue newLogic = new ConsumeQueue(</span><br><span class="line">        topic,</span><br><span class="line">        queueId,</span><br><span class="line">        StorePathConfigHelper.getStorePathConsumeQueue(this.messageStoreConfig.getStorePathRootDir()),</span><br><span class="line">        this.getMessageStoreConfig().getMapedFileSizeConsumeQueue(),</span><br><span class="line">        this);</span><br><span class="line">    ConsumeQueue oldLogic = map.putIfAbsent(queueId, newLogic);</span><br><span class="line">    if (oldLogic != null) &#123;</span><br><span class="line">        logic = oldLogic;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        logic = newLogic;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">return logic;</span><br></pre></td></tr></table></figure></p>
+<p>这里获取的逻辑比较简单，没有就创建创建创建。。。</p>
+<p>然后就是根据这个<code>Consume Queue</code>获取消息了，我们之前说过，<code>Consume Queue</code>叫做逻辑队列，相当于字典的索引表：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">// 消费队列 最小编号</span><br><span class="line">minOffset = consumeQueue.getMinOffsetInQueue();</span><br><span class="line">// 消费队列 最大编号</span><br><span class="line">maxOffset = consumeQueue.getMaxOffsetInQueue();</span><br><span class="line"></span><br><span class="line">if (maxOffset == 0) &#123; // 消费队列无消息</span><br><span class="line">    status = GetMessageStatus.NO_MESSAGE_IN_QUEUE;</span><br><span class="line">    nextBeginOffset = nextOffsetCorrection(offset, 0);</span><br><span class="line">&#125; else if (offset &lt; minOffset) &#123; // 查询offset 太小</span><br><span class="line">    status = GetMessageStatus.OFFSET_TOO_SMALL;</span><br><span class="line">    nextBeginOffset = nextOffsetCorrection(offset, minOffset);</span><br><span class="line">&#125; else if (offset == maxOffset) &#123; // 查询offset 超过 消费队列一个位置</span><br><span class="line">    status = GetMessageStatus.OFFSET_OVERFLOW_ONE;</span><br><span class="line">    nextBeginOffset = nextOffsetCorrection(offset, offset);</span><br><span class="line">&#125; else if (offset &gt; maxOffset) &#123; // 查询offset 超过 消费队列大于一个位置</span><br><span class="line">    status = GetMessageStatus.OFFSET_OVERFLOW_BADLY;</span><br><span class="line">    if (0 == minOffset) &#123;</span><br><span class="line">        nextBeginOffset = nextOffsetCorrection(offset, minOffset);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        nextBeginOffset = nextOffsetCorrection(offset, maxOffset);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里主要校验，请求的队列的<code>offset</code>是否越界以及合法的问题，不合法的<code>offset</code>会通过<code>nextOffsetCorrection</code>方法修正，告诉消费者正确的、下次开始消费的位置。</p>
+<p>通过校验，会去获取映射的<code>buffer</code>的结果：<code>SelectMappedBufferResult bufferConsumeQueue = consumeQueue.getIndexBuffer(offset)</code>如果找不到返回一个<code>OFFSET_FOUND_NULL</code>的状态，我们主要看获取到的情况，处理很长，分段来看：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">// commitLog下一个文件(MappedFile)对应的开始offset</span><br><span class="line">long nextPhyFileStartOffset = Long.MIN_VALUE;</span><br><span class="line">// 消息物理位置拉取到的最大offset</span><br><span class="line">long maxPhyOffsetPulling = 0;</span><br><span class="line"></span><br><span class="line">int i = 0;</span><br><span class="line">final int maxFilterMessageCount = Math.max(16000, maxMsgNums * ConsumeQueue.CQ_STORE_UNIT_SIZE);</span><br><span class="line">final boolean diskFallRecorded = this.messageStoreConfig.isDiskFallRecorded();</span><br><span class="line">ConsumeQueueExt.CqExtUnit cqExtUnit = new ConsumeQueueExt.CqExtUnit();</span><br></pre></td></tr></table></figure></p>
+<p>获取一些信息，初始化过滤消息的条数等。然后开始循环获取消息位置信息：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">for (; i &lt; bufferConsumeQueue.getSize() &amp;&amp; i &lt; maxFilterMessageCount; i += ConsumeQueue.CQ_STORE_UNIT_SIZE) &#123;</span><br><span class="line">	long offsetPy = bufferConsumeQueue.getByteBuffer().getLong();</span><br><span class="line">	int sizePy = bufferConsumeQueue.getByteBuffer().getInt();</span><br><span class="line">	long tagsCode = bufferConsumeQueue.getByteBuffer().getLong();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这三个数值之前我们在介绍<code>Consume Queue</code>中的消息格式的时候已经介绍过了，分别是<strong>消息的物理offset</strong>、<code>size</code>和<strong>tag的hashcode</strong>。</p>
+<p>继续往下看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line">maxPhyOffsetPulling = offsetPy;</span><br><span class="line"></span><br><span class="line">if (nextPhyFileStartOffset != Long.MIN_VALUE) &#123;</span><br><span class="line">    if (offsetPy &lt; nextPhyFileStartOffset)</span><br><span class="line">        continue;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//校验commitLog是否需要硬盘，无法全部放在内存，这里应该是获取消息的物理地址超过内存总大小了</span><br><span class="line">boolean isInDisk = checkInDiskByCommitOffset(offsetPy, maxOffsetPy);</span><br><span class="line"></span><br><span class="line">if (this.isTheBatchFull(sizePy, maxMsgNums, getResult.getBufferTotalSize(), getResult.getMessageCount(),</span><br><span class="line">    isInDisk)) &#123;</span><br><span class="line">    break;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">boolean extRet = false, isTagsCodeLegal = true;</span><br><span class="line">if (consumeQueue.isExtAddr(tagsCode)) &#123;</span><br><span class="line">    extRet = consumeQueue.getExt(tagsCode, cqExtUnit);</span><br><span class="line">    if (extRet) &#123;</span><br><span class="line">        tagsCode = cqExtUnit.getTagsCode();</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        // can&apos;t find ext content.Client will filter messages by tag also.</span><br><span class="line">        log.error(&quot;[BUG] can&apos;t find consume queue extend file content!addr=&#123;&#125;, offsetPy=&#123;&#125;, sizePy=&#123;&#125;, topic=&#123;&#125;, group=&#123;&#125;&quot;,</span><br><span class="line">            tagsCode, offsetPy, sizePy, topic, group);</span><br><span class="line">        isTagsCodeLegal = false;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//过滤consume queue，主要是判断tag是否符合</span><br><span class="line">if (messageFilter != null</span><br><span class="line">    &amp;&amp; !messageFilter.isMatchedByConsumeQueue(isTagsCodeLegal ? tagsCode : null, extRet ? cqExtUnit : null)) &#123;</span><br><span class="line">    if (getResult.getBufferTotalSize() == 0) &#123;</span><br><span class="line">        status = GetMessageStatus.NO_MATCHED_MESSAGE;</span><br><span class="line">    &#125;</span><br><span class="line">    continue;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">SelectMappedBufferResult selectResult = this.commitLog.getMessage(offsetPy, sizePy);</span><br><span class="line">if (null == selectResult) &#123;</span><br><span class="line">    if (getResult.getBufferTotalSize() == 0) &#123;</span><br><span class="line">        status = GetMessageStatus.MESSAGE_WAS_REMOVING;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    nextPhyFileStartOffset = this.commitLog.rollNextFile(offsetPy);</span><br><span class="line">    continue;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//判断消息是否符合条件</span><br><span class="line">if (messageFilter != null</span><br><span class="line">    &amp;&amp; !messageFilter.isMatchedByCommitLog(selectResult.getByteBuffer().slice(), null)) &#123;</span><br><span class="line">    if (getResult.getBufferTotalSize() == 0) &#123;</span><br><span class="line">        status = GetMessageStatus.NO_MATCHED_MESSAGE;</span><br><span class="line">    &#125;</span><br><span class="line">    // release...</span><br><span class="line">    selectResult.release();</span><br><span class="line">    continue;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//添加消息到结果中，更新offset和状态</span><br><span class="line">this.storeStatsService.getGetMessageTransferedMsgCount().incrementAndGet();</span><br><span class="line">getResult.addMessage(selectResult);</span><br><span class="line">status = GetMessageStatus.FOUND;</span><br><span class="line">nextPhyFileStartOffset = Long.MIN_VALUE;</span><br></pre></td></tr></table></figure>
+<p>其中：<code>SelectMappedBufferResult selectResult = this.commitLog.getMessage(offsetPy, sizePy);</code>这句就是真正的获取消息的部分，里面内容没有什么需要特别注意的部分，我们就忽略不计了。</p>
+<p>至此整个<code>rocketmq</code>真正获取消息的部分就结束了。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/rocketmq/" rel="tag"># rocketmq</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Dubbo的一些细节.html" rel="next" title="Dubbo版本的一些细节">
+                <i class="fa fa-chevron-left"></i> Dubbo版本的一些细节
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/RocketMQ源码解读——消费者的Rebalance过程.html" rel="prev" title="RocketMQ源码解读——消费者的Rebalance过程">
+                RocketMQ源码解读——消费者的Rebalance过程 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">74</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">70</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocketMQ源码解读——Consumer从文件中拉取消息"><span class="nav-number">1.</span> <span class="nav-text">RocketMQ源码解读——Consumer从文件中拉取消息</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="集群策略," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Dubbo源码——集群策略Dubbo的集群策略一共分8种，分别是：  FAIL_OVER（Default） FAIL_BACK FAIL_SAFE FAIL_FAST BROADCAST AVAILABLE FORKING MERGEABLE  今天来看一下这几种策略的实现。 FAIL_OVER即失败重试（换一个提供者），我们看一下代码： 12345678910111213141516171819">
+<meta name="keywords" content="集群策略">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Dubbo源码——集群策略">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Dubbo源码——集群策略.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Dubbo源码——集群策略Dubbo的集群策略一共分8种，分别是：  FAIL_OVER（Default） FAIL_BACK FAIL_SAFE FAIL_FAST BROADCAST AVAILABLE FORKING MERGEABLE  今天来看一下这几种策略的实现。 FAIL_OVER即失败重试（换一个提供者），我们看一下代码： 12345678910111213141516171819">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-04-23T13:20:43.633Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Dubbo源码——集群策略">
+<meta name="twitter:description" content="Dubbo源码——集群策略Dubbo的集群策略一共分8种，分别是：  FAIL_OVER（Default） FAIL_BACK FAIL_SAFE FAIL_FAST BROADCAST AVAILABLE FORKING MERGEABLE  今天来看一下这几种策略的实现。 FAIL_OVER即失败重试（换一个提供者），我们看一下代码： 12345678910111213141516171819">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Dubbo源码——集群策略.html"/>
+
+
+
+
+
+  <title>Dubbo源码——集群策略 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Dubbo源码——集群策略.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Dubbo源码——集群策略</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-04-23T21:20:53+08:00">
+                2018-04-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
+                    <span itemprop="name">dubbo源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Dubbo源码——集群策略"><a href="#Dubbo源码——集群策略" class="headerlink" title="Dubbo源码——集群策略"></a>Dubbo源码——集群策略</h3><p>Dubbo的集群策略一共分8种，分别是：</p>
+<ul>
+<li>FAIL_OVER（Default）</li>
+<li>FAIL_BACK</li>
+<li>FAIL_SAFE</li>
+<li>FAIL_FAST</li>
+<li>BROADCAST</li>
+<li>AVAILABLE</li>
+<li>FORKING</li>
+<li>MERGEABLE</li>
+</ul>
+<p>今天来看一下这几种策略的实现。</p>
+<h4 id="FAIL-OVER"><a href="#FAIL-OVER" class="headerlink" title="FAIL_OVER"></a>FAIL_OVER</h4><p>即失败重试（换一个提供者），我们看一下代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// retry loop.</span></span><br><span class="line">RpcException le = <span class="keyword">null</span>; <span class="comment">// last exception.</span></span><br><span class="line"><span class="comment">// invoked invokers.</span></span><br><span class="line">List&lt;Invoker&lt;T&gt;&gt; invoked = <span class="keyword">new</span> ArrayList&lt;Invoker&lt;T&gt;&gt;(copyinvokers.size()); </span><br><span class="line">Set&lt;String&gt; providers = <span class="keyword">new</span> HashSet&lt;String&gt;(len);</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; len; i++) &#123;</span><br><span class="line">    <span class="comment">//Reselect before retry to avoid a change of candidate `invokers`.</span></span><br><span class="line">    <span class="comment">//<span class="doctag">NOTE:</span> if `invokers` changed, then `invoked` also lose accuracy.</span></span><br><span class="line">    <span class="keyword">if</span> (i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">//检查当前cluster invoker是否已经被销毁</span></span><br><span class="line">        checkWhetherDestroyed();</span><br><span class="line">        <span class="comment">//list是我们之前说过的Directory的list方法</span></span><br><span class="line">        copyinvokers = list(invocation);</span><br><span class="line">        <span class="comment">// check again</span></span><br><span class="line">        checkInvokers(copyinvokers, invocation);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//负载均衡策略选取一个invoker</span></span><br><span class="line">    Invoker&lt;T&gt; invoker = select(loadbalance, invocation, copyinvokers, invoked);</span><br><span class="line">    invoked.add(invoker);</span><br><span class="line">    RpcContext.getContext().setInvokers((List) invoked);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">//用选取的这个执行</span></span><br><span class="line">        Result result = invoker.invoke(invocation);</span><br><span class="line">        <span class="keyword">if</span> (le != <span class="keyword">null</span> &amp;&amp; logger.isWarnEnabled()) &#123;</span><br><span class="line">            logger.warn(<span class="string">"..."</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (RpcException e) &#123;</span><br><span class="line">        <span class="comment">//如果是业务异常，则不重试</span></span><br><span class="line">        <span class="keyword">if</span> (e.isBiz()) &#123; <span class="comment">// biz exception.</span></span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//否则进入到下一个循环中</span></span><br><span class="line">        le = e;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">        le = <span class="keyword">new</span> RpcException(e.getMessage(), e);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        providers.add(invoker.getUrl().getAddress());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们考虑一种异步的情况，异步的情况下，更建议使用<code>Listenable Future</code>的方式实现，这里给出一个demo：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Future <span class="title">invoke</span><span class="params">(args,tryCount,failoverFuture)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (tryCount &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        future = invoke0(args);</span><br><span class="line">        future.setListener() &#123;</span><br><span class="line">            success(result) &#123;</span><br><span class="line">                failoverFuture.setSuccess(result);</span><br><span class="line">                <span class="keyword">return</span> failoverFuture;</span><br><span class="line">            &#125;</span><br><span class="line">        </span><br><span class="line">            fail() &#123;</span><br><span class="line">                <span class="keyword">return</span> invoke(args,tryCount - <span class="number">1</span>,failoverFuture)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样的实现方式在异步的情况下就非常优雅了。</p>
+<h4 id="FAIL-BACK"><a href="#FAIL-BACK" class="headerlink" title="FAIL_BACK"></a>FAIL_BACK</h4><p>失败重试，看代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">//check</span></span><br><span class="line">    checkInvokers(invokers, invocation);</span><br><span class="line">    Invoker&lt;T&gt; invoker = select(loadbalance, invocation, invokers, <span class="keyword">null</span>);</span><br><span class="line">    <span class="keyword">return</span> invoker.invoke(invocation);</span><br><span class="line">&#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">    logger.error(<span class="string">"..."</span>);</span><br><span class="line">    addFailed(invocation, <span class="keyword">this</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> RpcResult();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里注意一下，如果出错就返回一个空的Result，而不是等待重试的结果。看一下这个<code>addFailed</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (retryFuture == <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (retryFuture == <span class="keyword">null</span>) &#123;</span><br><span class="line">            retryFuture = scheduledExecutorService.scheduleWithFixedDelay(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    <span class="comment">// collect retry statistics</span></span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        retryFailed();</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Throwable t) &#123; <span class="comment">// Defensive fault tolerance</span></span><br><span class="line">                        logger.error(<span class="string">"..."</span>, t);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;, RETRY_FAILED_PERIOD, RETRY_FAILED_PERIOD, TimeUnit.MILLISECONDS);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//ConcurrentMap&lt;Invocation, AbstractClusterInvoker&lt;?&gt;&gt; failed</span></span><br><span class="line">failed.put(invocation, router);</span><br></pre></td></tr></table></figure>
+<p>如果这个<code>invoker</code>没有重试，则初始化一个<code>重试</code>，注意这里的重试并不会去换一个提供者，而是继续在这个提供者上重试。</p>
+<p>看一下<code>retryFailed</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (failed.size() == <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">for</span> (Map.Entry&lt;Invocation, AbstractClusterInvoker&lt;?&gt;&gt; entry : <span class="keyword">new</span> HashMap&lt;Invocation, AbstractClusterInvoker&lt;?&gt;&gt;(</span><br><span class="line">        failed).entrySet()) &#123;</span><br><span class="line">    Invocation invocation = entry.getKey();</span><br><span class="line">    Invoker&lt;?&gt; invoker = entry.getValue();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">//重试</span></span><br><span class="line">        invoker.invoke(invocation);</span><br><span class="line">        <span class="comment">//直接remove，下次不再重试，说白了就是只会重试一次</span></span><br><span class="line">        failed.remove(invocation);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">        logger.error(<span class="string">"..."</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到就是循环这个map，执行所有失败了的invoke过程。</p>
+<p>这里我们区分一下failover和failback：</p>
+<ol>
+<li>failover可以重试不止一次</li>
+<li>failover在失败时，进行重试，返回的是重试的结果。而failback返回的是一个空result</li>
+<li>failback不会更换一个提供者（invoker）进行重试</li>
+</ol>
+<h4 id="FAIL-SAFE、FAIL-FAST和AVAILABLE比较简单就跳过了"><a href="#FAIL-SAFE、FAIL-FAST和AVAILABLE比较简单就跳过了" class="headerlink" title="FAIL_SAFE、FAIL_FAST和AVAILABLE比较简单就跳过了"></a>FAIL_SAFE、FAIL_FAST和AVAILABLE比较简单就跳过了</h4><h4 id="BROADCAST"><a href="#BROADCAST" class="headerlink" title="BROADCAST"></a>BROADCAST</h4><p>广播，一次执行对所有的提供者都进行一次调用：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">checkInvokers(invokers, invocation);</span><br><span class="line">RpcContext.getContext().setInvokers((List) invokers);</span><br><span class="line">RpcException exception = <span class="keyword">null</span>;</span><br><span class="line">Result result = <span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">for</span> (Invoker&lt;T&gt; invoker : invokers) &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        result = invoker.invoke(invocation);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (RpcException e) &#123;</span><br><span class="line">        exception = e;</span><br><span class="line">        logger.warn(e.getMessage(), e);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">        exception = <span class="keyword">new</span> RpcException(e.getMessage(), e);</span><br><span class="line">        logger.warn(e.getMessage(), e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//如果有一个调用失败则抛出异常</span></span><br><span class="line"><span class="keyword">if</span> (exception != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">throw</span> exception;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> result;</span><br></pre></td></tr></table></figure>
+<p>其实也没有什么好看的，只需要注意一点即可：广播模式中，如果有一次调用失败，则返回失败。</p>
+<h4 id="FORKING"><a href="#FORKING" class="headerlink" title="FORKING"></a>FORKING</h4><p>这个就比较有意思了，注释给出的解释是：用在一些实时性要求比较高的读操作。</p>
+<p>我们看一下这个实现，分两块来看：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">checkInvokers(invokers, invocation);</span><br><span class="line"><span class="keyword">final</span> List&lt;Invoker&lt;T&gt;&gt; selected;</span><br><span class="line"><span class="comment">//并发数量</span></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">int</span> forks = getUrl().getParameter(Constants.FORKS_KEY, Constants.DEFAULT_FORKS);</span><br><span class="line"><span class="comment">//timeout 最快一个的timeout</span></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">int</span> timeout = getUrl().getParameter(Constants.TIMEOUT_KEY, Constants.DEFAULT_TIMEOUT);</span><br><span class="line"><span class="keyword">if</span> (forks &lt;= <span class="number">0</span> || forks &gt;= invokers.size()) &#123;</span><br><span class="line">    selected = invokers;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    selected = <span class="keyword">new</span> ArrayList&lt;Invoker&lt;T&gt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; forks; i++) &#123;</span><br><span class="line">        Invoker&lt;T&gt; invoker = select(loadbalance, invocation, invokers, selected);</span><br><span class="line">        <span class="keyword">if</span> (!selected.contains(invoker)) &#123;<span class="comment">//Avoid add the same invoker several times.</span></span><br><span class="line">            selected.add(invoker);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">RpcContext.getContext().setInvokers((List) selected);</span><br><span class="line"><span class="keyword">final</span> AtomicInteger count = <span class="keyword">new</span> AtomicInteger();</span><br><span class="line"><span class="keyword">final</span> BlockingQueue&lt;Object&gt; ref = <span class="keyword">new</span> LinkedBlockingQueue&lt;Object&gt;();</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">final</span> Invoker&lt;T&gt; invoker : selected) &#123;</span><br><span class="line">    <span class="comment">//启动线程池去执行</span></span><br><span class="line">    executor.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                Result result = invoker.invoke(invocation);</span><br><span class="line">                <span class="comment">//结果直接扔进blocking queue</span></span><br><span class="line">                ref.offer(result);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">                <span class="keyword">int</span> value = count.incrementAndGet();</span><br><span class="line">                <span class="keyword">if</span> (value &gt;= selected.size()) &#123;</span><br><span class="line">                    <span class="comment">//异常扔到队列里</span></span><br><span class="line">                    ref.offer(e);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从上面的代码我们可以看出，首先，并发的去执行invoke，如果成功就把结果扔进队列，如果失败就把异常扔进队列。</p>
+<p>继续往下看，下面的是有意思的地方：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    Object ret = ref.poll(timeout, TimeUnit.MILLISECONDS);</span><br><span class="line">    <span class="keyword">if</span> (ret <span class="keyword">instanceof</span> Throwable) &#123;</span><br><span class="line">        Throwable e = (Throwable) ret;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RpcException(...);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> (Result) ret;</span><br><span class="line">&#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> RpcException(...);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里直接从队列里poll一个元素出来，超时时间就是我们之前的timeout。如果是异常就抛出异常，如果是正常结果就返回，其他元素不作考虑。</p>
+<p>之前我对这个地方有点疑惑，不太明白这样做的目的。在我的印象里应该是这样的：不断的poll队列中的元素（不超时的情况下），如果是异常就丢弃，如果是正常结果就返回。</p>
+<p>如果像dubbo一样，可能会忽略很多成功的结果。今天重读的时候，看了一下注释才豁然开朗。dubbo的这种集群策略上写着：用于<code>对实时性要求比较高</code>的场景。这里我就理解了：优先速度，其次才是结果。对调用方来说，这种场景意味着对相应速度的依赖更高，那么不管最先返回的是成功的结果还是失败的结果，都直接返回给调用方。</p>
+<h4 id="MERGEABLE"><a href="#MERGEABLE" class="headerlink" title="MERGEABLE"></a>MERGEABLE</h4><p>把多个调用的结果组装成一个返回。这个依赖另外的一个<code>Merger</code>类，这里就不细说了。有兴趣的大家自己看一下源码吧。或者需求多的话，我再展开写一下。</p>
+<h4 id="联系方式"><a href="#联系方式" class="headerlink" title="联系方式"></a>联系方式</h4><p><a href="https://github.com/carryxyh" target="_blank" rel="noopener">我的github</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/集群策略/" rel="tag"># 集群策略</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/RocketMQ源码解读——message顺序发送.html" rel="next" title="RocketMQ源码解读——message顺序发送">
+                <i class="fa fa-chevron-left"></i> RocketMQ源码解读——message顺序发送
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Rocketmq源码解读——刷盘策略.html" rel="prev" title="Rocketmq源码解读——刷盘策略">
+                Rocketmq源码解读——刷盘策略 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">74</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">70</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Dubbo源码——集群策略"><span class="nav-number">1.</span> <span class="nav-text">Dubbo源码——集群策略</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#FAIL-OVER"><span class="nav-number">1.1.</span> <span class="nav-text">FAIL_OVER</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FAIL-BACK"><span class="nav-number">1.2.</span> <span class="nav-text">FAIL_BACK</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FAIL-SAFE、FAIL-FAST和AVAILABLE比较简单就跳过了"><span class="nav-number">1.3.</span> <span class="nav-text">FAIL_SAFE、FAIL_FAST和AVAILABLE比较简单就跳过了</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#BROADCAST"><span class="nav-number">1.4.</span> <span class="nav-text">BROADCAST</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FORKING"><span class="nav-number">1.5.</span> <span class="nav-text">FORKING</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MERGEABLE"><span class="nav-number">1.6.</span> <span class="nav-text">MERGEABLE</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#联系方式"><span class="nav-number">1.7.</span> <span class="nav-text">联系方式</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

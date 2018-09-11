@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="并发,管道-节点模型," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="记一次并发场景下的问题排查 上周周四，项目上线，我负责的部分主要是账单重构，说来也巧，本来是没有这个需求的，由于当时划分给我的项目其实已经被别的线接走了，后来经过讨论，这次的业务需要其他线支持，一下任务少了一大截，比较轻松，看了看下单流程，代码不符合我的审美就给重构了（现在想想真是自信过头，没经过架构评审，模型纯自己写的，就给重构了。。果不其然。。）。废话不说，直接进入正题。 问题出现四点钟上线完">
+<meta name="keywords" content="并发,管道-节点模型">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记一次并发场景下的问题排查">
+<meta property="og:url" content="http://wyj.shiwuliang.com/记一次并发场景下的问题排查.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="记一次并发场景下的问题排查 上周周四，项目上线，我负责的部分主要是账单重构，说来也巧，本来是没有这个需求的，由于当时划分给我的项目其实已经被别的线接走了，后来经过讨论，这次的业务需要其他线支持，一下任务少了一大截，比较轻松，看了看下单流程，代码不符合我的审美就给重构了（现在想想真是自信过头，没经过架构评审，模型纯自己写的，就给重构了。。果不其然。。）。废话不说，直接进入正题。 问题出现四点钟上线完">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2017-09-16T07:08:20.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="记一次并发场景下的问题排查">
+<meta name="twitter:description" content="记一次并发场景下的问题排查 上周周四，项目上线，我负责的部分主要是账单重构，说来也巧，本来是没有这个需求的，由于当时划分给我的项目其实已经被别的线接走了，后来经过讨论，这次的业务需要其他线支持，一下任务少了一大截，比较轻松，看了看下单流程，代码不符合我的审美就给重构了（现在想想真是自信过头，没经过架构评审，模型纯自己写的，就给重构了。。果不其然。。）。废话不说，直接进入正题。 问题出现四点钟上线完">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/记一次并发场景下的问题排查.html"/>
+
+
+
+
+
+  <title>记一次并发场景下的问题排查 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/记一次并发场景下的问题排查.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">记一次并发场景下的问题排查</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-04-24T11:31:53+08:00">
+                2017-04-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/线上问题排查/" itemprop="url" rel="index">
+                    <span itemprop="name">线上问题排查</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="记一次并发场景下的问题排查"><a href="#记一次并发场景下的问题排查" class="headerlink" title="记一次并发场景下的问题排查"></a>记一次并发场景下的问题排查</h3><hr>
+<p>上周周四，项目上线，我负责的部分主要是账单重构，说来也巧，本来是没有这个需求的，由于当时划分给我的项目其实已经被别的线接走了，后来经过讨论，这次的业务需要其他线支持，一下任务少了一大截，比较轻松，看了看下单流程，代码不符合我的审美就给重构了（现在想想真是自信过头，没经过架构评审，模型纯自己写的，就给重构了。。果不其然。。）。废话不说，直接进入正题。<br></p>
+<h4 id="问题出现"><a href="#问题出现" class="headerlink" title="问题出现"></a>问题出现<br></h4><p>四点钟上线完成，盯着日志，发现一单下单异常，仔细看了一下发现入参少了一个参数，问题很神奇，没有这个参数的情况下按理来说就不应该走到相应的流程去，但是却走进去了，这时候还没当回事，毕竟上线过程中，机器重启啥问题都可能出现，不大规模爆发就好（其实这个时候已经隐隐感觉不太对，但是我对自己的代码相当自信，也没有特别上心）。<br></p>
+<h4 id="大规模爆发"><a href="#大规模爆发" class="headerlink" title="大规模爆发"></a>大规模爆发<br></h4><p>六点多钟就是吃饭高峰期，这个期间流量暴增，请求会达到一个峰值，这个时候刚上过线，肯定是要紧盯一下的。五点多出现3-4单下单异常，问题一样，都是不应该走到那个逻辑中，但是却走了进去。。这里为了给读者一个比较清晰的认知，贴出部分代码：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">//这里的c就是channel的实例</span><br><span class="line"> if (condition) &#123;</span><br><span class="line">	if () &#123;</span><br><span class="line">		if () &#123;</span><br><span class="line">			c.addNode(n1);</span><br><span class="line">		&#125; else &#123;</span><br><span class="line">			c.addNode(n2);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; else &#123;</span><br><span class="line">		c.addNode(n3);</span><br><span class="line">	&#125;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">	if () &#123;</span><br><span class="line">		c.addNode(n4);</span><br><span class="line">	&#125; else &#123;</span><br><span class="line">		c.addNode(n5);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>模型不复杂，用的是<code>管道-节点</code>的模型，问题就是condition判断为true的情况下，<code>channel</code>中添加了<code>n4</code>或者<code>n5</code>节点！<br></p>
+<p>担心用户大面积下单失败，赶紧让测试的同事在线上环境中测试了一下，发现一切正常。这时候开始意识到，妈的大事不好！根据经验来看：<br></p>
+<ol>
+<li>非必现的问题比必现的问题更难排查。<br></li>
+<li>没有出现任何异常，这种情况下更是难下手。<br></li>
+</ol>
+<p>六点多，问题爆发，一分钟几十单失败，问题都是同一个。。由于公司流量还是比较大，尤其高峰期，比例不算大，可能几十单上百单中会有一单下单失败，但是在后台来看，高峰期有将近400单下单失败！大事不好！<br></p>
+<p>一个同事捕捉了一下某个用户的行为，这个用户第一次下单失败之后又进行了一系列加菜操作之后第二次下单，下单成功。。由于用户感知不大，所以线上反而没有人反馈有问题，这也是比较庆幸的一点。<br></p>
+<p>赶紧把大家叫过来一起捋了一下逻辑，反复看了几遍，发现没啥问题，这时候怀疑是并发情况下才会出现，先定位问题，添加了一些日志记录，等十点多发一次，再看看第二天的效果，是否能直观的给出一个错误的原因。这个时候已经七点多钟，由于负责的是P1级应用，马上发已经不太现实，只能等晚上十点以后了。<br></p>
+<p>这期间反复看了几遍逻辑，由于是重构的代码，别人已经基本帮不上忙，只能自己找（自己设计的模型出了问题，跪着也要找出来T T）。本来打算在公司过夜了（我们学校晚上十点半宿舍就关门了。。我回学校要将近两个小时），后来讨论了一下，由于不是必现问题，晚上流量又比较少，估计也出现不了，先上掉，第二天再看。<br></p>
+<h4 id="回滚"><a href="#回滚" class="headerlink" title="回滚"></a>回滚<br></h4><p>我以为打个补丁，没啥大问题，就先走了。九点多，还在公交车上，关注了一下线上反馈的群，有商家开始反应，金额对不上，有付款消息，收银机却收不到，赶紧在项目的群里说了一下情况，交易中心的架构师回复说如果下单流程走串（比如正常流程下单却调用了外卖下单接口），由于支付消息是根据流程来划分的，所以是存在收不到消息的情况，这已经不是小问题了，程序员都知道，只要跟钱打交道的流程都是重中之重的流程，这是不能出错的，赶紧给释迦打电话，看情况赶紧回滚。。<br></p>
+<p>这个项目涉及到的工程多达十几个，大面积回滚不太可能了，考虑把我负责重构的代码部分回滚掉，赶紧把老代码拉出来，晚上十点多发布了。。<br></p>
+<p>这时候反复捋了几遍逻辑，都觉得应该没什么问题，各种情况也都考虑了。。<br></p>
+<h4 id="问题还原"><a href="#问题还原" class="headerlink" title="问题还原"></a>问题还原<br></h4><p>第二天来了赶紧把代码找出来，先简单的测了一下模型，没出现问题，这时候开始怀疑是不是我调用的节点没错，交易中心内部调用出了问题，询问之后被否认。。没办法了，只能把线上出问题的代码拿出来，再测。<br></p>
+<p>第一次测试把线上出现错误的数据拿出来当入参，启动五百个线程同时跑，没有出现问题，同事提出了一个建议：多个场景下并发跑，这样看看效果。第二次测试两个场景，各启动200个线程跑，同样没出问题，这时开始觉得应该问题不在我这。。<br></p>
+<p>下午想了一下，更严密的测一下，四个场景，每个场景几十个线程，交叉跑 — 问题出现！<br></p>
+<h4 id="排查"><a href="#排查" class="headerlink" title="排查"></a>排查<br></h4><p>跟预测的一样，管道中的节点走串了，<strong>在条件condition为true的情况下，居然走到了只有condition为false才可能走到的节点中</strong>。。<br></p>
+<p>这时候基本确定是并发问题，为了更加确认，直接在方法上加最大粒度的锁，问题解决，这时候已经确定就是并发引起的偶现问题，头大。。<br></p>
+<p>这种问题基本上可以确定是变量共享导致的问题，那么首先怀疑到就是<strong>管道出问题，管道被多个线程共享了，添加节点的时候出现了问题</strong>，由于我设计这个模型的时候已经考虑到了这种情况，管道都是跟线程绑定的（ThreadLocal），但是现在出了问题就要解决，测一下，发现在多线程的情况下，管道和线程的绑定关系很稳固，没有出现同一个管道出现在了不同线程中的情况，继续头大，管道没问题，那么每个独立的管道中添加节点就不会有问题才对。<br></p>
+<p>甚至都怀疑到dubbo上去了。。。周五下午四点多，这时候几百个线程的情况下，问题已经必现，但是调试也好，条件断点也好，任何情况下代码层面都没出现会串的情况。。。这种是最变态的问题，代码都没问题，只能从逻辑层面考虑，几乎没法动手解决，只能通过经验、逻辑、角度等方面去考虑问题了。。<br></p>
+<p>跟同事讨论了一下，讨论中突然想到，也许<code>管道-节点</code>模型中存在能共享的变量？之前我对自己设计的模型自信心还是很强的，再加上那么多测试，基本不会出什么问题，所以一直没怀疑到模型上去，但是现在的情况是无所不用其极，没办法了。<br></p>
+<p>赶紧看了一下，找到问题！<br></p>
+<h4 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决<br></h4><p>由于使用的模型存在节点的概念，<strong>节点的后继节点的添加是被绑定到前继节点的next属性中</strong>，但是管道是线程安全的，按理来说不同线程的不同节点都是相互独立的，不应该出问题才对，那么问题出在哪？就出在节点并不是相互独立的而是共享的！<br></p>
+<p>由于每个节点是托管给spring容器的，而<strong>spring容器的bean默认都是单例的！那么不同线程就可以使用相同的节点</strong>，这时候如果channel1在跑逻辑，channel2在添加节点。。那么假设channel1中的节点顺序是：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">n1 -&gt; n2 -&gt; n3</span><br></pre></td></tr></table></figure>
+<p>假设channel2中的节点顺序是：<br></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">n1 -&gt; n2 -&gt; n4</span><br></pre></td></tr></table></figure>
+<p><strong>由于单例，那么n2在内存中指向了同一个对象，channel1在跑完n2的时候，正好channel2把n2的后继节点改成了n4，这时候，就可能出现节点跑串的情况！</strong><br></p>
+<p>那么解决很简单了，直接把节点注入成prototype就可以了。<br></p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结<br></h4><p>这个问题从出现到解决，历时一天多，中间比较焦头烂额。经此一役，以后重构代码必须慎之又慎，模型设计必须经过大神的评审，尤其是下单这么重要的流程，一定要小心小心再小心。<br></p>
+<p>其实这个问题不单是经验不足，也有模型设计上的问题，这个也跟排骨讨论过：<strong>节点和节点的关系，应该依托于管道管理，节点和节点之间不应该有任何绑定。</strong>所以后面考虑把之前的模型改一下，如果是管道在逻辑判断之前就已经把节点添加好了，只需要根据不同的业务来取不同的管道，这个问题就不会出现了，不过：<strong>福兮祸所依，祸兮福所伏</strong>，多出问题对自己的成长肯定是有好处的。</p>
+<p>即将毕业，遥想当年一个空指针问题都能让我不知所措，如今已经在排查解决并发问题了，感慨良多，期待未来更好的自己！</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/并发/" rel="tag"># 并发</a>
+          
+            <a href="/tags/管道-节点模型/" rel="tag"># 管道-节点模型</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Java阻塞队列的原理分析.html" rel="next" title="Java阻塞队列的原理分析">
+                <i class="fa fa-chevron-left"></i> Java阻塞队列的原理分析
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/记一次Disruptor排坑.html" rel="prev" title="记一次Disruptor排坑">
+                记一次Disruptor排坑 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">74</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">70</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#记一次并发场景下的问题排查"><span class="nav-number">1.</span> <span class="nav-text">记一次并发场景下的问题排查</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#问题出现"><span class="nav-number">1.1.</span> <span class="nav-text">问题出现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#大规模爆发"><span class="nav-number">1.2.</span> <span class="nav-text">大规模爆发</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#回滚"><span class="nav-number">1.3.</span> <span class="nav-text">回滚</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#问题还原"><span class="nav-number">1.4.</span> <span class="nav-text">问题还原</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#排查"><span class="nav-number">1.5.</span> <span class="nav-text">排查</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#解决"><span class="nav-number">1.6.</span> <span class="nav-text">解决</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#总结"><span class="nav-number">1.7.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

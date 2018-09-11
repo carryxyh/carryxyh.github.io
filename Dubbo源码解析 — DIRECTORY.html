@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="directory,router," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Dubbo源码解析 — DIRECTORY和ROUTER@(dubbo源码分析)  今天看一下Directory和Router。 我们直接从代码看起（一贯风格），先看后总结，对着总结再来看，相信会收获很多。我们先看com.alibaba.dubbo.config.ReferenceConfig的createProxy： 123if (urls.size() == 1) &amp;#123;    invo">
+<meta name="keywords" content="directory,router">
+<meta property="og:type" content="article">
+<meta property="og:title" content=" Dubbo源码解析 --- DIRECTORY和ROUTER">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Dubbo源码解析 — DIRECTORY.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Dubbo源码解析 — DIRECTORY和ROUTER@(dubbo源码分析)  今天看一下Directory和Router。 我们直接从代码看起（一贯风格），先看后总结，对着总结再来看，相信会收获很多。我们先看com.alibaba.dubbo.config.ReferenceConfig的createProxy： 123if (urls.size() == 1) &amp;#123;    invo">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-02-06T13:30:59.399Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content=" Dubbo源码解析 --- DIRECTORY和ROUTER">
+<meta name="twitter:description" content="Dubbo源码解析 — DIRECTORY和ROUTER@(dubbo源码分析)  今天看一下Directory和Router。 我们直接从代码看起（一贯风格），先看后总结，对着总结再来看，相信会收获很多。我们先看com.alibaba.dubbo.config.ReferenceConfig的createProxy： 123if (urls.size() == 1) &amp;#123;    invo">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Dubbo源码解析 — DIRECTORY.html"/>
+
+
+
+
+
+  <title> Dubbo源码解析 --- DIRECTORY和ROUTER | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Dubbo源码解析 — DIRECTORY.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline"> Dubbo源码解析 --- DIRECTORY和ROUTER</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-02-06T21:37:53+08:00">
+                2018-02-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
+                    <span itemprop="name">dubbo源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Dubbo源码解析-—-DIRECTORY和ROUTER"><a href="#Dubbo源码解析-—-DIRECTORY和ROUTER" class="headerlink" title="Dubbo源码解析 — DIRECTORY和ROUTER"></a>Dubbo源码解析 — DIRECTORY和ROUTER</h2><p>@(dubbo源码分析)</p>
+<hr>
+<p>今天看一下<code>Directory</code>和<code>Router</code>。</p>
+<p>我们直接从代码看起（一贯风格），先看后总结，对着总结再来看，相信会收获很多。我们先看<code>com.alibaba.dubbo.config.ReferenceConfig</code>的<code>createProxy</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (urls.size() == <span class="number">1</span>) &#123;</span><br><span class="line">    invoker = refprotocol.refer(interfaceClass, urls.get(<span class="number">0</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们之前说过了，根据扩展点，我们知道这里的<code>protocol</code>目前是<code>RegistryProtocol</code>，点进去：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> doRefer(cluster, registry, type, url);</span><br></pre></td></tr></table></figure>
+<p>这里的<code>cluster</code>同样是扩展点，点进去：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">RegistryDirectory&lt;T&gt; directory = <span class="keyword">new</span> RegistryDirectory&lt;T&gt;(type, url);</span><br><span class="line">directory.setRegistry(registry);</span><br><span class="line">directory.setProtocol(protocol);</span><br><span class="line"><span class="comment">// all attributes of REFER_KEY</span></span><br><span class="line">Map&lt;String, String&gt; parameters = <span class="keyword">new</span> HashMap&lt;String, String&gt;(directory.getUrl().getParameters());</span><br><span class="line">URL subscribeUrl = <span class="keyword">new</span> URL(Constants.CONSUMER_PROTOCOL, parameters.remove(Constants.REGISTER_IP_KEY), <span class="number">0</span>, type.getName(), parameters);</span><br><span class="line"><span class="keyword">if</span> (!Constants.ANY_VALUE.equals(url.getServiceInterface())</span><br><span class="line">        &amp;&amp; url.getParameter(Constants.REGISTER_KEY, <span class="keyword">true</span>)) &#123;</span><br><span class="line">    registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,</span><br><span class="line">            Constants.CHECK_KEY, String.valueOf(<span class="keyword">false</span>)));</span><br><span class="line">&#125;</span><br><span class="line">directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY,</span><br><span class="line">        Constants.PROVIDERS_CATEGORY</span><br><span class="line">                + <span class="string">","</span> + Constants.CONFIGURATORS_CATEGORY</span><br><span class="line">                + <span class="string">","</span> + Constants.ROUTERS_CATEGORY));</span><br><span class="line"></span><br><span class="line">Invoker invoker = cluster.join(directory);</span><br><span class="line">ProviderConsumerRegTable.registerConsuemr(invoker, url, subscribeUrl, directory);</span><br><span class="line"><span class="keyword">return</span> invoker;</span><br></pre></td></tr></table></figure>
+<p>这里出现了第一个东西：<code>DIRECTORY</code>，这里会用<code>cluster</code>的<code>join</code>方法生成一个<code>Invoker</code>：<code>Invoker invoker = cluster.join(directory);</code>，这里的<code>cluster</code>debug一下，是<code>FailoverCluster</code>，生成的就是<code>FailoverClusterInvoker</code>。这里我们都没有发现这个<code>Directory</code>的作用，先别急，我们至少知道了<code>AbstractClusterInvoker</code>中有一个<code>Directory</code>的实例。</p>
+<p>再看我们的<code>AbstractClusterInvoker</code>的<code>invoke</code>方法，这是<code>Dubbo</code>所有集群<code>invoker</code>的入口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">checkWhetherDestroyed();</span><br><span class="line">LoadBalance loadbalance;</span><br><span class="line"><span class="comment">//注意这里</span></span><br><span class="line">List&lt;Invoker&lt;T&gt;&gt; invokers = list(invocation);</span><br><span class="line"><span class="keyword">if</span> (invokers != <span class="keyword">null</span> &amp;&amp; invokers.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    loadbalance = ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(invokers.get(<span class="number">0</span>).getUrl()</span><br><span class="line">            .getMethodParameter(invocation.getMethodName(), Constants.LOADBALANCE_KEY, Constants.DEFAULT_LOADBALANCE));</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    loadbalance = ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(Constants.DEFAULT_LOADBALANCE);</span><br><span class="line">&#125;</span><br><span class="line">RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);</span><br><span class="line"><span class="keyword">return</span> doInvoke(invocation, invokers, loadbalance);</span><br></pre></td></tr></table></figure>
+<p>这里有个<code>list</code>方法，返回的是<code>invoker</code>集合，<code>doInvoke</code>方法下沉到了子类，之前我们说过，这里会根据负载均衡策略选出一个<code>invoker</code>执行，那么我们看下<code>list</code>方法是如何选取<code>invoker</code>集合的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//使用directory去选取</span></span><br><span class="line">List&lt;Invoker&lt;T&gt;&gt; invokers = directory.list(invocation);</span><br><span class="line"><span class="keyword">return</span> invokers;</span><br></pre></td></tr></table></figure>
+<p>点进去进入到<code>AbstractDirectory</code>的<code>list</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Invoker&lt;T&gt;&gt; invokers = doList(invocation);</span><br><span class="line"><span class="comment">//本地的routers</span></span><br><span class="line">List&lt;Router&gt; localRouters = <span class="keyword">this</span>.routers; <span class="comment">// local reference</span></span><br><span class="line"><span class="keyword">if</span> (localRouters != <span class="keyword">null</span> &amp;&amp; localRouters.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">for</span> (Router router : localRouters) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (router.getUrl() == <span class="keyword">null</span> || router.getUrl().getParameter(Constants.RUNTIME_KEY, <span class="keyword">false</span>)) &#123;</span><br><span class="line">                invokers = router.route(invokers, getConsumerUrl(), invocation);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            logger.error(<span class="string">"Failed to execute router: "</span> + getUrl() + <span class="string">", cause: "</span> + t.getMessage(), t);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>继续看一下<code>doList</code>，这里同样下沉到子类，子类有两个，分别是：<code>RegistryDirectory</code>和<code>StaticDirectory</code>，这两个的区别我们别的文章再说，这里简单提一下：<code>RegistryDirectory</code>中的<code>invoker</code>集合是动态的（实现了<code>NotifyListener</code>接口），而<code>StaticDirectory</code>中的<code>invoker</code>集合是固定的。</p>
+<p>那么<code>StaticDirectory</code>返回的集合就是固定的，而<code>RegistryDirectory</code>是动态的，我们在注册中心对<code>invoker</code>做改动，都会引起<code>RegistryDirectory</code>中<code>invoker</code>集合的变化。</p>
+<p>这里我们大概就能理解这个<code>Directory</code>，实际上，这个东西就是<code>Invoker</code>的集合。</p>
+<p><code>doList</code>结束，下面就出现了我们说的<code>Router</code>，默认有三种实现：<code>ConditionRouter</code>、<code>MockInvokersSelector</code>（虽然叫Selector）和<code>ScriptRouter</code>。这篇文章先不具体展开讨论每种<code>Router</code>的实现方式。</p>
+<p><code>router</code>返回的并不是一个<code>Invoker</code>，而是<code>invoker</code>集合，我们可以认为，<code>router</code>的作用就是把<code>Directory</code>中符合路由规则的<code>invoker</code>筛选出来，然后在这些<code>invoker</code>中，根据负载均衡策略和集群容错策略执行<code>invoke</code>方法。</p>
+<p>总结一下：<br><strong>Director</strong>：<code>invoker</code>的集合，是<code>AbstractClusterInvoker</code>的属性，可以认为是本集群下的所有<code>Invoker</code>。<br><strong>Router</strong>：从<code>Directory</code>中挑选出符合要求的<code>Invoker</code>集合。<br><strong>LoadBalance</strong>：从<code>Router</code>挑选的<code>invoker</code>中再选出<strong>其中一个</strong>作为最终选择去执行<code>invoke</code>方法。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/directory/" rel="tag"># directory</a>
+          
+            <a href="/tags/router/" rel="tag"># router</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/RocketMQ源码解读——同一消费组下不同消费者订阅关系不同时.html" rel="next" title="RocketMQ源码解读——同一消费组下不同消费者订阅关系不同时">
+                <i class="fa fa-chevron-left"></i> RocketMQ源码解读——同一消费组下不同消费者订阅关系不同时
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/dubbo——拆包和粘包.html" rel="prev" title="Dubbo源码解析 --- 拆包和粘包">
+                Dubbo源码解析 --- 拆包和粘包 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">74</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">70</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Dubbo源码解析-—-DIRECTORY和ROUTER"><span class="nav-number">1.</span> <span class="nav-text">Dubbo源码解析 — DIRECTORY和ROUTER</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
