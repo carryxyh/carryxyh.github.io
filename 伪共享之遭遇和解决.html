@@ -79,21 +79,21 @@
 
 
 
-<meta name="description" content="伪共享之遭遇&amp;amp;解决前言上一篇我们看了什么是缓存行，什么是MESI协议。这一篇我们来看一下伪共享。 遭遇伪共享之前我们已经说过了，CPU的缓存是以cache line作为单位存储的，那么我们考虑一种情况，如果多个线程在操作同一个实例的不同成员变量，但是这两个变量存在于同一个缓存行里，会发生什么？ 会发生两个线程要不停地去获取这个缓存行的所有权，一个使用另外一个就只能等。这是效率非常慢的。这种">
+<meta name="description" content="伪共享之遭遇和解决前言上一篇我们看了什么是缓存行，什么是MESI协议。这一篇我们来看一下伪共享。 遭遇伪共享之前我们已经说过了，CPU的缓存是以cache line作为单位存储的，那么我们考虑一种情况，如果多个线程在操作同一个实例的不同成员变量，但是这两个变量存在于同一个缓存行里，会发生什么？ 会发生两个线程要不停地去获取这个缓存行的所有权，一个使用另外一个就只能等。这是效率非常慢的。这种情况下，">
 <meta name="keywords" content="伪共享">
 <meta property="og:type" content="article">
-<meta property="og:title" content="伪共享之遭遇&amp;解决">
-<meta property="og:url" content="http://wyj.shiwuliang.com/伪共享之遭遇&解决.html">
+<meta property="og:title" content="伪共享之遭遇和解决">
+<meta property="og:url" content="http://wyj.shiwuliang.com/伪共享之遭遇和解决.html">
 <meta property="og:site_name" content="一时无两">
-<meta property="og:description" content="伪共享之遭遇&amp;amp;解决前言上一篇我们看了什么是缓存行，什么是MESI协议。这一篇我们来看一下伪共享。 遭遇伪共享之前我们已经说过了，CPU的缓存是以cache line作为单位存储的，那么我们考虑一种情况，如果多个线程在操作同一个实例的不同成员变量，但是这两个变量存在于同一个缓存行里，会发生什么？ 会发生两个线程要不停地去获取这个缓存行的所有权，一个使用另外一个就只能等。这是效率非常慢的。这种">
+<meta property="og:description" content="伪共享之遭遇和解决前言上一篇我们看了什么是缓存行，什么是MESI协议。这一篇我们来看一下伪共享。 遭遇伪共享之前我们已经说过了，CPU的缓存是以cache line作为单位存储的，那么我们考虑一种情况，如果多个线程在操作同一个实例的不同成员变量，但是这两个变量存在于同一个缓存行里，会发生什么？ 会发生两个线程要不停地去获取这个缓存行的所有权，一个使用另外一个就只能等。这是效率非常慢的。这种情况下，">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://wyj.shiwuliang.com/images/15267135632034.jpg">
 <meta property="og:image" content="http://wyj.shiwuliang.com/images/15267140984276.jpg">
 <meta property="og:image" content="http://wyj.shiwuliang.com/images/15267144223927.jpg">
-<meta property="og:updated_time" content="2018-05-19T07:33:11.552Z">
+<meta property="og:updated_time" content="2018-09-12T06:44:45.705Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="伪共享之遭遇&amp;解决">
-<meta name="twitter:description" content="伪共享之遭遇&amp;amp;解决前言上一篇我们看了什么是缓存行，什么是MESI协议。这一篇我们来看一下伪共享。 遭遇伪共享之前我们已经说过了，CPU的缓存是以cache line作为单位存储的，那么我们考虑一种情况，如果多个线程在操作同一个实例的不同成员变量，但是这两个变量存在于同一个缓存行里，会发生什么？ 会发生两个线程要不停地去获取这个缓存行的所有权，一个使用另外一个就只能等。这是效率非常慢的。这种">
+<meta name="twitter:title" content="伪共享之遭遇和解决">
+<meta name="twitter:description" content="伪共享之遭遇和解决前言上一篇我们看了什么是缓存行，什么是MESI协议。这一篇我们来看一下伪共享。 遭遇伪共享之前我们已经说过了，CPU的缓存是以cache line作为单位存储的，那么我们考虑一种情况，如果多个线程在操作同一个实例的不同成员变量，但是这两个变量存在于同一个缓存行里，会发生什么？ 会发生两个线程要不停地去获取这个缓存行的所有权，一个使用另外一个就只能等。这是效率非常慢的。这种情况下，">
 <meta name="twitter:image" content="http://wyj.shiwuliang.com/images/15267135632034.jpg">
 
 
@@ -124,13 +124,13 @@
 
 
 
-  <link rel="canonical" href="http://wyj.shiwuliang.com/伪共享之遭遇&解决.html"/>
+  <link rel="canonical" href="http://wyj.shiwuliang.com/伪共享之遭遇和解决.html"/>
 
 
 
 
 
-  <title>伪共享之遭遇&解决 | 一时无两</title>
+  <title>伪共享之遭遇和解决 | 一时无两</title>
   
 
 
@@ -165,7 +165,7 @@
       </a>
     </div>
       
-        <p class="site-subtitle"></p>
+        <h1 class="site-subtitle" itemprop="description"></h1>
       
   </div>
 
@@ -267,7 +267,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/伪共享之遭遇&解决.html">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/伪共享之遭遇和解决.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -284,7 +284,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">伪共享之遭遇&解决</h1>
+          <h2 class="post-title" itemprop="name headline">伪共享之遭遇和解决</h2>
         
 
         <div class="post-meta">
@@ -356,7 +356,7 @@
       
 
       
-        <h3 id="伪共享之遭遇-amp-解决"><a href="#伪共享之遭遇-amp-解决" class="headerlink" title="伪共享之遭遇&amp;解决"></a>伪共享之遭遇&amp;解决</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>上一篇我们看了什么是缓存行，什么是MESI协议。这一篇我们来看一下伪共享。</p>
+        <h3 id="伪共享之遭遇和解决"><a href="#伪共享之遭遇和解决" class="headerlink" title="伪共享之遭遇和解决"></a>伪共享之遭遇和解决</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>上一篇我们看了什么是缓存行，什么是MESI协议。这一篇我们来看一下伪共享。</p>
 <h4 id="遭遇伪共享"><a href="#遭遇伪共享" class="headerlink" title="遭遇伪共享"></a>遭遇伪共享</h4><p>之前我们已经说过了，CPU的缓存是以cache line作为单位存储的，那么我们考虑一种情况，如果多个线程在操作同一个实例的不同成员变量，但是这两个变量存在于同一个缓存行里，会发生什么？</p>
 <p>会发生两个线程要不停地去获取这个缓存行的所有权，一个使用另外一个就只能等。这是效率非常慢的。这种情况下，就是发生了伪共享。</p>
 <p>爬一张Disruptor的图：</p>
@@ -492,7 +492,7 @@
                 alt="时无两" />
             
               <p class="site-author-name" itemprop="name">时无两</p>
-              <p class="site-description motion-element" itemprop="description">嬉游醉眼，不负青春！git:https://github.com/carryxyh 邮箱:carryxyh@gmail.com</p>
+              <p class="site-description motion-element" itemprop="description"></p>
           </div>
 
           <nav class="site-state motion-element">
@@ -573,7 +573,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#伪共享之遭遇-amp-解决"><span class="nav-number">1.</span> <span class="nav-text">伪共享之遭遇&amp;解决</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#遭遇伪共享"><span class="nav-number">1.2.</span> <span class="nav-text">遭遇伪共享</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#解决伪共享问题"><span class="nav-number">1.3.</span> <span class="nav-text">解决伪共享问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#如何看待伪共享"><span class="nav-number">1.4.</span> <span class="nav-text">如何看待伪共享</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#伪共享之遭遇和解决"><span class="nav-number">1.</span> <span class="nav-text">伪共享之遭遇和解决</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#遭遇伪共享"><span class="nav-number">1.2.</span> <span class="nav-text">遭遇伪共享</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#解决伪共享问题"><span class="nav-number">1.3.</span> <span class="nav-text">解决伪共享问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#如何看待伪共享"><span class="nav-number">1.4.</span> <span class="nav-text">如何看待伪共享</span></a></li></ol></li></ol></div>
             
 
           </div>
@@ -771,6 +771,21 @@
   
 
   
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
 
   
   
