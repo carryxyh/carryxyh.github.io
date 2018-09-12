@@ -1328,7 +1328,7 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Dubbo源码解析 — filter和listener.html">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/synchronized 关键字.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -1347,7 +1347,7 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/Dubbo源码解析 — filter和listener.html" itemprop="url"> Dubbo源码解析 --- filter和listener</a></h1>
+                <a class="post-title-link" href="/synchronized 关键字.html" itemprop="url">synchronized 关键字</a></h1>
         
 
         <div class="post-meta">
@@ -1382,8 +1382,8 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
-                    <span itemprop="name">dubbo源码</span>
+                  <a href="/categories/java源码/" itemprop="url" rel="index">
+                    <span itemprop="name">java源码</span>
                   </a>
                 </span>
 
@@ -1421,14 +1421,20 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
       
         
           
-          Dubbo源码解析 — filter和listener
-前言有一句说一句，这个标题的有点标题党的意思，我们在这里并不想给大家讲解filter和listener的概念、实现、功能等等。而是想给大家讲解filter和listener的注入过程，具体filter和listener请大家看一下官方文档，或者可以查看一下dubbo已知扩展点的实现。
-问题我们看一下消费方执行流程：
-1ReferenceBean --&gt; ReferenceConfig --&gt;  RegistryProtocol --&gt; DubboProtocol  --&gt;  invoker  --&gt;  exp
+          synchronized 关键字
+实现原理在java1.6中对synchronized进行了一系列优化，在之前的版本中，lock性能远比synchronized关键字好，测试数据这里不放了。重点关注下实现原理。
+先说几个概念：
+
+普通同步方法，锁当前实例（相当于synchronize（this））。
+静态同步方法，锁当前类的class对象。（任何该class的实例全都会阻塞）
+synchronized（object）锁object对象。
+
+当一个线程访问同步代码块时，它首先是需要得到锁才能执行同步代码，当退出或者抛出异常时必须要释放锁，那么它是如何来实现这个机制的呢？我们先看一段简单的代码：
+
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/Dubbo源码解析 — filter和listener.html#more" rel="contents">
+            <a class="btn" href="/synchronized 关键字.html#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -1632,7 +1638,7 @@ Directory代表多个Invoker，可以把它看成invoker的list集合，但与Li
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/synchronized 关键字.html">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Dubbo源码解析 — 服务注册.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -1651,7 +1657,7 @@ Directory代表多个Invoker，可以把它看成invoker的list集合，但与Li
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/synchronized 关键字.html" itemprop="url">synchronized 关键字</a></h1>
+                <a class="post-title-link" href="/Dubbo源码解析 — 服务注册.html" itemprop="url"> Dubbo源码解析 --- 服务注册</a></h1>
         
 
         <div class="post-meta">
@@ -1686,8 +1692,8 @@ Directory代表多个Invoker，可以把它看成invoker的list集合，但与Li
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java源码/" itemprop="url" rel="index">
-                    <span itemprop="name">java源码</span>
+                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
+                    <span itemprop="name">dubbo源码</span>
                   </a>
                 </span>
 
@@ -1725,20 +1731,14 @@ Directory代表多个Invoker，可以把它看成invoker的list集合，但与Li
       
         
           
-          synchronized 关键字
-实现原理在java1.6中对synchronized进行了一系列优化，在之前的版本中，lock性能远比synchronized关键字好，测试数据这里不放了。重点关注下实现原理。
-先说几个概念：
-
-普通同步方法，锁当前实例（相当于synchronize（this））。
-静态同步方法，锁当前类的class对象。（任何该class的实例全都会阻塞）
-synchronized（object）锁object对象。
-
-当一个线程访问同步代码块时，它首先是需要得到锁才能执行同步代码，当退出或者抛出异常时必须要释放锁，那么它是如何来实现这个机制的呢？我们先看一段简单的代码：
+          Dubbo源码解析 — 服务注册
+前言对于分布式服务架构，解决服务的发现问题，引入了注册中心中间件，从而很好的解决了服务双方（消费方和提供方）的直接依赖问题。这种解耦的意义是非凡的，不仅在程序运行时保证了灵活性，在开发阶段也使得快速迭代成为了可能，甚至在运维层面也提供了非常好的自由度。
+夸了这么多，但要实现一个完美的注册中心系统却不是一件那么容易的事儿，你必须时刻注意关注它的可用性（包括稳定，实时和高效），这一点在任何一款分布式系统中都是件很复杂的事儿。当然这篇文章并不是打算摆平这么个庞然大物，我们只是从dubbo和zookeeper之间的关系来了解一下在dubbo架构中注册中心的相关知识。
 
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/synchronized 关键字.html#more" rel="contents">
+            <a class="btn" href="/Dubbo源码解析 — 服务注册.html#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
