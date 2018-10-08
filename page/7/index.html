@@ -262,6 +262,164 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Java阻塞队列的原理分析.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Java阻塞队列的原理分析.html" itemprop="url">Java阻塞队列的原理分析</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-04-11T20:41:56+08:00">
+                2017-04-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java源码/" itemprop="url" rel="index">
+                    <span itemprop="name">java源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+          Java阻塞队列的原理分析
+先看看BlockingQueue接口的文档说明：
+
+add：添加元素到队列里，添加成功返回true，由于容量满了添加失败会抛出IllegalStateException异常；
+offer：添加元素到队列里，添加成功返回true，添加失败返回false；
+put：添加元素到队列里，如果容量满了会阻塞直到容量不满；
+poll：删除队列头部元素，如果队列为空，返回null。否则返回元素；
+remove：基于对象找到对应的元素，并删除。删除成功返回true，否则返回false；
+take：删除队列头部元素，如果队列为空，一直阻塞到队列有元素并删除。
+
+先看一个简单的Arra
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/Java阻塞队列的原理分析.html#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Electrons使用文档.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1485,7 +1643,7 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/深克隆插件FKC.html">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Dubbo源码解析 — filter和listener.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="时无两">
@@ -1504,158 +1662,7 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
         
           <h2 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/深克隆插件FKC.html" itemprop="url">深克隆插件 -- FKC</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-02-25T11:37:53+08:00">
-                2017-02-25
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/深克隆/" itemprop="url" rel="index">
-                    <span itemprop="name">深克隆</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-          年前没机会分享我写的插件了，这里也做个总结吧：1.深克隆有几种实现方法：
-（1）最low的，大家都会的，get set get set get set巴拉巴拉。（缺点：显而易见，不通用，而且代码非常的丑陋！）（2）对象流读入，対向流读出，这其实就是一个序列化反序列化。（缺点：流是非常占用资源的，不停地new  close会消耗CPU，一个请求过来要进行几次new操作，会导致GC非常频繁，还有就是原生速度比较慢）
-2.针对以上第二种实现方法，设计了一个深克隆的插件，特点和实现如下：
-（1）针对原生序列化反序列化慢，使用kryo做序列化反序列化处理，kryo底层其实还是用了原生的流，只不过进行了一
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/深克隆插件FKC.html#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Dubbo源码解析 — 服务的创建和暴露.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="时无两">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="一时无两">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Dubbo源码解析 — 服务的创建和暴露.html" itemprop="url">Dubbo源码解析 --- 服务的创建和暴露</a></h2>
+                <a class="post-title-link" href="/Dubbo源码解析 — filter和listener.html" itemprop="url"> Dubbo源码解析 --- filter和listener</a></h2>
         
 
         <div class="post-meta">
@@ -1729,14 +1736,14 @@ Dubbo的“SPI”之前提到过，Dubbo的SPI并非原生的SPI，Dubbo的规�
       
         
           
-          Dubbo源码解析 — 服务的创建和暴露
-前言本文主要就dubbo基础的XML解析开始，到服务的创建和发布，最终延展到底层netty的调用，给出一个初始化流程的解读。在这里你能看到dubbo一些优秀的抽象设计，以及底层源代码的解读。如有语义不明，联系紫苑。或者邮件ziyuan@2dfire.com。
-service和server首先，当发布一个服务的Server时，我们需要编写一个Spring配置文件，形如以下：
-123456&lt;beans xmlns=&quot;...&quot;&gt;    &lt;dubbo:application name=&quot;hello-world-a
+          Dubbo源码解析 — filter和listener
+前言有一句说一句，这个标题的有点标题党的意思，我们在这里并不想给大家讲解filter和listener的概念、实现、功能等等。而是想给大家讲解filter和listener的注入过程，具体filter和listener请大家看一下官方文档，或者可以查看一下dubbo已知扩展点的实现。
+问题我们看一下消费方执行流程：
+1ReferenceBean --&gt; ReferenceConfig --&gt;  RegistryProtocol --&gt; DubboProtocol  --&gt;  invoker  --&gt;  exp
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/Dubbo源码解析 — 服务的创建和暴露.html#more" rel="contents">
+            <a class="btn" href="/Dubbo源码解析 — filter和listener.html#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -1828,7 +1835,7 @@ service和server首先，当发布一个服务的Server时，我们需要编写�
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">74</span>
+                  <span class="site-state-item-count">75</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1850,7 +1857,7 @@ service和server首先，当发布一个服务的Server时，我们需要编写�
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">70</span>
+                  <span class="site-state-item-count">71</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
