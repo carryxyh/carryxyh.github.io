@@ -262,6 +262,161 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Rocketmq源码解读——Filtersrv.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Rocketmq源码解读——Filtersrv.html" itemprop="url">Rocketmq源码解读——Filtersrv</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-05-21T20:53:17+08:00">
+                2018-05-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/rocketmq源码/" itemprop="url" rel="index">
+                    <span itemprop="name">rocketmq源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+          Rocketmq源码解读——Filtersrv概述Filtersrv负责自定义代码过滤Consumer从Broker拉去的消息。在没有Filtersrv的情况下，拉取消息很简单，就是直接连接Broker进行拉取即可。如果有了Filtersrv，则拉取是：Consumer ——&gt; Filtersrv ——&gt; Broker
+Filtersrv注册到Broker对应关系：
+
+一个Filtersrv对应一个Broker。
+一个Broker可以对应多个Filtersrv。Filtersrv的高可用可以通过启动多个Filtersrv实现。
+Filtersrv注册失败，主动退出并关闭。
+
+Fil
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/Rocketmq源码解读——Filtersrv.html#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/伪共享之遭遇和解决.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1629,160 +1784,6 @@ Producer顺序普通顺序消息是使用MessageQueueSelector来实现的：
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Tomcat异步Servlet实现分析——开启异步上下文.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="时无两">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="一时无两">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Tomcat异步Servlet实现分析——开启异步上下文.html" itemprop="url">Tomcat异步Servlet实现分析——开启异步上下文</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-06T19:54:13+08:00">
-                2018-03-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/tomcat源码解析/" itemprop="url" rel="index">
-                    <span itemprop="name">tomcat源码解析</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-          Tomcat异步Servlet实现分析——开启异步上下文前言异步servlet是servlet 3.0的新特性，具体的使用方式就不说了，我们主要看异步Servlet的代码实现。有两种场景：
-
-可立即返回给请求方数据的。很简单不说了。
-另外一些情况，需要等待处理结果，这个时候如果我们使用容器中的线程池，则线程池很快会耗尽。Servlet 3.0提供了异步支持，能够指示Respons在Servlet容器的线程退出之后保持开发状态。
-
-源码源码的入口在org.apache.catalina.connector.Request，先由一个请求开启异步（startAsync方法）：
-12345678910
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/Tomcat异步Servlet实现分析——开启异步上下文.html#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1837,7 +1838,7 @@ Producer顺序普通顺序消息是使用MessageQueueSelector来实现的：
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">75</span>
+                  <span class="site-state-item-count">76</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1859,7 +1860,7 @@ Producer顺序普通顺序消息是使用MessageQueueSelector来实现的：
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">71</span>
+                  <span class="site-state-item-count">72</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
