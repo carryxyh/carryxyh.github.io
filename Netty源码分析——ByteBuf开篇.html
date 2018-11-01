@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="netty,ByteBuf," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Netty源码分析——ByteBuf开篇前言这是ByteBuf开篇，主要介绍ByteBuf的结构，继承关系等，为我们后面的学习打一下铺垫。 ByteBuf的作用主要是为了平衡CPU处理速度和网络传输速度。一般情况下，CPU处理速度都远大于网络传输速度，如果我们直接把数据写入网络，那么就会导致写入请求大量的被阻塞（都在争抢套接字）。为此我们引入缓冲区的概念，积累一定的数据再往网络中写。 基本概念By">
+<meta name="keywords" content="netty,ByteBuf">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty源码分析——ByteBuf开篇">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Netty源码分析——ByteBuf开篇.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Netty源码分析——ByteBuf开篇前言这是ByteBuf开篇，主要介绍ByteBuf的结构，继承关系等，为我们后面的学习打一下铺垫。 ByteBuf的作用主要是为了平衡CPU处理速度和网络传输速度。一般情况下，CPU处理速度都远大于网络传输速度，如果我们直接把数据写入网络，那么就会导致写入请求大量的被阻塞（都在争抢套接字）。为此我们引入缓冲区的概念，积累一定的数据再往网络中写。 基本概念By">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-11-01T12:45:27.289Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Netty源码分析——ByteBuf开篇">
+<meta name="twitter:description" content="Netty源码分析——ByteBuf开篇前言这是ByteBuf开篇，主要介绍ByteBuf的结构，继承关系等，为我们后面的学习打一下铺垫。 ByteBuf的作用主要是为了平衡CPU处理速度和网络传输速度。一般情况下，CPU处理速度都远大于网络传输速度，如果我们直接把数据写入网络，那么就会导致写入请求大量的被阻塞（都在争抢套接字）。为此我们引入缓冲区的概念，积累一定的数据再往网络中写。 基本概念By">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Netty源码分析——ByteBuf开篇.html"/>
+
+
+
+
+
+  <title>Netty源码分析——ByteBuf开篇 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description"></h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Netty源码分析——ByteBuf开篇.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Netty源码分析——ByteBuf开篇</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-01T20:45:23+08:00">
+                2018-11-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty源码分析/" itemprop="url" rel="index">
+                    <span itemprop="name">Netty源码分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Netty源码分析——ByteBuf开篇"><a href="#Netty源码分析——ByteBuf开篇" class="headerlink" title="Netty源码分析——ByteBuf开篇"></a>Netty源码分析——ByteBuf开篇</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>这是<code>ByteBuf</code>开篇，主要介绍<code>ByteBuf</code>的结构，继承关系等，为我们后面的学习打一下铺垫。</p>
+<p><code>ByteBuf</code>的作用主要是为了平衡CPU处理速度和网络传输速度。一般情况下，CPU处理速度都远大于网络传输速度，如果我们直接把数据写入网络，那么就会导致写入请求大量的被阻塞（都在争抢套接字）。为此我们引入缓冲区的概念，积累一定的数据再往网络中写。</p>
+<h4 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h4><p>ByteBuf维护了两个索引，分别是<strong>读索引</strong>和<strong>写索引</strong>。图示：</p>
+<p>+——————–+——————+—————-+<br>| discardable bytes | readable bytes | writable bytes |<br>+——————–+——————+—————-+</p>
+<p>读索引的位置就在<code>discardable bytes</code>和<code>readable bytes</code>之间，而写索引的位置就在<code>readable bytes</code>和<code>writable bytes</code>之间。（这里很简单理解，为了美观就不在图上表明了）</p>
+<p>图示可知，<code>ByteBuf</code>由三个片段构成：废弃段、可读段和可写段。当用户使用<code>read</code>方法或者<code>skip</code>方法时，将会增加读索引。读索引之前的数据将进入废弃段，表示该数据已被使用。调用<code>discard</code>方法则会丢弃<code>discardable bytes</code>段的数据。比如我们按照上图所示，丢弃所有<code>discardable bytes</code>，就会变成这样：</p>
+<p>+——————+————————————–+<br>|  readable bytes  |  writable bytes (got more space)    |<br>+——————+————————————–+</p>
+<p>需要注意的是，当我们使用<code>clear</code>方法清空缓冲区时，此时缓冲区的写索引和读索引都将置0，但是并不清除缓冲区中的实际数据。此外，用户可以使用<code>mark</code>和<code>reset</code>标记并重置读索引和写索引。</p>
+<p>另外需要提一句<code>ByteBuf</code>的视图。可以在已有的缓冲区上创建视图即<strong>派生缓冲区</strong>。这些视图维护各自独立的写索引、读索引以及标记索引，但他们和原生缓冲区共享内部字节数据。创建派生缓冲区的方法有<code>duplicate</code>和<code>slice</code>。如果想拷贝缓冲区，也就是说期望维护特有的字节数据而不是共享字节数据，此时可使用<code>copy</code>方法。</p>
+<h4 id="类别"><a href="#类别" class="headerlink" title="类别"></a>类别</h4><p>按照底层的实现方式，可以把<code>ByteBuf</code>分为几种：</p>
+<ol>
+<li><code>HeapByteBuf</code>，底层实现为JAVA堆内存数组。可以认为就是一个对象，位于JVM堆内存区，可由GC回收，其申请和释放效率较高。</li>
+<li><code>DirectByteBuf</code>，底层实现为操作系统内核空间的字节数组，并不是虚拟机运行时数据区的一部分，也不是Java虚拟机规范中定义的内存区域。这部分数据一般情况下我们选择自己释放（Netty就是这么干的）。申请和释放效率都低于堆缓冲区，另一方面，却可以大大提高IO效率。</li>
+<li><code>CompositeByteBuf</code>，组合<code>ByteBuf</code>，顾名思义，后面我们细说。</li>
+</ol>
+<p>按照是否被池化，可以分几种：</p>
+<ol>
+<li><code>PooledByteBuf</code>，当对象释放后会归还给对象池，所以可循环使用。</li>
+<li><code>UnpooledByteBuf</code>，不使用对象池的缓冲区。</li>
+</ol>
+<p>池化和非池化的使用场景我就说一句，需要来来回回创建使用的时候就用池化。</p>
+<p>根据这四种特性，可以组合出不同的<code>ByteBuf</code>，比如<code>PooledHeapByteBuf</code>，再比如<code>UnpooledDirectByteBuf</code>，有各种各样的组合方式方便我们进行使用。</p>
+<h4 id="引用计数"><a href="#引用计数" class="headerlink" title="引用计数"></a>引用计数</h4><p>我们可以注意到，<code>ByteBuf</code>只是一个抽象类不能直接使用，而且其实现了<code>ReferenceCounted</code>接口。这个接口就是引用计数的抽象，表示<code>ByteBuf</code>是被引用计数管理的。</p>
+<p>引用计数的基本规则有下：</p>
+<ol>
+<li>初始计数为1，以<code>ByteBuf</code>为例，new出来的时候就是1。</li>
+<li>引用计数为0时，对象不能再被使用只能被释放。</li>
+</ol>
+<p>我们可以使用<code>retain</code>使引用计数增加1，使用<code>release</code>使引用计数减少1，这两个方法都可以指定参数表示引用计数的增加值和减少值（比如<code>retain(2)</code>表示引用计数增加2）。当我们使用引用计数为0的对象时，将抛出异常<code>IllegalReferenceCountException</code>。</p>
+<p>那我们怎么来决定什么时候释放什么时候增加呢，通用原则是<strong>谁最后使用含有引用计数的对象，谁负责释放或销毁该对象</strong>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 接收数据，作为生产者（往ByteBuf中写数据），不需要释放</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ByteBuf <span class="title">receiveData</span><span class="params">(ByteBuf b, <span class="keyword">byte</span> data)</span> </span>&#123;</span><br><span class="line">    b.writeByte(data);</span><br><span class="line">    <span class="keyword">return</span> b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 完全消费了数据，作为消费者（从ByteBuf中读数据），这里需要释放</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">decodeData</span><span class="params">(ByteBuf b)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">byte</span> data = b.readByte();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> String(<span class="keyword">new</span> <span class="keyword">byte</span>[]&#123;data&#125;);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        b.release();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们之前提过派生缓冲区的概念，通过<code>duplicate</code>和<code>slice</code>等生成的<code>ByteBuf</code>会共享原<code>ByteBuf</code>的数据，这时派生缓冲区并没有自己独立的引用计数而需要共享原生缓冲区的引用计数。也就是说，当我们需要将派生缓冲区传入下一个组件时，一定要注意先调用<code>retain</code>方法，防止原来的<code>ByteBuf</code>被直接<code>release</code>掉。</p>
+<h4 id="泄漏检测"><a href="#泄漏检测" class="headerlink" title="泄漏检测"></a>泄漏检测</h4><p>引用计数虽然大大提高了<code>ByteBuf</code>的使用效率，但也引入了一个新的问题：引用计数对象的内存泄露。由于JVM并没有意识到Netty实现的引用计数对象，它仍会将这些引用计数对象当做常规对象处理，也就意味着，当不为0的引用计数对象变得不可达时仍然会被GC自动回收。一旦被GC回收，引用计数对象将不再返回给创建它的对象池，这样便会造成内存泄露。用一句话概括一下就是：对象池（Netty角度）认为这个对象没被回收，但是GC（JVM角度）认为这个对象已经被回收了。</p>
+<p>为了便于用户发现内存泄露，Netty提供了相应的检测机制并定义了四个检测级别：</p>
+<ol>
+<li><code>DISABLED</code>，完全关闭内存泄露检测。</li>
+<li><code>SIMPLE</code>，抽样检测，且只对部分方法调用进行记录，消耗较小，有泄漏时可能会延迟报告。默认级别。</li>
+<li><code>ADVANCED</code>，抽样检测，记录对象最近几次的调用记录，有泄漏时可能会延迟报告。</li>
+<li><code>PARANOID</code>，每次创建一个对象时都进行泄露检测，且会记录对象最近的详细调用记录。只推荐在测试时使用。</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/netty/" rel="tag"># netty</a>
+          
+            <a href="/tags/ByteBuf/" rel="tag"># ByteBuf</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Netty源码分析——伙伴分配算法.html" rel="next" title="Netty源码分析——伙伴分配算法">
+                <i class="fa fa-chevron-left"></i> Netty源码分析——伙伴分配算法
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">77</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">73</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty源码分析——ByteBuf开篇"><span class="nav-number">1.</span> <span class="nav-text">Netty源码分析——ByteBuf开篇</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#基本概念"><span class="nav-number">1.2.</span> <span class="nav-text">基本概念</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#类别"><span class="nav-number">1.3.</span> <span class="nav-text">类别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#引用计数"><span class="nav-number">1.4.</span> <span class="nav-text">引用计数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#泄漏检测"><span class="nav-number">1.5.</span> <span class="nav-text">泄漏检测</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
