@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="netty," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Netty源码分析——泄露检测前言Netty泄露检测依赖于JDK原生的弱引用和引用队列，在早些的版本里，Netty使用的是幻影引用，这篇文章我会基于最新的Netty版本来做一个分析。这篇文章涉及的知识点除了Netty的泄露检测实现，还有一些JDK的知识点，主要是幻影引用和弱引用在被回收时的一些知识点。 幻影引用和弱引用的回收JAVA中存在四种引用，分别是：  强引用，最普遍的引用，类似Object">
+<meta name="keywords" content="netty">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty源码分析——泄露检测">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Netty源码分析——泄露检测.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Netty源码分析——泄露检测前言Netty泄露检测依赖于JDK原生的弱引用和引用队列，在早些的版本里，Netty使用的是幻影引用，这篇文章我会基于最新的Netty版本来做一个分析。这篇文章涉及的知识点除了Netty的泄露检测实现，还有一些JDK的知识点，主要是幻影引用和弱引用在被回收时的一些知识点。 幻影引用和弱引用的回收JAVA中存在四种引用，分别是：  强引用，最普遍的引用，类似Object">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-11-07T07:03:48.475Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Netty源码分析——泄露检测">
+<meta name="twitter:description" content="Netty源码分析——泄露检测前言Netty泄露检测依赖于JDK原生的弱引用和引用队列，在早些的版本里，Netty使用的是幻影引用，这篇文章我会基于最新的Netty版本来做一个分析。这篇文章涉及的知识点除了Netty的泄露检测实现，还有一些JDK的知识点，主要是幻影引用和弱引用在被回收时的一些知识点。 幻影引用和弱引用的回收JAVA中存在四种引用，分别是：  强引用，最普遍的引用，类似Object">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Netty源码分析——泄露检测.html"/>
+
+
+
+
+
+  <title>Netty源码分析——泄露检测 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description"></h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Netty源码分析——泄露检测.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Netty源码分析——泄露检测</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-07T15:03:27+08:00">
+                2018-11-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty源码分析/" itemprop="url" rel="index">
+                    <span itemprop="name">Netty源码分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Netty源码分析——泄露检测"><a href="#Netty源码分析——泄露检测" class="headerlink" title="Netty源码分析——泄露检测"></a>Netty源码分析——泄露检测</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>Netty泄露检测依赖于JDK原生的弱引用和引用队列，在早些的版本里，Netty使用的是幻影引用，这篇文章我会基于最新的Netty版本来做一个分析。这篇文章涉及的知识点除了Netty的泄露检测实现，还有一些JDK的知识点，主要是幻影引用和弱引用在被回收时的一些知识点。</p>
+<h4 id="幻影引用和弱引用的回收"><a href="#幻影引用和弱引用的回收" class="headerlink" title="幻影引用和弱引用的回收"></a>幻影引用和弱引用的回收</h4><p>JAVA中存在四种引用，分别是：</p>
+<ol>
+<li>强引用，最普遍的引用，类似<code>Object obj = new Object()</code>这类的引用。只要强引用还存在，垃圾回收器就不会回收掉被引用的对象。当内存空间不足，JVM宁愿抛出<code>OutOfMemoryError</code>错误，使程序异常终止，也不会靠随意回收具有强引用的对象来解决内存不足的问题。</li>
+<li>软引用（<code>SoftReference</code>类），如果一个对象只具有软引用，则内存空间足够，垃圾回收器就不会回收它，而如果内存空间不足了，就会回收这些对象的内存。只要垃圾回收器没有回收它，该对象就可以被程序使用。软引用可用来实现内存敏感的缓存。</li>
+<li>弱引用（<code>WeakReference</code>类），弱引用与软引用的区别在于：只具有弱引用的对象拥有更短暂的生命周期。垃圾回收器进行对象扫描时，一旦发现了只具有弱引用的对象，不管当前内存空间足够与否，都会回收它的内存。</li>
+<li>虚/幻影引用（<code>PhantomReference</code>类），虚引用并不会决定对象的生命周期。如果一个对象仅持有虚引用，那么它就和没有任何引用一样，在任何时候都可能被垃圾回收器回收。而且也无法通过虚引用来取得一个对象实例。当垃圾回收器准备回收一个对象时，如果发现它还有虚引用，就会在回收对象的内存<strong>之前</strong>，把这个虚引用加入到与之关联的引用队列中。</li>
+</ol>
+<p>这四种引用是老生常谈的问题。需要注意的是，<strong>软引用、弱引用和幻影引用都可以在被垃圾回收时，收到一个系统通知，通知方式就是这个引用将会被放入一个引用队列</strong>。软引用和弱引用的区别我们已经说过了，幻影引用和二者的区别是：幻影引用必须配合引用队列（<code>ReferenceQueue</code>类）一起使用，它只有一个构造函数，而且<code>ReferenceQueue</code>是入参。</p>
+<p>那么我们可以猜一下Netty的思路，我在之前的文章中说过：JVM并不知道Netty实现了引用计数，所以如果JVM把引用计数大于0的对象回收掉，那么这个对象将永远不会被归还到对象池中，从而导致内存泄露。</p>
+<p>那么我们可以这么设计，当我们创建一个对象时，我们就把这个对象维护在一个容器中。当我们<code>release</code>这个对象时（这里的<code>release</code>指的是最终<code>release</code>，也就是引用计数归0时的<code>release</code>），就把这个对象从容器中移除。也就是说，这个容器维护的是引用计数大于0的对象，也就是不应该被回收（<code>release</code>）的对象。</p>
+<p>当<code>ReferenceQueue</code>和容器中，同时出现了一个对象，则说明这个对象泄露了，因为<code>ReferenceQueue</code>中存放的是JVM打算回收的对象，而容器中存放的是不应该被回收的对象，如果这个对象被JVM回收掉，就会出现对象池内存泄露。</p>
+<h4 id="泄露分析源码"><a href="#泄露分析源码" class="headerlink" title="泄露分析源码"></a>泄露分析源码</h4><p>我们从分配<code>ByteBuf</code>的地方开始看起，这里提前说明一下，泄漏检测不光是只针对<code>ByteBuf</code>，这里选用<code>ByteBuf</code>作为例子只是比较有代表性。而且使用<code>ByteBuf</code>作为分析的对象，也可以看一下<code>Record</code>记录的流程，比如这个<code>ByteBuf</code>什么时候进行过什么操作。</p>
+<p>另外一个泄露分析的例子是<code>HashedWheelTimer</code>，针对<code>HashedWheelTimer</code>的泄露分析就无法记录什么时候操作过之类的信息，只能记录这个<code>HashedWheelTimer</code>是否一直没有被关闭。这个在分析完之后会带着大家再看一下。</p>
+<p>回到<code>ByteBuf</code>的分配，我们看下<code>PooledByteBufAllocator</code>，这里会分配池化的<code>ByteBuf</code>，有两个方法：<code>newHeapBuffer</code>分配底层是堆内存的<code>ByteBuf</code>，<code>newDirectBuffer</code>则分配堆外内存的<code>ByteBuf</code>。这两个方法最终都会执行<code>AbstractByteBufAllocator#toLeakAwareBuffer(ByteBuf)</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">ResourceLeakTracker&lt;ByteBuf&gt; leak;</span><br><span class="line"><span class="keyword">switch</span> (ResourceLeakDetector.getLevel()) &#123;</span><br><span class="line">    <span class="keyword">case</span> SIMPLE:</span><br><span class="line">        <span class="comment">// SIMPLE使用SimpleLeakAwareByteBuf</span></span><br><span class="line">        leak = AbstractByteBuf.leakDetector.track(buf);</span><br><span class="line">        <span class="keyword">if</span> (leak != <span class="keyword">null</span>) &#123;</span><br><span class="line">            buf = <span class="keyword">new</span> SimpleLeakAwareByteBuf(buf, leak);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> ADVANCED:</span><br><span class="line">    <span class="keyword">case</span> PARANOID:</span><br><span class="line">        <span class="comment">// ADVANCED和PARANOID都使用AdvancedLeakAwareByteBuf</span></span><br><span class="line">        leak = AbstractByteBuf.leakDetector.track(buf);</span><br><span class="line">        <span class="keyword">if</span> (leak != <span class="keyword">null</span>) &#123;</span><br><span class="line">            buf = <span class="keyword">new</span> AdvancedLeakAwareByteBuf(buf, leak);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> buf;</span><br></pre></td></tr></table></figure>
+<p>关于<code>AdvancedLeakAwareByteBuf</code>和<code>SimpleLeakAwareByteBuf</code>我们后面说<code>Record</code>记录的时候再说，先看看<code>leak = AbstractByteBuf.leakDetector.track(buf);</code>这一句，<code>leakDetector</code>是一个泄露探测器<code>ResourceLeakDetector</code>，我们看看它的<code>track</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取检测级别</span></span><br><span class="line">Level level = ResourceLeakDetector.level;</span><br><span class="line"><span class="keyword">if</span> (level == Level.DISABLED) &#123;</span><br><span class="line">    <span class="comment">// 禁用泄漏检测就直接返回null，上层不会做任何处理</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (level.ordinal() &lt; Level.PARANOID.ordinal()) &#123;</span><br><span class="line">    <span class="comment">// 如果泄露检测级别小于PARANOID，就随机取一个，samplingInterval默认128，nextInt(samplingInterval)) == 0这一句说明默认抽样是128分之一，差不多是百分之一。</span></span><br><span class="line">    <span class="keyword">if</span> ((PlatformDependent.threadLocalRandom().nextInt(samplingInterval)) == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// 如果需要抽样，则进行泄露报告，然后返回一个DefaultResourceLeak</span></span><br><span class="line">        reportLeak();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> DefaultResourceLeak(obj, refQueue, allLeaks);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 如果级别是PARANOID，每次都进行泄露报告，即分配一个对象的时候就行一次泄露报告，同样返回一个DefaultResourceLeak</span></span><br><span class="line">reportLeak();</span><br><span class="line"><span class="keyword">return</span> <span class="keyword">new</span> DefaultResourceLeak(obj, refQueue, allLeaks);</span><br></pre></td></tr></table></figure>
+<p>上述流程可以看到：</p>
+<ol>
+<li>如果是<code>PARANOID</code>级别，则每次分配对象时都进行泄露检测。</li>
+<li>如果是<code>SIMPLE</code>或者<code>ADVANCED</code>，则默认情况下每分配128个对象进行一次泄露检测（注意不是一定，而是概率）。</li>
+</ol>
+<p>我们继续先看一下<code>DefaultResourceLeak</code>的构造函数：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 弱引用（老版本用的是欢迎引用）</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DefaultResourceLeak</span>&lt;<span class="title">T</span>&gt;</span></span><br><span class="line"><span class="class">            <span class="keyword">extends</span> <span class="title">WeakReference</span>&lt;<span class="title">Object</span>&gt; <span class="keyword">implements</span> <span class="title">ResourceLeakTracker</span>&lt;<span class="title">T</span>&gt;, <span class="title">ResourceLeak</span> </span>&#123;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 存储DefaultResourceLeak的容器</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ConcurrentMap&lt;DefaultResourceLeak&lt;?&gt;, LeakEntry&gt; allLeaks;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Record的头结点</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> Record head;</span><br><span class="line"></span><br><span class="line">DefaultResourceLeak(</span><br><span class="line">        Object referent,</span><br><span class="line">        ReferenceQueue&lt;Object&gt; refQueue,</span><br><span class="line">        ConcurrentMap&lt;DefaultResourceLeak&lt;?&gt;, LeakEntry&gt; allLeaks) &#123;</span><br><span class="line">    <span class="comment">// WeakReference的构造函数</span></span><br><span class="line">    <span class="keyword">super</span>(referent, refQueue);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> referent != <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    trackedHash = System.identityHashCode(referent);</span><br><span class="line">    <span class="comment">// 这里放了一个LeakEntry.INSTANCE进去，是为了不要一直维护referent，如果put（this, referent）进去会导致allLeaks -&gt; referent的引用链一直存在导致WeakReference无法被回收</span></span><br><span class="line">    allLeaks.put(<span class="keyword">this</span>, LeakEntry.INSTANCE);</span><br><span class="line">    <span class="comment">// 初始化一个“创建”记录，“创建”表示这个DefaultResourceLeak的生命周期中的最开始的也是最底层的那个记录。</span></span><br><span class="line">    headUpdater.set(<span class="keyword">this</span>, <span class="keyword">new</span> Record(Record.BOTTOM));</span><br><span class="line">    <span class="keyword">this</span>.allLeaks = allLeaks;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里其实包含了非常多的信息，我们看回去<code>track0</code>方法中创建<code>DefaultResourceLeak</code>的部分：<code>return new DefaultResourceLeak(obj, refQueue, allLeaks);</code>，其中<code>refQueue</code>就是一个<code>new ReferenceQueue&lt;Object&gt;();</code>，而<code>allLeaks</code>是一个<code>ConcurrentHashMap</code>。注意这两个属性都是全局的，也就是说同一个<code>ResourceLeakDetector</code>创建的所有<code>DefaultResourceLeak</code>将共享一个<code>ReferenceQueue</code>并把自己放到一个叫<code>allLeaks</code>的map里。</p>
+<p>注意这里<code>allLeaks</code>中放的value是一个<code>LeakEntry.INSTANCE</code>，不是我们需要检测的对象，这里给的说明是，如果<code>put(this, referent)</code>会导致<code>allLeaks</code> -&gt; <code>referent</code>（这里的<code>referent</code>在我们的场景下就是一个<code>ByteBuf</code>）一直存在，从而影响<code>WeakReference</code>的回收。</p>
+<p>说回来，我们总结一下<code>track</code>方法和<code>DefaultResourceLeak</code>做的事情：</p>
+<ol>
+<li><code>track</code>方法进行采样，并且初始化一个<code>DefaultResourceLeak</code>。</li>
+<li><code>DefaultResourceLeak</code>就是一个弱引用的实例，和一个全局的<code>ReferenceQueue</code>绑定，并且把自己维护在一个map中。</li>
+</ol>
+<p>我们看回<code>SimpleLeakAwareByteBuf</code>，其中就维护了这个返回的<code>DefaultResourceLeak</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ByteBuf trackedByteBuf;</span><br><span class="line"><span class="comment">// 这就track方法返回的那个DefaultResourceLeak</span></span><br><span class="line"><span class="keyword">final</span> ResourceLeakTracker&lt;ByteBuf&gt; leak;</span><br><span class="line"></span><br><span class="line">SimpleLeakAwareByteBuf(ByteBuf wrapped, ByteBuf trackedByteBuf, ResourceLeakTracker&lt;ByteBuf&gt; leak) &#123;</span><br><span class="line">    <span class="keyword">super</span>(wrapped);</span><br><span class="line">    <span class="keyword">this</span>.trackedByteBuf = ObjectUtil.checkNotNull(trackedByteBuf, <span class="string">"trackedByteBuf"</span>);</span><br><span class="line">    <span class="keyword">this</span>.leak = ObjectUtil.checkNotNull(leak, <span class="string">"leak"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那么目前我们先顺一遍<code>allocator</code>分配的流程，以<code>newHeapBuffer</code>为例：</p>
+<ol>
+<li><code>newHeapBuffer</code>分配一个<code>heapByteBuf</code>。</li>
+<li>把这个<code>heapByteBuf</code>丢到<code>toLeakAwareBuffer</code>中，这个<code>heapByteBuf</code>会和一个弱引用（弱引用其实就是<code>DefaultResourceLeak</code>）关联起来。</li>
+<li>然后这个<code>heapByteBuf</code>和这个弱引用一起被维护在<code>SimpleLeakAwareByteBuf</code>中。</li>
+<li><code>newHeapBuffer</code>最终返回的就是一个<code>SimpleLeakAwareByteBuf</code>，这个<code>ByteBuf</code>是一个包装的<code>ByteBuf</code>。</li>
+</ol>
+<p><code>newHeapBuffer</code>返回的<code>ByteBuf</code>就可以被上层使用了，通过引用计数我们可以进行<code>retain</code>和<code>release</code>。</p>
+<p>我们关注泄漏检测，当然要看<code>release</code>的时候做了什么，看下<code>SimpleLeakAwareByteBuf#release()</code>干了啥：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 调用relase，release只有在引用计数归0并且这个对象被回收了才会返回true</span></span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">super</span>.release()) &#123;</span><br><span class="line">    <span class="comment">// 这句话是关键</span></span><br><span class="line">    closeLeak();</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> <span class="keyword">false</span>;</span><br></pre></td></tr></table></figure>
+<p>注意，<code>release</code>实际上是委托给了<code>SimpleLeakAwareByteBuf</code>的父类<code>WrappedByteBuf</code>进行，但是<code>release</code>的含义是一样的：只有在引用计数对象计数为0且对象被真正释放的时候才会返回true。</p>
+<p>当我们真正<code>release</code>了<code>ByteBuf</code>时，就会执行<code>closeLeak</code>，这里会执行<code>leak.close(trackedByteBuf);</code>，其中<code>trackedByteBuf</code>就是真正的<code>heapByteBuf</code>，追进去：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">close</span><span class="params">(T trackedObject)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 保证要释放的对象就是当初自己维护的那个对象</span></span><br><span class="line">    <span class="keyword">assert</span> trackedHash == System.identityHashCode(trackedObject);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> close();</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="comment">// 保证对象的可见性，请关注'后记2'章节</span></span><br><span class="line">        reachabilityFence0(trackedObject);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">close</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 把自己从allLeaks移除</span></span><br><span class="line">    <span class="keyword">if</span> (allLeaks.remove(<span class="keyword">this</span>, LeakEntry.INSTANCE)) &#123;</span><br><span class="line">        <span class="comment">// 这是父类的Reference的方法，接触引用</span></span><br><span class="line">        clear();</span><br><span class="line">        <span class="comment">// 把head record设置为null</span></span><br><span class="line">        headUpdater.set(<span class="keyword">this</span>, <span class="keyword">null</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里涉及到的方法我列出来了，主要是把自己从<code>allLeaks</code>中移除，然后接触<code>Reference</code>的引用，最后把<code>head record</code>设置为<code>null</code>，这个地方是因为这个对象不会泄露，所以不需要<code>record</code>信息了。</p>
+<p>说到这很多人可能有疑问，为啥这样就说明这个对象不会泄露了呢？</p>
+<p>带着这个问题我们看看之前漏掉的一个关键方法——<code>reportLeak</code>，这个方法就是打印泄露信息并且报告泄露，我们看看：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Netty认为泄露是error级别，如果没有开启error级别日志，就不报告，直接清理ReferenceQueue</span></span><br><span class="line"><span class="keyword">if</span> (!logger.isErrorEnabled()) &#123;</span><br><span class="line">    clearRefQueue();</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 报告最近的一次泄露</span></span><br><span class="line"><span class="keyword">for</span> (;;) &#123;</span><br><span class="line">    <span class="comment">// 从队列中取一个DefaultResourceLeak出来</span></span><br><span class="line">    DefaultResourceLeak ref = (DefaultResourceLeak) refQueue.poll();</span><br><span class="line">    <span class="comment">// 如果取不出来，说明没有泄露</span></span><br><span class="line">    <span class="keyword">if</span> (ref == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 清理引用并且从allLeaks移除自己</span></span><br><span class="line">    <span class="keyword">if</span> (!ref.dispose()) &#123;</span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 能走到这里说明可能泄露了，这里要打印报告</span></span><br><span class="line">    String records = ref.toString();</span><br><span class="line">    <span class="keyword">if</span> (reportedLeaks.putIfAbsent(records, Boolean.TRUE) == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (records.isEmpty()) &#123;</span><br><span class="line">            reportUntracedLeak(resourceType);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            reportTracedLeak(resourceType, records);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里是泄露检测的关键，我们一点一点分析。</p>
+<p>直接看到<code>DefaultResourceLeak ref = (DefaultResourceLeak) refQueue.poll();</code>这里，这里是从<code>ReferenceQueue</code>中取一个<code>DefaultResourceLeak</code>出来，再说一次<code>DefaultResourceLeak</code>其实就是一个弱引用，只有在JVM打算垃圾回收掉它关联的对象的时候，才会被放到和它关联的<code>ReferenceQueue</code>中。</p>
+<p>取一个<code>DefaultResourceLeak</code>出来，如果有，说明这个<code>DefaultResourceLeak</code>对应的<code>ByteBuf</code>即将被回收。然后调用<code>ref.dispose()</code>方法，这个方法很简单不贴了，主要是执行<code>allLeaks.remove(this, LeakEntry.INSTANCE);</code>，把自己从<code>allLeaks</code>移除，如果移除失败，则<code>continue</code>，否则就说明这个<code>ByteBuf</code>内存泄露。</p>
+<p><code>allLeaks</code>中维护的是什么，之前说了，是那些引用计数没到0，也就是Netty认为不该被回收的对象，如果<code>ReferenceQueue</code>中取出来的对象在<code>allLeaks</code>中也存在，就说明：<strong>这个对象即将被JVM回收，但是Netty认为它的引用计数不为0，不应该被回收</strong>！</p>
+<p>谜底揭开！</p>
+<p>为什么<code>SimpleLeakAwareByteBuf</code>执行<code>release</code>的时候，要把这个引用从<code>allLeaks</code>中移除，因为这时候引用计数归零，也就是Netty认为这个对象应该被回收了。</p>
+<p>如果这个对象出现在<code>ReferenceQueue</code>中，在不泄露的情况下，Netty应该已经<code>release</code>了这个对象，那么它就不应该出现在<code>allLeaks</code>中，也就是说<code>ref.dispose</code>在执行<code>allLeaks.remove(this, LeakEntry.INSTANCE);</code>这句的时候就会返回<code>false</code>，因为这个对象引用计数归零就会从这里被移除，<code>remove</code>当然移除不掉一个不存在的值。</p>
+<p>至此，泄露检测的分析已经结束，我们回看整个流程：</p>
+<ol>
+<li>分配<code>ByteBuf</code>的时候，这个<code>ByteBuf</code>会和一个弱引用（<code>DefaultResourceLeak</code>）关联。</li>
+<li><code>DefaultResourceLeak</code>被放到<code>allLeaks</code>中，说明这个对象Netty认为不该被回收。</li>
+<li>当我们分配对象时，就会采样并且进行泄露检测（<code>reportLeak</code>）。</li>
+<li>从<code>ReferenceQueue</code>中取<code>DefaultResourceLeak</code>，如果取不出来说明没有JVM认为该回收的对象，当然也不存在泄露。</li>
+<li>如果取的出来，就尝试从<code>allLeaks</code>中移除这个从<code>ReferenceQueue</code>取出来的引用。</li>
+<li>如果能从<code>allLeaks</code>中移除，说明这个<code>DefaultResourceLeak</code>还在<code>allLeaks</code>中，即Netty认为不该被释放，但是JVM认为这个<code>DefaultResourceLeak</code>关联的对象应该被回收，这时候就可能出现泄露，打印<code>Record</code>。</li>
+<li>如果不能从<code>allLeaks</code>中移除，说明JVM认为这个对象该被回收的时候，Netty也已经释放了这个对象，皆大欢喜！</li>
+</ol>
+<h4 id="为什么说可能发生泄露"><a href="#为什么说可能发生泄露" class="headerlink" title="为什么说可能发生泄露"></a>为什么说可能发生泄露</h4><p>这里并不是说上述情况一定发生了泄露，试想一种情况，Netty刚刚执行完成<code>release</code>，还没来的及把这个<code>DefaultResourceLeak</code>从<code>allLeaks</code>中移除，JVM就检测到这个<code>DefaultResourceLeak</code>关联的对象需要回收了，这时候如果另外一个线程正在执行<code>reportLeak</code>，那么依然可能把这个已经被Netty释放并且马上要被JVM回收的对象列为泄露对象。</p>
+<p>Netty在<code>reportLeak</code>也注释了：检测并报告最近一次泄露，说明报告是有时效性的，如果一个对象一直存在在我们的泄露报告中，那我们需要关注这种对象的泄漏问题。</p>
+<h4 id="Record"><a href="#Record" class="headerlink" title="Record"></a>Record</h4><p>说这个类的时候我们要看一下<code>SimpleLeakAwareByteBuf</code>和它的子类<code>AdvancedLeakAwareByteBuf</code>。先看<code>SimpleLeakAwareByteBuf</code>，它的大部分数据操作（<code>read</code>、<code>get</code>、<code>set</code>等方法）都使用的是父类的方法，而一些派生方法（<code>duplicate</code>和<code>slice</code>等）进行了特殊处理，我们看一下<code>duplicate</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ByteBuf <span class="title">duplicate</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 把super.duplicate返回的ByteBuf传给newSharedLeakAwareByteBuf方法</span></span><br><span class="line">    <span class="keyword">return</span> newSharedLeakAwareByteBuf(<span class="keyword">super</span>.duplicate());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> SimpleLeakAwareByteBuf <span class="title">newSharedLeakAwareByteBuf</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        ByteBuf wrapped)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 把duplicate出来的ByteBuf二次封装成一个SimpleLeakAwareByteBuf再返回</span></span><br><span class="line">    <span class="keyword">return</span> newLeakAwareByteBuf(wrapped, trackedByteBuf, leak);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> SimpleLeakAwareByteBuf <span class="title">newLeakAwareByteBuf</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        ByteBuf buf, ByteBuf trackedByteBuf, ResourceLeakTracker&lt;ByteBuf&gt; leakTracker)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 二次封装成SimpleLeakAwareByteBuf</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> SimpleLeakAwareByteBuf(buf, trackedByteBuf, leakTracker);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们二次封装用的是全局的<code>ResourceLeakTracker&lt;ByteBuf&gt; leak</code>，也就是说其实<code>duplicate</code>出来的对象没有放到<code>allLeaks</code>中（全局的<code>leak</code>说明<code>leak</code>是旧的，不是用<code>track</code>方法创建出来的）。<code>slice</code>方法也一样，说明<code>duplicate</code>和<code>slice</code>方法返回的对象和原来的对象是共用同一个泄露检测过程的，而不是独立的，这也符合<code>duplicate</code>和<code>slice</code>的设定——共享原缓冲区的数据，所以也共享了泄漏检测的流程。</p>
+<p><code>unwrappedDerived</code>流程会在一些特殊情况下返回新的被泄露检测的<code>ByteBuf</code>，这里不展开说了，有兴趣的朋友可以看下这个方法。</p>
+<p>我们可以看到，<code>SimpleLeakAwareByteBuf</code>和<code>Record</code>基本没有关系，操作<code>ByteBuf</code>读写的时候也不会记录任何信息。我们如果需要详细记录一个<code>ByteBuf</code>的生命周期、读写操作，这时候就会使用<code>AdvancedLeakAwareByteBuf</code>，看名字我们也可以知道是高级的泄露检测<code>ByteBuf</code>。</p>
+<p>我们看下它的<code>slice</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ByteBuf <span class="title">slice</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    recordLeakNonRefCountingOperation(leak);</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">super</span>.slice();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 这个方法中会调用ResourceLeakTracker.record方法记录一个Record</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">recordLeakNonRefCountingOperation</span><span class="params">(ResourceLeakTracker&lt;ByteBuf&gt; leak)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!ACQUIRE_AND_RELEASE_ONLY) &#123;</span><br><span class="line">        leak.record();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们看到了本小节的重点，就是<code>record</code>，我们需要追踪一个<code>ByteBuf</code>完整的生命周期，必须要在他的各个时期做一些记录，<code>ResourceLeakTracker.record</code>是关键。我们先不急着看<code>record</code>方法做了什么，我们再看看读写操作，以<code>writeBytes</code>为例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">recordLeakNonRefCountingOperation(leak);</span><br><span class="line"><span class="keyword">return</span> <span class="keyword">super</span>.writeBytes(src);</span><br></pre></td></tr></table></figure>
+<p>又看到了<code>recordLeakNonRefCountingOperation</code>操作，其余方法类似，都进行了记录。追进去看<code>record</code>方法，最终会到<code>DefaultResourceLeak#record0</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">record0</span><span class="params">(Object hint)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// TARGET_RECORDS规定可以记录的最大Record数量</span></span><br><span class="line">    <span class="keyword">if</span> (TARGET_RECORDS &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        Record oldHead;</span><br><span class="line">        Record prevHead;</span><br><span class="line">        Record newHead;</span><br><span class="line">        <span class="keyword">boolean</span> dropped;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">            <span class="comment">// 如果head == null 说明已经关闭了，我们在close方法中说过，close时会把head设置为null</span></span><br><span class="line">            <span class="keyword">if</span> ((prevHead = oldHead = headUpdater.get(<span class="keyword">this</span>)) == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">final</span> <span class="keyword">int</span> numElements = oldHead.pos + <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">if</span> (numElements &gt;= TARGET_RECORDS) &#123;</span><br><span class="line">                <span class="keyword">final</span> <span class="keyword">int</span> backOffFactor = Math.min(numElements - TARGET_RECORDS, <span class="number">30</span>);</span><br><span class="line">                <span class="keyword">if</span> (dropped = PlatformDependent.threadLocalRandom().nextInt(<span class="number">1</span> &lt;&lt; backOffFactor) != <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="comment">// 设置链表的节点</span></span><br><span class="line">                    prevHead = oldHead.next;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                dropped = <span class="keyword">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            newHead = hint != <span class="keyword">null</span> ? <span class="keyword">new</span> Record(prevHead, hint) : <span class="keyword">new</span> Record(prevHead);</span><br><span class="line">        <span class="comment">// CAS的方式设置新的头节点</span></span><br><span class="line">        &#125; <span class="keyword">while</span> (!headUpdater.compareAndSet(<span class="keyword">this</span>, oldHead, newHead));</span><br><span class="line">        <span class="keyword">if</span> (dropped) &#123;</span><br><span class="line">            droppedRecordsUpdater.incrementAndGet(<span class="keyword">this</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Netty为了防止有些对象的操作非常频繁，可能<code>Record</code>链会非常多，Netty会抛弃一些<code>Record</code>。我们从上面的代码可以很明显看出来，<code>Record</code>会形成一个链，<code>Record</code>类实际上是<code>Throwable</code>的子类，我们可以把一条<code>Record</code>理解成一个调用栈帧，将来整个<code>Record</code>链会形成一个类似堆栈的记录。<code>DefaultResourceLeak#toString</code>方法中可以看到整个<code>Record</code>链组装的方式。</p>
+<p>这篇文章更多的注意力集中在泄漏检测的实现和思路上，对于<code>Record</code>部分就不多做解读了，有兴趣的朋友可以去DEBUG一下即可，代码并不是很复杂。</p>
+<h4 id="HashedWheelTimer的泄露检测"><a href="#HashedWheelTimer的泄露检测" class="headerlink" title="HashedWheelTimer的泄露检测"></a>HashedWheelTimer的泄露检测</h4><p>之前说过，泄漏检测不光针对<code>ByteBuf</code>，可以针对任何对象，包括没实现引用计数的对象。</p>
+<p>我们简单看下在<code>HashedWheelTimer</code>中的使用。</p>
+<p>先看构造函数中初始化部分：<code>leak = leakDetection || !workerThread.isDaemon() ? leakDetector.track(this) : null;</code></p>
+<p><code>leakDetection</code>是构造函数的入参，表示是否开启。可以看到，如果我们选择开启或者<code>workerThread</code>是守护线程的时候，就会开启泄露检测。如果<code>workerThread</code>是守护线程，那么在程序结束后守护线程是不会立即关闭的，所以如果是守护线程就开启检测，防止程序不断重启结束，产生很多一直没有关闭的<code>workerThread</code>。</p>
+<p>这个<code>leak</code>我们可以全局搜一下，只有在构造函数和<code>stop</code>中使用了<code>leak</code>，看下<code>stop</code>，我截取一些有用的代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">boolean</span> interrupted = <span class="keyword">false</span>;</span><br><span class="line">    <span class="comment">// 中断workerThread</span></span><br><span class="line">    <span class="keyword">while</span> (workerThread.isAlive()) &#123;</span><br><span class="line">        workerThread.interrupt();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            workerThread.join(<span class="number">100</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException ignored) &#123;</span><br><span class="line">            interrupted = <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (interrupted) &#123;</span><br><span class="line">        Thread.currentThread().interrupt();</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    INSTANCE_COUNTER.decrementAndGet();</span><br><span class="line">    <span class="keyword">if</span> (leak != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 关闭泄漏检测</span></span><br><span class="line">        <span class="keyword">boolean</span> closed = leak.close(<span class="keyword">this</span>);</span><br><span class="line">        <span class="keyword">assert</span> closed;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>流程其实很简单，只不过在<code>HashedWheelTimer</code>中我们关心的是一个<code>HashedWheelTimer</code>是否关闭。如果一个<code>HashedWheelTimer</code>一直不关闭，我们认为产生了泄露，但是泄露报告里只有<code>HashedWheelTimer</code>的初始化<code>Record</code>，并不会记录什么时候添加了任务之类的记录。</p>
+<p>其实<code>ByteBuf</code>也好，<code>HashedWheelTimer</code>也好，泄露检测检测的就是资源的释放。如果一个<code>HashedWheelTimer</code>一直启动没有被<code>stop</code>，以至于到JVM都打算回收它了仍然没有<code>stop</code>，则依然产生泄露。</p>
+<h4 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h4><p>之前我们在说<code>allLeaks</code>的时候，可能有些同学会发现，我们放进去的<code>value</code>其实是一个毫无意义的值，而我们使用时也不关心值，只关心键，这种情况下其实使用<code>Set</code>是更符合场景的。但是问题是我们如何构建一个线程安全的<code>Set</code>，jdk原生没有提供<code>ConcurrentHashSet</code>这个类，但是线程安全的<code>Set</code>是有使用场景的。我们可以通过以下两种方式解决这个问题：</p>
+<ol>
+<li>Guava提供的线程安全<code>Set</code>：<code>Set&lt;String&gt; s = Sets.newConcurrentHashSet();</code></li>
+<li>我们用jdk支持的<code>Collections</code>方法来构建：<code>Set&lt;String&gt; s = Collections.newSetFromMap(new ConcurrentHashMap&lt;String, Boolean&gt;());</code></li>
+</ol>
+<p>关于这个问题我已经提交了PR修复了（使用第二种方式），最新的4.1.x版本中已经没有<code>LeakEntry.INSTANCE</code>这个类了，<code>ConcurrentHashMap</code>也已经替换成了<code>Set</code>。</p>
+<h4 id="后记2"><a href="#后记2" class="headerlink" title="后记2"></a>后记2</h4><p>这个部分的后记就非常高端了，设计JIT编译优化和解除内联优化。也涉及到前面我讲的内容有一些错误。</p>
+<p>我在<code>为什么说可能发生泄露</code>中降到，如果GC线程把一个正准备（还没）从<code>allLeaks</code>中移除的对象提前GC放到了<code>ReferenceQueue</code>中，这时候另外一个线程恰好在执行<code>reportLeask</code>方法并且从<code>ReferenceQueue</code>中把这个对象<code>poll</code>了出来，这时候按照我们的分析，执行<code>reportLeak</code>时会继续尝试从<code>allLeaks</code>中移除这个对象，如果移除成功则泄露。</p>
+<p>那么之前正准备（还没）从<code>allLeaks</code>中移除这个对象的线程其实马上就要进行<code>remove</code>操作了，但是这个时候这个对象已经被<code>reportLeak</code>给误报告为泄露对象。</p>
+<p>在某些JIT编译优化的场景下，GC线程认为<code>SimpleLeakAwareByteBuf#release</code>执行之后，也就是彻底释放这个对象之后，就不会存在这个对象的引用了，所以GC线程就在<code>SimpleLeakAwareByteBuf#release</code>之前提前堆这个对象进行了回收，导致这个对象提前出现在<code>ReferenceQueue</code>中。说白了就是，经过JIT优化，JVM未卜先知了，我们还没<code>release</code>申请的那个<code>ByteBuf</code>的时候，JVM就提前帮我们把它回收掉了。</p>
+<p>R大在知乎有一篇精彩的回答，不光我描述的场景会出现对象提前回收的问题，极端情况下，<code>this</code>都可能被提前回收！我这里贴一下地址供有需要的小伙伴看一下。</p>
+<p>说回来，我们怎么保证在执行<code>release</code>之前，想要释放的<code>ByteBuf</code>不被提前回收呢？之前版本中的<code>close</code>方法不是现在这样的，而是这样的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">close</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> allLeaks.remove(<span class="keyword">this</span>, LeakEntry.INSTANCE);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>后来进行了第一次修改，增加了一个<code>close</code>方法，而且都是用新的<code>close</code>方法进行关闭泄露检测操作：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">close</span><span class="params">(T trackedObject)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">assert</span> trackedHash == System.identityHashCode(trackedObject);</span><br><span class="line">    <span class="comment">// We need to actually do the null check of the trackedObject after we close the leak because otherwise</span></span><br><span class="line">    <span class="comment">// we may get false-positives reported by the ResourceLeakDetector. This can happen as the JIT / GC may</span></span><br><span class="line">    <span class="comment">// be able to figure out that we do not need the trackedObject anymore and so already enqueue it for</span></span><br><span class="line">    <span class="comment">// collection before we actually get a chance to close the enclosing ResourceLeak.</span></span><br><span class="line">    <span class="keyword">return</span> close() &amp;&amp; trackedObject != <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>新增了一个入参，这个入参就是当时我们要追踪的那个对象，比如一个<code>ByteBuf</code>。这里进行了一个<code>trackedObject != null</code>操作，就是告诉JIT，我们在进行<code>SimpleLeakAwareByteBuf#release</code>操作之后，还需要用到这个被追踪的<code>ByteBuf</code>，防止JIT优化这里的编译，从而防止<code>release</code>方法执行之前，<code>ByteBuf</code>就被提前回收导致错误的泄露报告。</p>
+<p>后来又进行了一次修改，我们现在的<code>close</code>方法是：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">assert</span> trackedHash == System.identityHashCode(trackedObject);</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> close();</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="comment">// This method will do `synchronized(trackedObject)` and we should be sure this will not cause deadlock.</span></span><br><span class="line">    <span class="comment">// It should not, because somewhere up the callstack should be a (successful) `trackedObject.release`,</span></span><br><span class="line">    <span class="comment">// therefore it is unreasonable that anyone else, anywhere, is holding a lock on the trackedObject.</span></span><br><span class="line">    <span class="comment">// (Unreasonable but possible, unfortunately.)</span></span><br><span class="line">    reachabilityFence0(trackedObject);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">reachabilityFence0</span><span class="params">(Object ref)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (ref != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// Empty synchronized is ok: https://stackoverflow.com/a/31933260/1151521</span></span><br><span class="line">        <span class="keyword">synchronized</span> (ref) &#123; &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们可以看到有一个<code>reachabilityFence0</code>方法，这里我也保留了一些注释。注释大意是说，我们需要在执行<code>reachabilityFence0</code>之前，保留对象的强引用，至少在调用此方法之前，引用的对象不能通过垃圾收集回收。R大的回复中也说了一种在JDK9中可以采用的方法，就是使用<code>java.lang.ref.Reference#reachabilityFence</code>方法可以保证入参对象不被提前回收，这个方法在1.9之前是没有的，我这里为了给大家一个更直观的感受，直接把这个方法的实现贴出来：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@DontInline</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">reachabilityFence</span><span class="params">(Object ref)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// Does nothing, because this method is annotated with @DontInline</span></span><br><span class="line">    <span class="comment">// HotSpot needs to retain the ref and not GC it before a call to this</span></span><br><span class="line">    <span class="comment">// method</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到注释上说，这个方法是空方法，但是因为有<code>DontInline</code>注解（不要做内联优化），可以让GC在执行这个方法之前都不要GC入参的那个对象。</p>
+<p>但是Netty实际使用的是<code>synchronized (ref) { }</code>这种方式，这种方式也可以让GC在执行这个同步块之前，不回收<code>ref</code>这个对象，但是这种方法兼容性更好（<code>Reference#reachabilityFence</code>在1.9中才存在），所以Netty使用这种方式。而且在<code>reachabilityFence0</code>上Netty给了很明确的注释，由于Netty锁住了这个对象，所以调用方有义务保证不产生死锁。这里也给我们一个小TIPS，尽量不要对<code>ByteBuf</code>加锁，因为大部分情况下没有人知道<code>ByteBuf</code>在<code>release</code>的时候还会被锁住。</p>
+<p>可能有人要问，空的<code>synchronized</code>块会不会导致一些问题，这里<code>stackOverFlow</code>上也给出了一个答案，有兴趣的同学可以去看一下。</p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>我写这篇文章前后折腾了将近一个周，没有借鉴其他人的文章，查阅了大量资料，内容全都来自自己对泄漏检测的解读，如果有错误的地方还请大家指正，代码都基于<code>4.1.32</code>，也是Netty最新的版本，希望大家喜欢！</p>
+<h4 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h4><p><a href="https://www.zhihu.com/question/51244545/answer/126055789" target="_blank" rel="noopener">this被提前回收的情况及避免措施</a><br><a href="https://ylgrgyq.github.io/2017/11/11/netty-resource-leack-detector/" target="_blank" rel="noopener">老版本ResourceLeakDetector的BUG</a><br><a href="https://github.com/netty/netty/pull/8422/files" target="_blank" rel="noopener">第一次修复JIT编译优化导致错误的泄露检测的PR</a><br><a href="https://github.com/netty/netty/pull/8410" target="_blank" rel="noopener">第二次优化JIT编译优化导致错误的泄露检测的PR</a><br><a href="https://stackoverflow.com/a/31933260/1151521" target="_blank" rel="noopener">关于空的synchronized块能否正常工作</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/netty/" rel="tag"># netty</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Netty源码分析——ByteBuf开篇.html" rel="next" title="Netty源码分析——ByteBuf开篇">
+                <i class="fa fa-chevron-left"></i> Netty源码分析——ByteBuf开篇
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">78</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">73</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty源码分析——泄露检测"><span class="nav-number">1.</span> <span class="nav-text">Netty源码分析——泄露检测</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#幻影引用和弱引用的回收"><span class="nav-number">1.2.</span> <span class="nav-text">幻影引用和弱引用的回收</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#泄露分析源码"><span class="nav-number">1.3.</span> <span class="nav-text">泄露分析源码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么说可能发生泄露"><span class="nav-number">1.4.</span> <span class="nav-text">为什么说可能发生泄露</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Record"><span class="nav-number">1.5.</span> <span class="nav-text">Record</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HashedWheelTimer的泄露检测"><span class="nav-number">1.6.</span> <span class="nav-text">HashedWheelTimer的泄露检测</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#后记"><span class="nav-number">1.7.</span> <span class="nav-text">后记</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#后记2"><span class="nav-number">1.8.</span> <span class="nav-text">后记2</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#总结"><span class="nav-number">1.9.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#附录"><span class="nav-number">1.10.</span> <span class="nav-text">附录</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
