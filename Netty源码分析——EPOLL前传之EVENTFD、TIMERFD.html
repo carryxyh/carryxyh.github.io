@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="netty,timerfd,eventfd," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Netty源码分析——EPOLL前传之EVENTFD、TIMERFD前言最近打算开始一个新的部分，关于Netty的EPOLL。很多人有一个误解，包括一些经常使用Netty的都会认为Netty的NIO就是select（底层用的JDK的select），而Netty的EPOLL性能好是因为底层是epoll。 这个地方是不对的。Netty的NIO底层就是EPOLL。Netty的EPOLL底层是自己通过调用">
+<meta name="keywords" content="netty,timerfd,eventfd">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty源码分析——EPOLL前传之EVENTFD、TIMERFD">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Netty源码分析——EPOLL前传之EVENTFD、TIMERFD.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Netty源码分析——EPOLL前传之EVENTFD、TIMERFD前言最近打算开始一个新的部分，关于Netty的EPOLL。很多人有一个误解，包括一些经常使用Netty的都会认为Netty的NIO就是select（底层用的JDK的select），而Netty的EPOLL性能好是因为底层是epoll。 这个地方是不对的。Netty的NIO底层就是EPOLL。Netty的EPOLL底层是自己通过调用">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-11-20T12:58:59.534Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Netty源码分析——EPOLL前传之EVENTFD、TIMERFD">
+<meta name="twitter:description" content="Netty源码分析——EPOLL前传之EVENTFD、TIMERFD前言最近打算开始一个新的部分，关于Netty的EPOLL。很多人有一个误解，包括一些经常使用Netty的都会认为Netty的NIO就是select（底层用的JDK的select），而Netty的EPOLL性能好是因为底层是epoll。 这个地方是不对的。Netty的NIO底层就是EPOLL。Netty的EPOLL底层是自己通过调用">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Netty源码分析——EPOLL前传之EVENTFD、TIMERFD.html"/>
+
+
+
+
+
+  <title>Netty源码分析——EPOLL前传之EVENTFD、TIMERFD | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description"></h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Netty源码分析——EPOLL前传之EVENTFD、TIMERFD.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Netty源码分析——EPOLL前传之EVENTFD、TIMERFD</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-20T20:58:48+08:00">
+                2018-11-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty源码分析/" itemprop="url" rel="index">
+                    <span itemprop="name">Netty源码分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Netty源码分析——EPOLL前传之EVENTFD、TIMERFD"><a href="#Netty源码分析——EPOLL前传之EVENTFD、TIMERFD" class="headerlink" title="Netty源码分析——EPOLL前传之EVENTFD、TIMERFD"></a>Netty源码分析——EPOLL前传之EVENTFD、TIMERFD</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>最近打算开始一个新的部分，关于Netty的<code>EPOLL</code>。很多人有一个误解，包括一些经常使用Netty的都会认为Netty的NIO就是<code>select</code>（底层用的JDK的<code>select</code>），而Netty的<code>EPOLL</code>性能好是因为底层是<code>epoll</code>。</p>
+<p>这个地方是不对的。Netty的NIO底层就是<code>EPOLL</code>。Netty的<code>EPOLL</code>底层是自己通过调用系统调用，通过<code>TIMERFD</code>实现的自己的<code>EPOLL</code>。可能有人要问Netty的NIO底层调用的是<code>select</code>啊，其实JVM在<code>select</code>这个<code>native</code>方法底层会进行判断，如果当前系统支持<code>EPOLL</code>就自动启用<code>EPOLL</code>。这也是为什么JDK的NIO会出现CPU空转问题，这个CPU空转问题，在<code>select</code>和<code>poll</code>模式下都不会出现，所以我们要记住是<code>EPOLL</code>的CPU空转问题。</p>
+<p>那么为什么Netty的NIO已经使用了<code>EPOLL</code>的情况下，Netty还要自己花大心思实现一个自己的<code>EPOLL</code>呢，作者给出了解释：</p>
+<ol>
+<li>Netty的<code>EPOLL</code>用的是边缘触发，性能更好。</li>
+<li>Netty的<code>EPOLL</code>开放了更多的参数。</li>
+</ol>
+<p>注意：慎用Netty的<code>EPOLL</code>，这个建议来自闪电侠，新美大推送系统负责人，专注Netty。原因有二，其一，Netty的<code>EPOLL</code>有BUG，目前他也没有排查出这个BUG出在那，可能出在内核里。其二，由于Netty的<code>EPOLL</code>和NIO模式底层都是<code>EPOLL</code>，所以性能不会差特别多。</p>
+<p>再说一下我们为什么还要分析Netty的<code>EPOLL</code>：</p>
+<ol>
+<li>Netty的<code>EPOLL</code>使用边缘触发，我们通过分析可以更了解如何使用边缘触发。</li>
+<li>Netty的<code>EPOLL</code>底层使用了一些Linux的函数，对我们理解<code>EPOLL</code>很有帮助，比如可能很多人理解<code>EPOLL</code>是给<code>SOCKET</code>用的，其实<code>EPOLL</code>可以监听任何支持<code>EPOLL</code>的文件描述符的IO情况。</li>
+</ol>
+<p>我们可以看一下<code>EpollEventLoop</code>中存在这样的代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> FileDescriptor eventFd;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> FileDescriptor timerFd;</span><br></pre></td></tr></table></figure>
+<p>这就是我们说的两种文件描述符，<code>eventfd</code>和<code>timerfd</code>。我们先讲解一下这两种文件描述符的作用。</p>
+<h4 id="EVENTFD"><a href="#EVENTFD" class="headerlink" title="EVENTFD"></a>EVENTFD</h4><p><code>eventfd</code>是一个Linux系统提供的一个系统调用，通过一个共享的64位计数器完成进程间通讯。我们看下涉及到的几个系统调用，这里提一下，有点对不起大家，由于我自己的是mac系统没法对代码进行调试，所以本篇文章给出的代码都是网上找来的，代码逻辑看过，但是真的跑起来可能不是一回事，这个有Linux操作系统的同学可以跑一下。</p>
+<p>创建：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">eventfd</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">int</span> initval, <span class="keyword">int</span> flags)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>创建的时候可以传入一个计数器的初始值<code>initval</code>。<code>flags</code>是标记，具体有以下几种，使用时跟<code>selectionKey</code>一样，用<code>|</code>表示多个：</p>
+<ul>
+<li><code>EFD_CLOEXEC</code>：<code>fork</code>子进程的时候不继承父进程的这个文件描述符。多线程时基本都需要设置。</li>
+<li><code>EFD_NONBLOCK</code>：如果没有设置了这个标志位，那read操作将会阻塞直到计数器中有值。如果设置这个标志位，计数器值为0的时候也会立即返回-1。</li>
+<li><code>EFD_SEMAPHORE</code>：信号量模式。在计数器中的值大于0的情况下，<code>read</code>操作时返回1，计数器减一。如果没有设置，返回计数器中的值，计数器归0。</li>
+</ul>
+<p>读写操作：</p>
+<ul>
+<li><code>eventfd_write</code>：写操作。表示向计数器中写入一个数值。多次写入会进行累加操作。</li>
+<li><code>eventfd_read</code>：读操作。表示从计数器中读取，根据<code>EFD_SEMAPHORE</code>和<code>EFD_NONBLOCK</code>返回结果。</li>
+</ul>
+<p>DEMO：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/eventfd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> efd = eventfd(<span class="number">0</span>, EFD_NONBLOCK | EFD_CLOEXEC);</span><br><span class="line">    eventfd_write(efd, <span class="number">2</span>);</span><br><span class="line">    eventfd_write(efd, <span class="number">3</span>);</span><br><span class="line">    eventfd_write(efd, <span class="number">4</span>);</span><br><span class="line">    <span class="keyword">eventfd_t</span> count;</span><br><span class="line">    <span class="keyword">int</span> read_result = eventfd_read(efd, &amp;count);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 第一次读</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"read_result="</span> &lt;&lt; read_result &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"count="</span> &lt;&lt; count &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    </span><br><span class="line">    read_result = eventfd_read(efd, &amp;count);</span><br><span class="line">    <span class="comment">// 由于是非阻塞模式，所以这里会打印-1</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"read_result="</span> &lt;&lt; read_result &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    <span class="comment">// 第二次读，由于读失败了，所以count的值不变还是9</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"count="</span> &lt;&lt; count &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    close(efd);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">运行结果：</span><br><span class="line">read_result=<span class="number">0</span></span><br><span class="line">count=<span class="number">9</span></span><br><span class="line">read_result=<span class="number">-1</span></span><br><span class="line">count=<span class="number">9</span></span><br></pre></td></tr></table></figure>
+<h4 id="TIMERFD"><a href="#TIMERFD" class="headerlink" title="TIMERFD"></a>TIMERFD</h4><p>继续看一下<code>timerfd</code>。</p>
+<p>创建：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">timerfd_create</span><span class="params">(<span class="keyword">int</span> clockid, <span class="keyword">int</span> flags)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>创建一个<code>timerfd</code>，返回的fd可以进行如下操作：<code>read</code>、<code>select(poll、epoll)</code>、<code>close</code>。这里可以看到我们是可以用<code>EPOLL</code>来监听<code>timerfd</code>的。</p>
+<p>设置timer的周期及间隔：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">timerfd_settime</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">int</span> flags, <span class="keyword">const</span> struct itimerspec *new_value,struct itimerspec *old_value)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数中的数据结构如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">timespec</span> &#123;</span> </span><br><span class="line">    <span class="keyword">time_t</span> tv_sec; <span class="comment">/* Seconds */</span> </span><br><span class="line">    <span class="keyword">long</span> tv_nsec; <span class="comment">/* Nanoseconds */</span> </span><br><span class="line">&#125;; </span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">itimerspec</span> &#123;</span> </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timespec</span> <span class="title">it_interval</span>;</span> <span class="comment">/* Interval for periodic timer */</span> </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timespec</span> <span class="title">it_value</span>;</span> <span class="comment">/* Initial expiration */</span> </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>DEMO：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/timerfd.h&gt; </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/time.h&gt; </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt; </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt; </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt; </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt; </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> handle_error(msg) \ </span></span><br><span class="line"><span class="keyword">do</span> &#123; perror(msg); <span class="built_in">exit</span>(EXIT_FAILURE); &#125; <span class="keyword">while</span> (<span class="number">0</span>) </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">printTime</span><span class="params">()</span> </span>&#123; </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">tv</span>;</span> </span><br><span class="line">    gettimeofday(&amp;tv, <span class="literal">NULL</span>); </span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"printTime: current time:%ld.%ld "</span>, tv.tv_sec, tv.tv_usec); </span><br><span class="line">&#125; </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span> </span>&#123; </span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">timespec</span> <span class="title">now</span>;</span> </span><br><span class="line">  <span class="keyword">if</span> (clock_gettime(CLOCK_REALTIME, &amp;now) == <span class="number">-1</span>) &#123;</span><br><span class="line">    handle_error(<span class="string">"clock_gettime"</span>); </span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 初始化定时器的参数，初始时间和定时间隔</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">itimerspec</span> <span class="title">new_value</span>;</span> </span><br><span class="line">  new_value.it_value.tv_sec = now.tv_sec + atoi(argv[<span class="number">1</span>]); </span><br><span class="line">  new_value.it_value.tv_nsec = now.tv_nsec; </span><br><span class="line">  new_value.it_interval.tv_sec = atoi(argv[<span class="number">2</span>]); </span><br><span class="line">  new_value.it_interval.tv_nsec = <span class="number">0</span>; </span><br><span class="line"></span><br><span class="line">  <span class="comment">// 创建定时器</span></span><br><span class="line">  <span class="keyword">int</span> fd = timerfd_create(CLOCK_REALTIME, <span class="number">0</span>); </span><br><span class="line">  <span class="keyword">if</span> (fd == <span class="number">-1</span>) &#123;</span><br><span class="line">    handle_error(<span class="string">"timerfd_create"</span>); </span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (timerfd_settime(fd, TFD_TIMER_ABSTIME, &amp;new_value, <span class="literal">NULL</span>) == <span class="number">-1</span>) &#123;</span><br><span class="line">    handle_error(<span class="string">"timerfd_settime"</span>); </span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  printTime(); </span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"timer started\n"</span>); </span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">uint64_t</span> tot_exp = <span class="number">0</span>; tot_exp &lt; atoi(argv[<span class="number">3</span>]);) &#123; </span><br><span class="line">      <span class="keyword">uint64_t</span> <span class="built_in">exp</span>; </span><br><span class="line">      <span class="comment">// 阻塞等待定时器到期。返回值是未处理的到期次数。</span></span><br><span class="line">      <span class="comment">// 比如定时间隔为2秒，但过了10秒才去读取，则读取的值是5。</span></span><br><span class="line">      <span class="keyword">ssize_t</span> s = read(fd, &amp;<span class="built_in">exp</span>, <span class="keyword">sizeof</span>(<span class="keyword">uint64_t</span>)); </span><br><span class="line">      <span class="keyword">if</span> (s != <span class="keyword">sizeof</span>(<span class="keyword">uint64_t</span>)) &#123;</span><br><span class="line">        handle_error(<span class="string">"read"</span>); </span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      tot_exp += <span class="built_in">exp</span>; </span><br><span class="line">      printTime(); </span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">"read: %llu; total=%llu\n"</span>, <span class="built_in">exp</span>, tot_exp); </span><br><span class="line">  &#125; </span><br><span class="line">  <span class="built_in">exit</span>(EXIT_SUCCESS); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意我们读取<code>timerfd</code>会阻塞到定时器到期。</p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>这一篇文章主要是写了<code>eventfd</code>和<code>timerfd</code>的作用。</p>
+<p>我们后面会在Netty的<code>EPOLL</code>中看到这两种文件描述符的作用。Netty的<code>EPOLL</code>使用<code>eventfd</code>做唤醒操作，使用<code>timerfd</code>控制超时。我们会在后面的文章中清楚的看到<code>EPOLL</code>如何监控各种类型的文件描述符以及<code>EPOLL</code>使用边缘触发的情况下需要注意的一些点。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/netty/" rel="tag"># netty</a>
+          
+            <a href="/tags/timerfd/" rel="tag"># timerfd</a>
+          
+            <a href="/tags/eventfd/" rel="tag"># eventfd</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Netty源码分析——泄露检测.html" rel="next" title="Netty源码分析——泄露检测">
+                <i class="fa fa-chevron-left"></i> Netty源码分析——泄露检测
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">79</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">75</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty源码分析——EPOLL前传之EVENTFD、TIMERFD"><span class="nav-number">1.</span> <span class="nav-text">Netty源码分析——EPOLL前传之EVENTFD、TIMERFD</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#EVENTFD"><span class="nav-number">1.2.</span> <span class="nav-text">EVENTFD</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#TIMERFD"><span class="nav-number">1.3.</span> <span class="nav-text">TIMERFD</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#总结"><span class="nav-number">1.4.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

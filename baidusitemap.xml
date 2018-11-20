@@ -4,6 +4,30 @@
 
     
   <url>
+    <loc>http://wyj.shiwuliang.com/Netty%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E2%80%94%E2%80%94EPOLL%E5%89%8D%E4%BC%A0%E4%B9%8BEVENTFD%E3%80%81TIMERFD.html</loc>
+    <lastmod>2018-11-20T12:58:59.534Z</lastmod>
+    <data>
+        <display>
+        <title>Netty源码分析——EPOLL前传之EVENTFD、TIMERFD</title>
+        <pubTime>2018-11-20T12:58:48.000Z</pubTime>
+        
+        <tag>netty</tag>
+         
+        <tag>timerfd</tag>
+         
+        <tag>eventfd</tag>
+         
+         
+           
+             
+              <breadCrumb title="Netty源码分析" url="http://wyj.shiwuliang.com/categories/Netty%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
     <loc>http://wyj.shiwuliang.com/Netty%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E2%80%94%E2%80%94AUTOREAD.html</loc>
     <lastmod>2018-11-15T12:09:51.830Z</lastmod>
     <data>
