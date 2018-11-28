@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="一时无两">
 <meta property="og:description" content="Netty源码分析——EPOLL之epollWait和唤醒前言上一篇咱们一起看了eventfd和timerfd，主要就是给这篇做铺垫的，这一章主要是讲解EpollEventLoop的run方法中的select过程，这个select指的是我们在最早文章中说的Reactor线程干的三件事之一的select。 我们上篇中的eventfd主要作为唤醒epollWait的手段，而timerfd因为其阻塞直到">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-11-27T11:47:58.678Z">
+<meta property="og:updated_time" content="2018-11-28T06:58:44.844Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Netty源码分析——EPOLL之epollWait和唤醒">
 <meta name="twitter:description" content="Netty源码分析——EPOLL之epollWait和唤醒前言上一篇咱们一起看了eventfd和timerfd，主要就是给这篇做铺垫的，这一章主要是讲解EpollEventLoop的run方法中的select过程，这个select指的是我们在最早文章中说的Reactor线程干的三件事之一的select。 我们上篇中的eventfd主要作为唤醒epollWait的手段，而timerfd因为其阻塞直到">
@@ -405,6 +405,11 @@
 <li><code>timerfd</code>：为了能够定期唤醒阻塞<code>select</code>。</li>
 </ul>
 <p>至此整个<code>epoll</code>的<code>select</code>就看完了。</p>
+<h4 id="关于使用边缘触发"><a href="#关于使用边缘触发" class="headerlink" title="关于使用边缘触发"></a>关于使用边缘触发</h4><p>这里我在网上查阅资料的时候，看到几个非常不错的问答以及需要注意的点，这里列出来，为我们理解边缘触发和后面解析读取/写入操作都很有好处，先来一个问答：</p>
+<p>Q：在使用边沿触发时，我需要对一个文件描述符持续地<code>read/write</code>直到出现<code>EAGAIN</code>吗？<br>A：从<code>epoll_wait()</code>收到一个事件则表明这个文件描述符已经准备好做对应的I/O操作了。直到下一次<code>read/write</code>出现<code>EAGAIN</code>之前，你必须认为它是已经准备好了的。至于什么时候和怎样使用这个文件描述符就完全看你自己了。对于基于数据包类型的文件描述符，比如<code>UDP</code>和<code>canonical</code>模式下的<code>terminal</code>，检测<code>read/write</code>的I/O空间是否用尽的唯一方法就是持续地<code>read/write</code>直到出现<code>EAGAIN</code>。对于基于数据流的文件描述符，比如<code>pipe</code>，<code>FIFO</code>，<code>TCP</code>，还可以用检测向目标文件描述符发送/接收数据的总量的方法可以检测<code>read/write</code>的I/O空间是否用尽。</p>
+<p>这里的QA我们主要提取一个内容即可：对于数据包类型的文件描述符，我们需要不断地<code>read/write</code>直到出现<code>EAGAIN</code>，实际上Netty也是这样做的，数据包类型的文件描述符对应<code>EpollDatagramChannel</code>。对于数据类类型的文件描述符，可以用检测向目标文件描述符发送/接收数据的总量的方法可以检测<code>read/write</code>的I/O空间是否用尽，Netty中数据流类型的文件描述符对应<code>AbstractEpollStreamChannel</code>这个类的子类，Netty也是使用读取的<code>Buffer</code>是否读取满来判断是否读完的。</p>
+<p>另外说一个边缘触发的饥饿问题：</p>
+<p>使用边沿触发模式时的饥饿问题，如果某个socket源源不断地收到非常多的数据，那么在试图读取完所有数据的过程中，有可能会造成其他的<code>socket</code>得不到处理，从而造成饥饿（这个问题不只针对epoll）。解决的办法是为每个已经准备好的描述符维护一个队列，这样程序就可以知道哪些描述符已经准备好了但是还在轮询等待。当然，简单的方法是使用水平触发模式。</p>
 
       
     </div>
@@ -597,7 +602,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty源码分析——EPOLL之epollWait和唤醒"><span class="nav-number">1.</span> <span class="nav-text">Netty源码分析——EPOLL之epollWait和唤醒</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#源码"><span class="nav-number">1.2.</span> <span class="nav-text">源码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#C语言源码部分"><span class="nav-number">1.3.</span> <span class="nav-text">C语言源码部分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#java源码部分"><span class="nav-number">1.4.</span> <span class="nav-text">java源码部分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#用eventfd来控制epoll的唤醒"><span class="nav-number">1.5.</span> <span class="nav-text">用eventfd来控制epoll的唤醒</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#总结"><span class="nav-number">1.6.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty源码分析——EPOLL之epollWait和唤醒"><span class="nav-number">1.</span> <span class="nav-text">Netty源码分析——EPOLL之epollWait和唤醒</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#源码"><span class="nav-number">1.2.</span> <span class="nav-text">源码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#C语言源码部分"><span class="nav-number">1.3.</span> <span class="nav-text">C语言源码部分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#java源码部分"><span class="nav-number">1.4.</span> <span class="nav-text">java源码部分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#用eventfd来控制epoll的唤醒"><span class="nav-number">1.5.</span> <span class="nav-text">用eventfd来控制epoll的唤醒</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#总结"><span class="nav-number">1.6.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#关于使用边缘触发"><span class="nav-number">1.7.</span> <span class="nav-text">关于使用边缘触发</span></a></li></ol></li></ol></div>
             
 
           </div>
