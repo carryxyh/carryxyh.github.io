@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="kryo," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Kryo序列化在分布式处理情景下的问题背景最近在dubbo的issue列表里看到了这样一个issue，主要描述的是在某种情况下使用kryo作为序列化方式会报错，这个issue下面，另外一位来自阿里的Committer也给了问题出现的原因，这个问题还是非常有意思的，这里顺便看一下kryo的序列化方式，复现一下这个问题。 准备工作issue下面其实已经贴出了一个demo可以用来复现上述的问题。但是在我">
+<meta name="keywords" content="kryo">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kryo序列化在分布式处理情景下的问题">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Kryo序列化在分布式处理情景下的问题.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Kryo序列化在分布式处理情景下的问题背景最近在dubbo的issue列表里看到了这样一个issue，主要描述的是在某种情况下使用kryo作为序列化方式会报错，这个issue下面，另外一位来自阿里的Committer也给了问题出现的原因，这个问题还是非常有意思的，这里顺便看一下kryo的序列化方式，复现一下这个问题。 准备工作issue下面其实已经贴出了一个demo可以用来复现上述的问题。但是在我">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15451341485789.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15451342391788.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15451361666837.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15451362771382.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15451368002990.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15451379978658.jpg">
+<meta property="og:updated_time" content="2018-12-18T13:11:41.407Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kryo序列化在分布式处理情景下的问题">
+<meta name="twitter:description" content="Kryo序列化在分布式处理情景下的问题背景最近在dubbo的issue列表里看到了这样一个issue，主要描述的是在某种情况下使用kryo作为序列化方式会报错，这个issue下面，另外一位来自阿里的Committer也给了问题出现的原因，这个问题还是非常有意思的，这里顺便看一下kryo的序列化方式，复现一下这个问题。 准备工作issue下面其实已经贴出了一个demo可以用来复现上述的问题。但是在我">
+<meta name="twitter:image" content="http://wyj.shiwuliang.com/images/15451341485789.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Kryo序列化在分布式处理情景下的问题.html"/>
+
+
+
+
+
+  <title>Kryo序列化在分布式处理情景下的问题 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description"></h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Kryo序列化在分布式处理情景下的问题.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Kryo序列化在分布式处理情景下的问题</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-18T21:05:38+08:00">
+                2018-12-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/kryo/" itemprop="url" rel="index">
+                    <span itemprop="name">kryo</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Kryo序列化在分布式处理情景下的问题"><a href="#Kryo序列化在分布式处理情景下的问题" class="headerlink" title="Kryo序列化在分布式处理情景下的问题"></a>Kryo序列化在分布式处理情景下的问题</h3><h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>最近在dubbo的issue列表里看到了这样一个<a href="https://github.com/apache/incubator-dubbo/issues/2881" target="_blank" rel="noopener">issue</a>，主要描述的是在某种情况下使用kryo作为序列化方式会报错，这个issue下面，另外一位来自阿里的<code>Committer</code>也给了问题出现的原因，这个问题还是非常有意思的，这里顺便看一下kryo的序列化方式，复现一下这个问题。</p>
+<h4 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h4><p>issue下面其实已经贴出了一个demo可以用来复现上述的问题。但是在我的机器上一直不work，我就没有用他的demo了。这里我准备一个更简单的demo让大家更清楚的了解这个问题，先看看我们的类：</p>
+<p><strong>Server</strong>：启动的main函数代码可以从dubbo-demo下面找一个provider抄过来即可，主要看配置文件：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 这里使用kryo作为序列化方式 --&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 关于PhoneOptimizer这个类我们后面看 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dubbo:protocol</span> <span class="attr">name</span>=<span class="string">"dubbo"</span> <span class="attr">port</span>=<span class="string">"20880"</span> <span class="attr">serialization</span>=<span class="string">"kryo"</span> <span class="attr">optimizer</span>=<span class="string">"dubbo.action.optimizer.PhoneOptimizer"</span> <span class="attr">heartbeat</span>=<span class="string">"10000000"</span>/&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">dubbo:application</span> <span class="attr">name</span>=<span class="string">"demo-server"</span>/&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 如果你要运行代码记得把zk地址改掉，或者用直连等方式 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dubbo:registry</span> <span class="attr">address</span>=<span class="string">"zookeeper://xxx"</span>/&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 暴露一个服务 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"phoneServiceImpl"</span> <span class="attr">class</span>=<span class="string">"dubbo.action.inter.PhoneServiceImpl"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dubbo:service</span> <span class="attr">id</span>=<span class="string">"phoneService"</span> <span class="attr">interface</span>=<span class="string">"dubbo.action.inter.PhoneService"</span> <span class="attr">ref</span>=<span class="string">"phoneServiceImpl"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+<p><strong>Client</strong>：代码就不看了，直接看配置：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:application</span> <span class="attr">name</span>=<span class="string">"demo-consumer"</span>/&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 一会再看这个optimizer，注意这里用的是UserOptimizer和上面使用的PhoneOptimizer不一样 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dubbo:protocol</span> <span class="attr">name</span>=<span class="string">"dubbo"</span> <span class="attr">port</span>=<span class="string">"20881"</span> <span class="attr">serialization</span>=<span class="string">"kryo"</span> <span class="attr">optimizer</span>=<span class="string">"dubbo.action.optimizer.UserOptimizer"</span> <span class="attr">heartbeat</span>=<span class="string">"10000000"</span>/&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 同样记得改改zk地址或者改成直连 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dubbo:registry</span> <span class="attr">address</span>=<span class="string">"zookeeper://xxx"</span>/&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 引用一个服务 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">id</span>=<span class="string">"phoneService"</span> <span class="attr">interface</span>=<span class="string">"dubbo.action.inter.PhoneService"</span> <span class="attr">timeout</span>=<span class="string">"100000000"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+<p><strong>PhoneService</strong>：这里只贴PhoneService的实现、Phone类还有User类，实在是太简单了：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">PhoneServiceImpl</span> <span class="keyword">implements</span> <span class="title">PhoneService</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Phone <span class="title">getPhone</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> Phone();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Phone</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = -<span class="number">8578553481899481234L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String color = <span class="string">"black"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getColor</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> color;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setColor</span><span class="params">(String color)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.color = color;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = <span class="number">2345729265494289413L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String name = <span class="string">"xyh"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getName</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setName</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>Optimizer</strong>：这里把两个Optimizer都贴出来：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserOptimizer</span> <span class="keyword">implements</span> <span class="title">SerializationOptimizer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Collection&lt;Class&gt; <span class="title">getSerializableClasses</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> Collections.singletonList(User.class);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">PhoneOptimizer</span> <span class="keyword">implements</span> <span class="title">SerializationOptimizer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Collection&lt;Class&gt; <span class="title">getSerializableClasses</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> Collections.singletonList(Phone.class);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码特别简单，就是简单的引用和暴露，唯一特别的地方就是我们设置了我们的<code>optimizer</code>，服务端用<code>PhoneOptimizer</code>而客户端使用<code>UserOptimizer</code>，并且我们使用Kryo作为序列化方式。</p>
+<p>启动一下程序，启动<code>Server</code>没什么特别的，正常启动。启动<code>Client</code>的时候报错：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">PhoneService ps = (PhoneService) context.getBean(<span class="string">"phoneService"</span>);</span><br><span class="line">Phone p = ps.getPhone();</span><br><span class="line"></span><br><span class="line">错误：</span><br><span class="line">Exception in thread <span class="string">"main"</span> java.lang.ClassCastException: dubbo.action.domain.User cannot be cast to dubbo.action.domain.Phone</span><br><span class="line">	at com.alibaba.dubbo.common.bytecode.proxy0.getPhone(proxy0.java)</span><br><span class="line">	at dubbo.action.ServerAndConsumer.main(ServerAndConsumer.java:<span class="number">20</span>)</span><br></pre></td></tr></table></figure>
+<p>我们明明在<code>PhoneService</code>里返回的是<code>Phone</code>类，怎么就<code>cast exception</code>了呢。带着这个问题我们看下源码。</p>
+<h4 id="源码分析——Optimizer的作用"><a href="#源码分析——Optimizer的作用" class="headerlink" title="源码分析——Optimizer的作用"></a>源码分析——Optimizer的作用</h4><p>要解决这个问题，我们要先看看<code>Optimizer</code>是怎么起作用的，这个部分的代码是dubbo重启维护之后，从dubbox中合并过来的，代码在<code>DubboProtocol#optimizeSerialization</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 加载我们配置中的 optimizer="xxx.PhoneOptimezer" 这个类</span></span><br><span class="line">Class clazz = Thread.currentThread().getContextClassLoader().loadClass(className);</span><br><span class="line"><span class="keyword">if</span> (!SerializationOptimizer.class.isAssignableFrom(clazz)) &#123;</span><br><span class="line">    <span class="comment">// throw exception...</span></span><br><span class="line">&#125;</span><br><span class="line">SerializationOptimizer optimizer = (SerializationOptimizer) clazz.newInstance();</span><br><span class="line"><span class="keyword">if</span> (optimizer.getSerializableClasses() == <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 把我们PhoneOptimezer中的类注册到SerializableClassRegistry中</span></span><br><span class="line"><span class="keyword">for</span> (Class c : optimizer.getSerializableClasses()) &#123;</span><br><span class="line">    SerializableClassRegistry.registerClass(c);</span><br><span class="line">&#125;</span><br><span class="line">optimizers.add(className);</span><br></pre></td></tr></table></figure>
+<p><code>SerializableClassRegistry</code>的的内容非常简单，不多说了，看下<code>SerializableClassRegistry</code>的<code>getRegisteredClasses</code>调用方，在<code>AbstractKryoFactory</code>里（注意Fst序列化方式中也用到了类似的地方，我们先不看，只看kryo相关）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (Class clazz : SerializableClassRegistry.getRegisteredClasses()) &#123;</span><br><span class="line">    kryo.register(clazz);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其实就是把我们的<code>Phone</code>和<code>User</code>两个domain类注册到了kryo里。</p>
+<h4 id="源码分析——kryo序列化"><a href="#源码分析——kryo序列化" class="headerlink" title="源码分析——kryo序列化"></a>源码分析——kryo序列化</h4><p>现在我们知道了这个<code>Optimizer</code>的作用之后，就要看看为什么会报错了。这里我们要从客户端和服务端两个端看起，先看看服务端写出去了什么东西，再看看客户端收到了什么东西。</p>
+<p>这里我需要跟大家说明一下kryo的两种写class信息的序列化方式：</p>
+<ol>
+<li>写入的是<code>class name</code>，默认情况下就是这种写class的方式，性能不好，因为写入的数据比较大，无论是传输还是写入都慢。</li>
+<li>写入的是id，对于我们注册过的类（调用过<code>kryo.register(Class type)</code>），我们写入的class信息是一个id，性能好，写入的数据量小，写入和传输都快。</li>
+</ol>
+<p>我们下面看看我们如何出的错。</p>
+<p>我会带着大家一起跟踪整个过程，先以debug的方式运行服务端，再以普通方式运行客户端。我们看看我们到底写出去个什么东西，我们既然要看写出去个什么东西，当然要看我们<code>encode</code>相关的部分，这里我们<code>encode</code>的是<code>response</code>，代码入口在<code>DubboCountCodec#encode</code>，我们跳过一些信息，看kryo相关的内容，入口在<code>KryoObjectOutput#writeObject</code>，追进去：</p>
+<p><img src="/images/15451341485789.jpg" alt=""></p>
+<p>可以看到我们写出去的确实是一个Phone对象，我们看看<code>writeClass</code>方法，这个主要是把类的信息写到流里，最终走到<code>DefaultClassResolver#writeClass</code>里：</p>
+<p><img src="/images/15451342391788.jpg" alt=""></p>
+<p>这里要注意，我们发现我们走到了<code>registration.getId() != NAME</code>这个分支里，结果我们实际上并没有向流里写什么信息，只是写了一个<code>id</code>（<code>output.writeVarInt</code>），这是为什么，我们要追溯一下<code>Kryo#getRegistration(java.lang.Class)</code>这个方法，这个方法底层是从<code>classResolver</code>的<code>classToRegistration</code>这个map中获取一个<code>Registration</code>，那我们就看看这个<code>classToRegistration</code>中的值是从哪来的，看下使用这个字段的地方，我们找到了线索：<br><code>DefaultClassResolver#register</code>方法中使用了put。那我们可以很轻松的联想到我们之前在启动dubbo的时候，注册了我们的<code>Phone.class</code>到kryo中。看下这个<code>register</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (registration.getId() != NAME) &#123;</span><br><span class="line">    <span class="comment">// 如果id不是-1，就把我们的registration放到一个map里，键就是id</span></span><br><span class="line">    idToRegistration.put(registration.getId(), registration);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (TRACE) &#123;</span><br><span class="line">    <span class="comment">// sth...</span></span><br><span class="line">&#125;</span><br><span class="line">classToRegistration.put(registration.getType(), registration);</span><br><span class="line"><span class="keyword">if</span> (registration.getType().isPrimitive())</span><br><span class="line">    classToRegistration.put(getWrapperClass(registration.getType()), registration);</span><br><span class="line"><span class="keyword">return</span> registration;</span><br></pre></td></tr></table></figure>
+<p>我们在使用<code>kryo.register(Class type)</code>这个方法时，其实默认调用的是这样的：<code>return classResolver.register(new Registration(type, serializer, getNextRegistrationId()));</code>，注意这里<code>getNextRegistrationId</code>，实际上就是从<code>idToRegistration</code>这个字段里取最大的id，然后加1后返回。kryo默认会注册五十多个类，都是java原生的类，比如<code>Boolean</code>和<code>Integer</code>。</p>
+<p>我们写完了class信息之后，就是实际写入我们的对象的具体信息了，比如我们的<code>color</code>字段。这里不说了，跟我们的问题关系不大。</p>
+<p>其实说到这里，基本上很多朋友也能猜到问题了，我们在服务端注册的<code>Phone.class</code>，但是在客户端，我们注册的<code>User.class</code>，而二者对应的id是同一个，这种情况下就会出现问题。为什么id是同一个，这里我说一下，之前我们说过，kryo会默认注册五十多个jdk原生的类，那么客户端和服务端的kryo绝对是两个对象，在这两个kryo都没有注册其他类的情况下，<code>Phone</code>和<code>User</code>这两个类在两个kryo中的位置是一样的。</p>
+<h4 id="问题大揭秘"><a href="#问题大揭秘" class="headerlink" title="问题大揭秘"></a>问题大揭秘</h4><p>我们猜完了，就要实际看看效果了。这里我们用普通方式运行服务端，debug方式运行客户端，看看我们客户端收到数据以后，为什么报错。</p>
+<p>上面是<code>encode</code>这里就是<code>decode</code>了，<code>decode</code>的就是响应信息，最终和我们kryo相关的地方在<code>KryoObjectInput#readObject()</code>，调用的是kryo的<code>readClassAndObject</code>方法：</p>
+<p><img src="/images/15451361666837.jpg" alt=""></p>
+<p>我们看看读取出来的是什么：</p>
+<p><img src="/images/15451362771382.jpg" alt=""></p>
+<p>果然是一个<code>User</code>对象。至此我们就知道为什么会<code>class cast exception</code>了。</p>
+<h4 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h4><p>这里可能有人会说，你并没有复现issue中提到的场景啊，issue里说报出来的是另外一个错误。这里其实本质是一样的，如果你看得懂这篇文章，应该会明白。说白了，kryo中有个注册表，标记<code>id - class</code>的关系。</p>
+<p>但是在分布式系统中，两端的这个<code>id - class</code>表关系一旦错误，就会出现各种问题，这是kryo在分布式系统中的局限性，下面借用一下解决这个issue的这位大神的图，一目了然：</p>
+<p><img src="/images/15451368002990.jpg" alt=""></p>
+<p>图上所示的就是一种典型的，两个端<code>id - class</code>错乱的情况。另外一篇<a href="https://www.2cto.com/kf/201805/743957.html" target="_blank" rel="noopener">文章</a>也提到了kryo在分布式场景中的问题，就提到了issue中的场景。</p>
+<h4 id="kryo初始化类的小细节"><a href="#kryo初始化类的小细节" class="headerlink" title="kryo初始化类的小细节"></a>kryo初始化类的小细节</h4><p>这个部分与我们的问题无关，有兴趣的可以看下，没兴趣的直接跳过即可。</p>
+<p>kryo初始化对象很特别，使用的是<code>ConstructorAccess</code>这个类。我们看下<code>ConstructorAccess#get</code>方法，先看头部：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">Class enclosingType = type.getEnclosingClass();</span><br><span class="line"><span class="keyword">boolean</span> isNonStaticMemberClass = enclosingType != <span class="keyword">null</span> &amp;&amp; type.isMemberClass() &amp;&amp; !Modifier.isStatic(type.getModifiers());</span><br><span class="line"></span><br><span class="line">String className = type.getName();</span><br><span class="line"><span class="comment">// 拼装类名，我们的场景中就是 xxx.PhoneConstructorAccess</span></span><br><span class="line">String accessClassName = className + <span class="string">"ConstructorAccess"</span>;</span><br><span class="line"><span class="keyword">if</span> (accessClassName.startsWith(<span class="string">"java."</span>)) </span><br><span class="line">	accessClassName = <span class="string">"reflectasm."</span> + accessClassName;</span><br><span class="line">Class accessClass;</span><br><span class="line">AccessClassLoader loader = AccessClassLoader.get(type);</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">	<span class="comment">// 尝试加载xxx.PhoneConstructorAccess</span></span><br><span class="line">	accessClass = loader.loadClass(accessClassName);</span><br><span class="line"><span class="keyword">catch</span>(xxx) &#123;</span><br><span class="line">	xxx</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>很奇怪，居然尝试去加载一个不存在的类，我们每个类进来，都会尝试加载<code>ClassNameConstructorAccess</code>这个类。我们的例子中，当然不存在这个<code>PhoneConstructorAccess</code>类，继续看如果捕捉异常会怎样：</p>
+<p><img src="/images/15451379978658.jpg" alt=""></p>
+<p>在捕捉到异常之后，使用ASM重新创建了一个<code>ConstructorAccess</code>子类，并且这个新类的<code>newInstance</code>方法，返回的就是我们的<code>User</code>（或者<code>Phone</code>）对象的实例。</p>
+<p>这里我们可以看到，实际上kryo是通过一个额外的、通过ASM生成的类，来进行对象的初始化的。为什么用这种方式，不甚了解，有了解的朋友可以告知我一下。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/kryo/" rel="tag"># kryo</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Netty源码分析——EPOLL之epollWait和唤醒.html" rel="next" title="Netty源码分析——EPOLL之epollWait和唤醒">
+                <i class="fa fa-chevron-left"></i> Netty源码分析——EPOLL之epollWait和唤醒
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">81</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">76</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Kryo序列化在分布式处理情景下的问题"><span class="nav-number">1.</span> <span class="nav-text">Kryo序列化在分布式处理情景下的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#背景"><span class="nav-number">1.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#准备工作"><span class="nav-number">1.2.</span> <span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#源码分析——Optimizer的作用"><span class="nav-number">1.3.</span> <span class="nav-text">源码分析——Optimizer的作用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#源码分析——kryo序列化"><span class="nav-number">1.4.</span> <span class="nav-text">源码分析——kryo序列化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#问题大揭秘"><span class="nav-number">1.5.</span> <span class="nav-text">问题大揭秘</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#后记"><span class="nav-number">1.6.</span> <span class="nav-text">后记</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kryo初始化类的小细节"><span class="nav-number">1.7.</span> <span class="nav-text">kryo初始化类的小细节</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
