@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="netty,DirectByteBuffer," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Netty源码分析——no cleaner策略DirectByteBuffer中的Cleaner要说Netty的noCleaner策略，还是要先看看底层DirectByteBuffer中的Cleaner。由于我们使用了堆外内存，所以我们要管理这些堆外内存，这里JDK底层提供了Cleaner来作为释放的方式之一。我们看看直接内存的构造函数： 12345678910111213141516171819">
+<meta name="keywords" content="netty,DirectByteBuffer">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty源码分析——no cleaner策略">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Netty源码分析——no cleaner策略.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Netty源码分析——no cleaner策略DirectByteBuffer中的Cleaner要说Netty的noCleaner策略，还是要先看看底层DirectByteBuffer中的Cleaner。由于我们使用了堆外内存，所以我们要管理这些堆外内存，这里JDK底层提供了Cleaner来作为释放的方式之一。我们看看直接内存的构造函数： 12345678910111213141516171819">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-12-25T08:11:39.132Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Netty源码分析——no cleaner策略">
+<meta name="twitter:description" content="Netty源码分析——no cleaner策略DirectByteBuffer中的Cleaner要说Netty的noCleaner策略，还是要先看看底层DirectByteBuffer中的Cleaner。由于我们使用了堆外内存，所以我们要管理这些堆外内存，这里JDK底层提供了Cleaner来作为释放的方式之一。我们看看直接内存的构造函数： 12345678910111213141516171819">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Netty源码分析——no cleaner策略.html"/>
+
+
+
+
+
+  <title>Netty源码分析——no cleaner策略 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description"></h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Netty源码分析——no cleaner策略.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Netty源码分析——no cleaner策略</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-25T16:11:35+08:00">
+                2018-12-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty源码分析/" itemprop="url" rel="index">
+                    <span itemprop="name">Netty源码分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Netty源码分析——no-cleaner策略"><a href="#Netty源码分析——no-cleaner策略" class="headerlink" title="Netty源码分析——no cleaner策略"></a>Netty源码分析——no cleaner策略</h3><h4 id="DirectByteBuffer中的Cleaner"><a href="#DirectByteBuffer中的Cleaner" class="headerlink" title="DirectByteBuffer中的Cleaner"></a>DirectByteBuffer中的Cleaner</h4><p>要说Netty的noCleaner策略，还是要先看看底层<code>DirectByteBuffer</code>中的<code>Cleaner</code>。由于我们使用了堆外内存，所以我们要管理这些堆外内存，这里JDK底层提供了<code>Cleaner</code>来作为释放的方式之一。我们看看直接内存的构造函数：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> Cleaner cleaner;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> Cleaner <span class="title">cleaner</span><span class="params">()</span> </span>&#123; <span class="keyword">return</span> cleaner; &#125;</span><br><span class="line"></span><br><span class="line">DirectByteBuffer(<span class="keyword">int</span> cap) &#123;</span><br><span class="line">    <span class="keyword">super</span>(-<span class="number">1</span>, <span class="number">0</span>, cap, cap);</span><br><span class="line">    <span class="keyword">boolean</span> pa = VM.isDirectMemoryPageAligned();</span><br><span class="line">    <span class="keyword">int</span> ps = Bits.pageSize();</span><br><span class="line">    <span class="keyword">long</span> size = Math.max(<span class="number">1L</span>, (<span class="keyword">long</span>)cap + (pa ? ps : <span class="number">0</span>));</span><br><span class="line">    <span class="comment">// 标记分配了多少内存，用来控制使用的堆外内存量</span></span><br><span class="line">    Bits.reserveMemory(size, cap);</span><br><span class="line">    <span class="keyword">long</span> base = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 尝试分配内存</span></span><br><span class="line">        base = unsafe.allocateMemory(size);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (OutOfMemoryError x) &#123;</span><br><span class="line">        Bits.unreserveMemory(size, cap);</span><br><span class="line">        <span class="keyword">throw</span> x;</span><br><span class="line">    &#125;</span><br><span class="line">    unsafe.setMemory(base, size, (<span class="keyword">byte</span>) <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (pa &amp;&amp; (base % ps != <span class="number">0</span>)) &#123;</span><br><span class="line">        address = base + ps - (base &amp; (ps - <span class="number">1</span>));</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        address = base;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 创建Cleaner，这里Deallocator是一个runnable</span></span><br><span class="line">    cleaner = Cleaner.create(<span class="keyword">this</span>, <span class="keyword">new</span> Deallocator(base, size, cap));</span><br><span class="line">    att = <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们会在构造函数里创建一个<code>Cleaner</code>，看下<code>create</code>方法及相关方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这里的var0就是DirectByteBuffer</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Cleaner <span class="title">create</span><span class="params">(Object var0, Runnable var1)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> var1 == <span class="keyword">null</span> ? <span class="keyword">null</span> : add(<span class="keyword">new</span> Cleaner(var0, var1));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> ReferenceQueue&lt;Object&gt; dummyQueue = <span class="keyword">new</span> ReferenceQueue();</span><br><span class="line"></span><br><span class="line"><span class="comment">// cleaner本身是一个PhantomReference</span></span><br><span class="line"><span class="comment">// 这里var1就是DirectByteBuffer，var2是Deallocator这个runnable</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="title">Cleaner</span><span class="params">(Object var1, Runnable var2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>(var1, dummyQueue);</span><br><span class="line">    <span class="keyword">this</span>.thunk = var2;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 构建一个双向链表</span></span><br><span class="line"><span class="comment">// var0是新的cleaner实例</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> Cleaner <span class="title">add</span><span class="params">(Cleaner var0)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (first != <span class="keyword">null</span>) &#123;</span><br><span class="line">        var0.next = first;</span><br><span class="line">        first.prev = var0;</span><br><span class="line">    &#125;</span><br><span class="line">    first = var0;</span><br><span class="line">    <span class="keyword">return</span> var0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们就做了两件事：</p>
+<ol>
+<li>把我们分配的<code>DirectByteBuffer</code>和一个<code>PhantomReference</code>关联起来</li>
+<li>把<code>cleaner</code>构建成一个双向链表</li>
+</ol>
+<p>我们看看<code>Cleaner</code>中有一个<code>clean</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">clean</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 把自己从链表中移除</span></span><br><span class="line">    <span class="keyword">if</span> (remove(<span class="keyword">this</span>)) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// thunk就是我们上面说到的Deallocator</span></span><br><span class="line">            <span class="keyword">this</span>.thunk.run();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (<span class="keyword">final</span> Throwable var2) &#123;</span><br><span class="line">            AccessController.doPrivileged(<span class="keyword">new</span> PrivilegedAction&lt;Void&gt;() &#123;</span><br><span class="line">                <span class="function"><span class="keyword">public</span> Void <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    <span class="keyword">if</span> (System.err != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        (<span class="keyword">new</span> Error(<span class="string">"Cleaner terminated abnormally"</span>, var2)).printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    System.exit(<span class="number">1</span>);</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>再来看看<code>Deallocator</code>这个类的<code>run</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (address == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 调用free释放内存</span></span><br><span class="line">    unsafe.freeMemory(address);</span><br><span class="line">    address = <span class="number">0</span>;</span><br><span class="line">    Bits.unreserveMemory(size, capacity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>好了，现在我们知道<code>Cleaner</code>是做什么的了，它本质上是一个幻影引用，执行<code>clean</code>的时候会执行我们设置进去的<code>Runnable</code>对象。对于<code>DirectByteBuffer</code>来说，设置进去的<code>Runnable</code>实例的作用就是释放内存。</p>
+<p>那么什么时候我们的<code>Cleaner</code>可以执行<code>clean</code>方法呢？答案是在<code>ReferenceHandler</code>这个线程里，<code>Reference</code>这给类在加载的时候，会启动<code>ReferenceHandler</code>这个线程，看看这个线程的<code>run</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (;;) &#123;</span><br><span class="line">    Reference&lt;Object&gt; r;</span><br><span class="line">    <span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">        <span class="keyword">if</span> (pending != <span class="keyword">null</span>) &#123;</span><br><span class="line">            r = pending;</span><br><span class="line">            pending = r.discovered;</span><br><span class="line">            r.discovered = <span class="keyword">null</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    lock.wait();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (OutOfMemoryError x) &#123; &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException x) &#123; &#125;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (r <span class="keyword">instanceof</span> Cleaner) &#123;</span><br><span class="line">        ((Cleaner)r).clean();</span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ReferenceQueue&lt;Object&gt; q = r.queue;</span><br><span class="line">    <span class="keyword">if</span> (q != ReferenceQueue.NULL) q.enqueue(r);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里要提一下<code>Reference</code>和<code>ReferenceQueue</code>的工作原理，<code>Reference</code>里有个静态字段<code>pending</code>，当一个<code>Reference</code>的<code>referent</code>被回收时，垃圾回收器会把<code>Reference</code>添加到<code>pending</code>这个链表里，然后<code>ReferenceHandler</code>不断的读取<code>pending</code>中的<code>reference</code>，把它加入到对应的<code>ReferenceQueue</code>中。联合使用的主要作用就是当<code>reference</code>指向的<code>referent</code>回收时，提供一种通知机制，通过<code>queue</code>取到这些<code>reference</code>，来做额外的处理工作。</p>
+<p>但是我们可以从上面的代码中发现，如果<code>referent</code>被回收，而<code>Reference</code>恰好又是<code>Cleaner</code>实例，就不会进入<code>ReferenceQueue</code>，而是直接调用<code>clean</code>方法。</p>
+<p>所以我们可以总结一下，<code>DirectByteBuffer</code>和<code>Cleaner</code>的关系就是当<code>DirectByteBuffer</code>被回收的时候（这里指的是没有强引用关联这个Buffer），释放我们申请的堆外内存，来保证我们不会产生对外内存泄露。</p>
+<h4 id="Netty的no-cleaner策略"><a href="#Netty的no-cleaner策略" class="headerlink" title="Netty的no cleaner策略"></a>Netty的no cleaner策略</h4><p>我们说过了有<code>cleaner</code>的方式，已经觉得设计的非常完善了，保证我们的堆外内存不会泛滥，而且保证了在<code>DirectByteBuffer</code>被回收的时候，堆外内存也可以回收（当然如果内存泄露了是两码事）。</p>
+<p>来看看入口，入口在<code>UnpooledByteBufAllocator</code>的<code>newDirectBuffer</code>方法里：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (PlatformDependent.hasUnsafe()) &#123;</span><br><span class="line">    buf = noCleaner ? <span class="keyword">new</span> InstrumentedUnpooledUnsafeNoCleanerDirectByteBuf(<span class="keyword">this</span>, initialCapacity, maxCapacity) :</span><br><span class="line">            <span class="keyword">new</span> InstrumentedUnpooledUnsafeDirectByteBuf(<span class="keyword">this</span>, initialCapacity, maxCapacity);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    buf = <span class="keyword">new</span> InstrumentedUnpooledDirectByteBuf(<span class="keyword">this</span>, initialCapacity, maxCapacity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果可以使用<code>unsafe</code>并且开启<code>noCleaner</code>策略，使用<code>InstrumentedUnpooledUnsafeNoCleanerDirectByteBuf</code>。关于不能使用<code>noCleaner</code>的场景我们就不细说了，实际上是在释放的时候直接使用<code>Cleaner.clean</code>来进行内存释放。释放的方式是通过反射获取<code>clean</code>这个方法或者内部的<code>cleaner</code>这个字段，来执行方法或者获取<code>Cleaner</code>对象后调用<code>clean</code>。可以看下<code>CleanerJava6</code>这个类。</p>
+<p>那么说说我们的主角，<code>noCleaner</code>下的<code>DirectByteBuffer</code>，这时候我们创建的对象是<code>InstrumentedUnpooledUnsafeNoCleanerDirectByteBuf</code>的实例，我们关注一下如何释放：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">freeDirect</span><span class="params">(ByteBuffer buffer)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> capacity = buffer.capacity();</span><br><span class="line">    <span class="keyword">super</span>.freeDirect(buffer);</span><br><span class="line">    ((UnpooledByteBufAllocator) alloc()).decrementDirect(capacity);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">freeDirect</span><span class="params">(ByteBuffer buffer)</span> </span>&#123;</span><br><span class="line">    PlatformDependent.freeDirectNoCleaner(buffer);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">freeDirectNoCleaner</span><span class="params">(ByteBuffer buffer)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 确保使用了no cleaner策略</span></span><br><span class="line">    <span class="keyword">assert</span> USE_DIRECT_BUFFER_NO_CLEANER;</span><br><span class="line">    <span class="keyword">int</span> capacity = buffer.capacity();</span><br><span class="line">    <span class="comment">// 调用free memory</span></span><br><span class="line">    PlatformDependent0.freeMemory(PlatformDependent0.directBufferAddress(buffer));</span><br><span class="line">    decrementMemoryCounter(capacity);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">freeMemory</span><span class="params">(<span class="keyword">long</span> address)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 调用unsafe的freememory</span></span><br><span class="line">    UNSAFE.freeMemory(address);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个链路非常简单。总结一下no cleaner策略和has cleaner的区别：</p>
+<ol>
+<li><code>no cleaner</code>尝试获取<code>Cleaner</code>字段或者<code>Cleaner</code>的<code>clean</code>方法，执行释放。</li>
+<li><code>has cleaner</code>直接调用<code>unsafe</code>来释放堆外内存。</li>
+</ol>
+<p>那么可能有人要问为什么了，为什么还要使用<code>no cleaner</code>策略呢（这是Netty的默认策略）？</p>
+<p>我认为原因有二：</p>
+<ol>
+<li>Netty实现了引用计数，我们不需要jdk帮助我们进行内存回收。这也是为什么Netty自己实现了泄露检测。由于希望释放由我们自己来操作，所以没有必要使用<code>Cleaner</code>。</li>
+<li>性能的一点点提升，在使用<code>no cleaner</code>策略的时候，Netty会通过反射得到<code>DirectByteBuffer</code>的构造函数，不过获取到的构造函数是两个入参的构造函数，非常简单，可以看下<code>private DirectByteBuffer(long addr, int cap)</code>这个方法，不会进行创建<code>Cleaner</code>等措施。</li>
+</ol>
+<p>另外，可能Netty认为jdk的<code>Bits</code>的<code>reserveMemory</code>设计的也不怎么样（里面有我们经常说到的手动调用<code>System.gc</code>的问题），所以就放弃了使用原生的<code>Cleaner</code>策略。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/netty/" rel="tag"># netty</a>
+          
+            <a href="/tags/DirectByteBuffer/" rel="tag"># DirectByteBuffer</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Kryo序列化在分布式处理情景下的问题.html" rel="next" title="Kryo序列化在分布式处理情景下的问题">
+                <i class="fa fa-chevron-left"></i> Kryo序列化在分布式处理情景下的问题
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">82</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">77</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Netty源码分析——no-cleaner策略"><span class="nav-number">1.</span> <span class="nav-text">Netty源码分析——no cleaner策略</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#DirectByteBuffer中的Cleaner"><span class="nav-number">1.1.</span> <span class="nav-text">DirectByteBuffer中的Cleaner</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Netty的no-cleaner策略"><span class="nav-number">1.2.</span> <span class="nav-text">Netty的no cleaner策略</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
