@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="注册中心," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Dubbo源码解析——注册中心的容错策略简介其实之前一直是我遗漏了这个部分的逻辑，没有细看。后来偶然间在某个PR中看到了注册中心中还进行了文件存储相关的操作，就好奇的看了一下这个部分的逻辑。 这里主要的作用是增加注册中心的健壮性，我们需要考虑在某些场景下，注册中心和应用之间的网络抖动对全局的影响：  对于Provider来说，注册失败就直接启动失败，默认情况下，Zookeeper和Provider">
+<meta name="keywords" content="注册中心">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Dubbo源码解析——注册中心的容错策略">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Dubbo源码解析——注册中心的容错策略.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Dubbo源码解析——注册中心的容错策略简介其实之前一直是我遗漏了这个部分的逻辑，没有细看。后来偶然间在某个PR中看到了注册中心中还进行了文件存储相关的操作，就好奇的看了一下这个部分的逻辑。 这里主要的作用是增加注册中心的健壮性，我们需要考虑在某些场景下，注册中心和应用之间的网络抖动对全局的影响：  对于Provider来说，注册失败就直接启动失败，默认情况下，Zookeeper和Provider">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-01-10T12:33:15.516Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Dubbo源码解析——注册中心的容错策略">
+<meta name="twitter:description" content="Dubbo源码解析——注册中心的容错策略简介其实之前一直是我遗漏了这个部分的逻辑，没有细看。后来偶然间在某个PR中看到了注册中心中还进行了文件存储相关的操作，就好奇的看了一下这个部分的逻辑。 这里主要的作用是增加注册中心的健壮性，我们需要考虑在某些场景下，注册中心和应用之间的网络抖动对全局的影响：  对于Provider来说，注册失败就直接启动失败，默认情况下，Zookeeper和Provider">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Dubbo源码解析——注册中心的容错策略.html"/>
+
+
+
+
+
+  <title>Dubbo源码解析——注册中心的容错策略 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description"></h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Dubbo源码解析——注册中心的容错策略.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Dubbo源码解析——注册中心的容错策略</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-10T20:33:34+08:00">
+                2019-01-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
+                    <span itemprop="name">dubbo源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Dubbo源码解析——注册中心的容错策略"><a href="#Dubbo源码解析——注册中心的容错策略" class="headerlink" title="Dubbo源码解析——注册中心的容错策略"></a>Dubbo源码解析——注册中心的容错策略</h3><h4 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h4><p>其实之前一直是我遗漏了这个部分的逻辑，没有细看。后来偶然间在某个PR中看到了注册中心中还进行了文件存储相关的操作，就好奇的看了一下这个部分的逻辑。</p>
+<p>这里主要的作用是增加注册中心的健壮性，我们需要考虑在某些场景下，注册中心和应用之间的网络抖动对全局的影响：</p>
+<ul>
+<li>对于<code>Provider</code>来说，注册失败就直接启动失败，默认情况下，<code>Zookeeper</code>和<code>Provider</code>之间的网络抖动我们可以不做处理，默认Dubbo创建的是一个临时节点，会自动通过心跳来探活（很多人都提过ISSUE问过这个问题，知识点）。<code>Provider</code>目前不订阅注册中心上的信息，所以不需要考虑订阅时失败。</li>
+<li>对于<code>Consumer</code>来说，默认情况下，注册自己的时候失败就直接返回（比如<code>Consumer</code>和注册中心网络不通）。考虑一下一个<code>Consumer</code>订阅信息失败的时候我们如何处理，直接失败？假如网络抖动导致我们某一次启动<code>Consumer</code>的时候订阅失败，除了定时重试，我们是否还可以有更优秀的做法来保证程序的健壮。</li>
+</ul>
+<p>这就是关于注册中心的容错策略。具体的做法就是，每次注册中心上，<code>Provider</code>变更的消息通知到本地的时候（目前Dubbo默认情况下还是全量通知），我们把最新的消息保留下来，当我们在重启<code>Consumer</code>的时候，或者<code>Consumer</code>和注册中心之间的网络抖动的时候，我们至少可以把最近的<code>Provider</code>信息告知<code>Consumer</code>，让<code>Consumer</code>先尝试连接这些<code>Provider</code>，而不是直接让<code>Consumer</code>重启失败。</p>
+<p>需要注意的是，容错的机制主要发生在订阅阶段，所以我们下面主要关注订阅失败相关的处理。</p>
+<h4 id="通知流程"><a href="#通知流程" class="headerlink" title="通知流程"></a>通知流程</h4><p>先看我们的启动流程，注册中心启动的时候，会<code>load</code>我们已有的<code>cache</code>文件（<code>cache</code>文件就是我们说的最近一次的<code>Provider</code>的相关数据，比如<code>URL</code>），具体的代码在<code>AbstractRegistry</code>的构造函数里：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">setUrl(url);</span><br><span class="line"><span class="comment">// 默认是异步的存储cache文件</span></span><br><span class="line">syncSaveFile = url.getParameter(Constants.REGISTRY_FILESAVE_SYNC_KEY, <span class="keyword">false</span>);</span><br><span class="line"><span class="comment">// 存储的地址，/home/xxx/.dubbo/...</span></span><br><span class="line">String filename = url.getParameter(Constants.FILE_KEY, System.getProperty(<span class="string">"user.home"</span>) + <span class="string">"/.dubbo/dubbo-registry-"</span> + url.getParameter(Constants.APPLICATION_KEY) + <span class="string">"-"</span> + url.getAddress() + <span class="string">".cache"</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 我们的cache file</span></span><br><span class="line">File file = <span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">if</span> (ConfigUtils.isNotEmpty(filename)) &#123;</span><br><span class="line">    file = <span class="keyword">new</span> File(filename);</span><br><span class="line">    <span class="keyword">if</span> (!file.exists() &amp;&amp; file.getParentFile() != <span class="keyword">null</span> &amp;&amp; !file.getParentFile().exists()) &#123;</span><br><span class="line">        <span class="keyword">if</span> (!file.getParentFile().mkdirs()) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"Invalid registry cache file "</span> + file + <span class="string">", cause: Failed to create directory "</span> + file.getParentFile() + <span class="string">"!"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">this</span>.file = file;</span><br><span class="line"><span class="comment">// 加载已有的配置</span></span><br><span class="line">loadProperties();</span><br><span class="line">notify(url.getBackupUrls());</span><br></pre></td></tr></table></figure>
+<p>根据我们之前分析的流程，我们需要关注每次<code>Provider</code>变更通知到本地的时候，我们是如何处理的，<code>AbstractRegistry#notify(org.apache.dubbo.common.URL, org.apache.dubbo.registry.NotifyListener, java.util.List&lt;org.apache.dubbo.common.URL&gt;)</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这里的key是category，值是对应的URL</span></span><br><span class="line">Map&lt;String, List&lt;URL&gt;&gt; result = <span class="keyword">new</span> HashMap&lt;String, List&lt;URL&gt;&gt;();</span><br><span class="line"><span class="keyword">for</span> (URL u : urls) &#123;</span><br><span class="line">    <span class="keyword">if</span> (UrlUtils.isMatch(url, u)) &#123;</span><br><span class="line">        String category = u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);</span><br><span class="line">        List&lt;URL&gt; categoryList = result.computeIfAbsent(category, k -&gt; &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        &#125;);</span><br><span class="line">        categoryList.add(u);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Map&lt;String, List&lt;URL&gt;&gt; categoryNotified = notified.computeIfAbsent(url, k -&gt; &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;();</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">for</span> (Map.Entry&lt;String, List&lt;URL&gt;&gt; entry : result.entrySet()) &#123;</span><br><span class="line">    String category = entry.getKey();</span><br><span class="line">    List&lt;URL&gt; categoryList = entry.getValue();</span><br><span class="line">    <span class="comment">// 把这些数据放到notified这个全局的变量里</span></span><br><span class="line">    categoryNotified.put(category, categoryList);</span><br><span class="line">    <span class="comment">// 保存cache文件</span></span><br><span class="line">    saveProperties(url);</span><br><span class="line">    listener.notify(categoryList);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们可以看到，最新的<code>Provider</code>端<code>URL</code>到达<code>Consumer</code>的时候，我们会把它存到<code>notified</code>这个全局变量里，然后通知<code>listener</code>。</p>
+<p>看下这个<code>saveProperties</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">StringBuilder buf = <span class="keyword">new</span> StringBuilder();</span><br><span class="line"><span class="comment">// 把notified里面的数据拿出来</span></span><br><span class="line">Map&lt;String, List&lt;URL&gt;&gt; categoryNotified = notified.get(url);</span><br><span class="line"><span class="keyword">if</span> (categoryNotified != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">for</span> (List&lt;URL&gt; us : categoryNotified.values()) &#123;</span><br><span class="line">        <span class="keyword">for</span> (URL u : us) &#123;</span><br><span class="line">            <span class="keyword">if</span> (buf.length() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                buf.append(URL_SEPARATOR);</span><br><span class="line">            &#125;</span><br><span class="line">            buf.append(u.toFullString());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 键是某个接口，比如com.abc.DemoService，这里还会有group和version信息</span></span><br><span class="line"><span class="comment">// 值就是对应的所有url，用空格拼接起来</span></span><br><span class="line">properties.setProperty(url.getServiceKey(), buf.toString());</span><br><span class="line"><span class="comment">// 锁，只保存最新的数据</span></span><br><span class="line"><span class="keyword">long</span> version = lastCacheChanged.incrementAndGet();</span><br><span class="line"><span class="keyword">if</span> (syncSaveFile) &#123;</span><br><span class="line">    doSaveProperties(version);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 默认异步保存</span></span><br><span class="line">    registryCacheExecutor.execute(<span class="keyword">new</span> SaveProperties(version));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意这里我们只保存最新的一份数据，所以用一个<code>version</code>来控制。看看这个<code>doSaveProperties</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (version &lt; lastCacheChanged.get()) &#123;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line">File lockfile = <span class="keyword">new</span> File(file.getAbsolutePath() + <span class="string">".lock"</span>);</span><br><span class="line"><span class="keyword">if</span> (!lockfile.exists()) &#123;</span><br><span class="line">    lockfile.createNewFile();</span><br><span class="line">&#125;</span><br><span class="line">RandomAccessFile raf = <span class="keyword">new</span> RandomAccessFile(lockfile, <span class="string">"rw"</span>);</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    FileChannel channel = raf.getChannel();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 这里用锁来控制并发写</span></span><br><span class="line">        FileLock lock = channel.tryLock();</span><br><span class="line">        <span class="keyword">if</span> (lock == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"..."</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (!file.exists()) &#123;</span><br><span class="line">                file.createNewFile();</span><br><span class="line">            &#125;</span><br><span class="line">            FileOutputStream outputFile = <span class="keyword">new</span> FileOutputStream(file);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                properties.store(outputFile, <span class="string">"Dubbo Registry Cache"</span>);</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                outputFile.close();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.release();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        channel.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    raf.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>总结一下整个流程就是：</p>
+<ol>
+<li>最新的<code>URL</code>（全量的，之前已经说过）到达。</li>
+<li>数据保存到全局变量中（<code>notified</code>）。</li>
+<li>异步的保存到文件中，即使注册中心重启也不会丢失。</li>
+</ol>
+<h4 id="订阅过程的容错"><a href="#订阅过程的容错" class="headerlink" title="订阅过程的容错"></a>订阅过程的容错</h4><p>看下这个方法<code>FailbackRegistry#subscribe</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这里是订阅过程抛出异常时的处理</span></span><br><span class="line">Throwable t = e;</span><br><span class="line">List&lt;URL&gt; urls = getCacheUrls(url);</span><br><span class="line"><span class="comment">// getCacheUrls就是从notified这个全局变量里把相关的数据拉出来</span></span><br><span class="line"><span class="comment">// 由于我们每次启动注册中心的时候都会加载cache文件，并且每次新的数据到达Consumer的时候</span></span><br><span class="line"><span class="comment">// 也会更新notified，所以这里其实是取出最新一次的Provider的URL副本。</span></span><br><span class="line"><span class="keyword">if</span> (urls != <span class="keyword">null</span> &amp;&amp; !urls.isEmpty()) &#123;</span><br><span class="line">    notify(url, listener, urls);</span><br><span class="line">    logger.error(...);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">boolean</span> check = getUrl().getParameter(Constants.CHECK_KEY, <span class="keyword">true</span>)</span><br><span class="line">            &amp;&amp; url.getParameter(Constants.CHECK_KEY, <span class="keyword">true</span>);</span><br><span class="line">    <span class="keyword">boolean</span> skipFailback = t <span class="keyword">instanceof</span> SkipFailbackWrapperException;</span><br><span class="line">    <span class="keyword">if</span> (check || skipFailback) &#123;</span><br><span class="line">        <span class="keyword">if</span> (skipFailback) &#123;</span><br><span class="line">            t = t.getCause();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(...);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        logger.error(...);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 添加一个任务进行定时重试</span></span><br><span class="line">addFailedSubscribed(url, listener);</span><br></pre></td></tr></table></figure>
+<p>总结一下订阅的流程也很简单：</p>
+<ol>
+<li>如果出错了，获取最新的<code>Provider</code>端URL副本。</li>
+<li>通知给监听器。（只通知需要订阅这个监听器，并非所有的）</li>
+<li>添加一个任务定时重新订阅，重试成功时，这时可能<code>Consumer</code>还维护的是<code>Provider</code>的<code>URL</code>的副本，可能是过期的，当重试任务成功后，会把最新的数据更新过来。</li>
+</ol>
+<p>至此我们就完成了注册中心的容错流程分析。这里并不复杂，但是很容易遗漏，网上关于这个地方的分析不是很多，这里拿出来跟大家分享一下。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/注册中心/" rel="tag"># 注册中心</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Netty源码分析——no cleaner策略.html" rel="next" title="Netty源码分析——no cleaner策略">
+                <i class="fa fa-chevron-left"></i> Netty源码分析——no cleaner策略
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">83</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">78</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Dubbo源码解析——注册中心的容错策略"><span class="nav-number">1.</span> <span class="nav-text">Dubbo源码解析——注册中心的容错策略</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#简介"><span class="nav-number">1.1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#通知流程"><span class="nav-number">1.2.</span> <span class="nav-text">通知流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#订阅过程的容错"><span class="nav-number">1.3.</span> <span class="nav-text">订阅过程的容错</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
