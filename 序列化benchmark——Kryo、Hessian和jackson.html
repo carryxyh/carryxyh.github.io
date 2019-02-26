@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="kryo,jackson,hessian," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="序列化benchmark——Kryo、Hessian和jackson前言发现云音乐很多地方使用jackson作为默认序列化方式，最近想做一个benchmark来验证一下效果，包括调优一些问题。我的机器是mac，4核16G的配置。  kryo: 3.0.3 hessian: 4.0.35 jackson: 2.6.5  benchmark主代码1234567891011121314151617181">
+<meta name="keywords" content="kryo,jackson,hessian">
+<meta property="og:type" content="article">
+<meta property="og:title" content="序列化benchmark——Kryo、Hessian和jackson">
+<meta property="og:url" content="http://wyj.shiwuliang.com/序列化benchmark——Kryo、Hessian和jackson.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="序列化benchmark——Kryo、Hessian和jackson前言发现云音乐很多地方使用jackson作为默认序列化方式，最近想做一个benchmark来验证一下效果，包括调优一些问题。我的机器是mac，4核16G的配置。  kryo: 3.0.3 hessian: 4.0.35 jackson: 2.6.5  benchmark主代码1234567891011121314151617181">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-02-26T03:48:11.334Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="序列化benchmark——Kryo、Hessian和jackson">
+<meta name="twitter:description" content="序列化benchmark——Kryo、Hessian和jackson前言发现云音乐很多地方使用jackson作为默认序列化方式，最近想做一个benchmark来验证一下效果，包括调优一些问题。我的机器是mac，4核16G的配置。  kryo: 3.0.3 hessian: 4.0.35 jackson: 2.6.5  benchmark主代码1234567891011121314151617181">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/序列化benchmark——Kryo、Hessian和jackson.html"/>
+
+
+
+
+
+  <title>序列化benchmark——Kryo、Hessian和jackson | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description"></h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/序列化benchmark——Kryo、Hessian和jackson.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">序列化benchmark——Kryo、Hessian和jackson</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-26T11:48:32+08:00">
+                2019-02-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/序列化/" itemprop="url" rel="index">
+                    <span itemprop="name">序列化</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="序列化benchmark——Kryo、Hessian和jackson"><a href="#序列化benchmark——Kryo、Hessian和jackson" class="headerlink" title="序列化benchmark——Kryo、Hessian和jackson"></a>序列化benchmark——Kryo、Hessian和jackson</h3><h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>发现云音乐很多地方使用<code>jackson</code>作为默认序列化方式，最近想做一个benchmark来验证一下效果，包括调优一些问题。我的机器是<code>mac</code>，4核16G的配置。</p>
+<ul>
+<li>kryo: 3.0.3</li>
+<li>hessian: 4.0.35</li>
+<li>jackson: 2.6.5</li>
+</ul>
+<h4 id="benchmark主代码"><a href="#benchmark主代码" class="headerlink" title="benchmark主代码"></a>benchmark主代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@BenchmarkMode</span>(Mode.Throughput)</span><br><span class="line"><span class="meta">@OutputTimeUnit</span>(TimeUnit.SECONDS)</span><br><span class="line"><span class="meta">@State</span>(Scope.Benchmark)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SerializeBenchmark</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@State</span>(Scope.Thread)</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Person</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line">        <span class="comment">// fields...</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Kryo3MetaSerializer kryo3MetaSerializer = <span class="keyword">new</span> Kryo3MetaSerializer();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Hessian2MetaSerializer hessian2MetaSerializer = <span class="keyword">new</span> Hessian2MetaSerializer();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> JacksonMetaSerializer jacksonMetaSerializer = <span class="keyword">new</span> JacksonMetaSerializer();</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Benchmark</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">kryo</span><span class="params">(Person p)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">byte</span>[] bytes = kryo3MetaSerializer.toBytes(p);</span><br><span class="line">            kryo3MetaSerializer.fromBytes(bytes, Person.class);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Benchmark</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">hessian</span><span class="params">(Person p)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">byte</span>[] bytes = hessian2MetaSerializer.toBytes(p);</span><br><span class="line">            hessian2MetaSerializer.fromBytes(bytes, Person.class);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Benchmark</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">jackson</span><span class="params">(Person p)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">byte</span>[] bytes = jacksonMetaSerializer.toBytes(p);</span><br><span class="line">            jacksonMetaSerializer.fromBytes(bytes, Person.class);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        Options opt = <span class="keyword">new</span> OptionsBuilder()</span><br><span class="line">                .include(SerializeBenchmark.class.getSimpleName())</span><br><span class="line">                .forks(<span class="number">2</span>)</span><br><span class="line">                .warmupIterations(<span class="number">10</span>)</span><br><span class="line">                .measurementIterations(<span class="number">10</span>)</span><br><span class="line">                .build();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Runner(opt).run();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>主代码比较简单，这里<code>xxxMetaSerializer</code>是已经封装好的实现类，里面的代码就不贴了。这里是<code>fork</code>两个线程去做测试，预热和<code>measure</code>都是十轮。</p>
+<h4 id="小类"><a href="#小类" class="headerlink" title="小类"></a>小类</h4><p>我们先看小类的吞吐量测试，这里的<code>meta</code>类如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@State</span>(Scope.Thread)</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Person</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = -<span class="number">6378930680486048168L</span>;</span><br><span class="line"></span><br><span class="line">    String name = <span class="string">"ziyuan"</span>;</span><br><span class="line"></span><br><span class="line">    String address = <span class="string">"网商路599号网易大厦"</span>;</span><br><span class="line"></span><br><span class="line">    Integer age = <span class="number">25</span>;</span><br><span class="line"></span><br><span class="line">    List&lt;Integer&gt; phoneNumber = Arrays.asList(<span class="number">1</span>, <span class="number">8</span>, <span class="number">7</span>, <span class="number">1</span>, <span class="number">8</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">7</span>, <span class="number">9</span>, <span class="number">8</span>, <span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    Boolean marry = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    Long[] gone = <span class="keyword">new</span> Long[]&#123;<span class="number">100L</span>, <span class="number">998456L</span>, Long.MAX_VALUE, (<span class="keyword">long</span>) Integer.MAX_VALUE&#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意这里我们写<code>set/get</code>方法，测试的时候需要加上。测试结果如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Benchmark                    Mode  Cnt       Score      Error  Units</span><br><span class="line">SerializeBenchmark.hessian  thrpt   20   18316.590 ±  151.534  ops/s</span><br><span class="line">SerializeBenchmark.jackson  thrpt   20  175164.888 ± 9199.818  ops/s</span><br><span class="line">SerializeBenchmark.kryo     thrpt   20  157208.428 ± 6399.210  ops/s</span><br></pre></td></tr></table></figure>
+<p>这里测试的是吞吐量注意，<code>score</code>越大越好，可以看到，<code>jackson</code>的吞吐量最大。<code>kryo</code>其次，<code>hessian</code>最差。</p>
+<h4 id="中等大小类"><a href="#中等大小类" class="headerlink" title="中等大小类"></a>中等大小类</h4><p>中等类，这里出现了一层嵌套，<code>meta</code>对象：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Company</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = -<span class="number">6453017601947707917L</span>;</span><br><span class="line"></span><br><span class="line">    String n = <span class="string">"杭州网易云音乐"</span>;</span><br><span class="line"></span><br><span class="line">    String phone = <span class="string">"62804567"</span>;</span><br><span class="line"></span><br><span class="line">    Integer colleage = <span class="number">25000</span>;</span><br><span class="line"></span><br><span class="line">    Map&lt;String, Integer&gt; mm = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        mm.put(<span class="string">"liujia"</span>, <span class="number">28</span>);</span><br><span class="line">        mm.put(<span class="string">"taoge"</span>, <span class="number">30</span>);</span><br><span class="line">        mm.put(<span class="string">"qiandahua"</span>, <span class="number">27</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@State</span>(Scope.Thread)</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Person</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = -<span class="number">6378930680486048168L</span>;</span><br><span class="line"></span><br><span class="line">    Company company = <span class="keyword">new</span> Company();</span><br><span class="line"></span><br><span class="line">    String name = <span class="string">"ziyuan"</span>;</span><br><span class="line"></span><br><span class="line">    String address = <span class="string">"网商路599号网易大厦"</span>;</span><br><span class="line"></span><br><span class="line">    Integer age = <span class="number">25</span>;</span><br><span class="line"></span><br><span class="line">    List&lt;Integer&gt; phoneNumber = Arrays.asList(<span class="number">1</span>, <span class="number">8</span>, <span class="number">7</span>, <span class="number">1</span>, <span class="number">8</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">7</span>, <span class="number">9</span>, <span class="number">8</span>, <span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    Boolean marry = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    Map&lt;String, String&gt; colleague = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    Long[] gone = <span class="keyword">new</span> Long[]&#123;<span class="number">100L</span>, <span class="number">998456L</span>, Long.MAX_VALUE, (<span class="keyword">long</span>) Integer.MAX_VALUE&#125;;</span><br><span class="line"></span><br><span class="line">    Set&lt;Float&gt; floats = <span class="keyword">new</span> ConcurrentHashSet&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        colleague.put(<span class="string">"1"</span>, <span class="string">"xingtaoabc"</span>);</span><br><span class="line">        colleague.put(<span class="string">"2"</span>, <span class="string">"yuanhuaabc"</span>);</span><br><span class="line">        colleague.put(<span class="string">"3"</span>, <span class="string">"dezhiabc"</span>);</span><br><span class="line">        colleague.put(<span class="string">"4"</span>, <span class="string">"niaanajieabc"</span>);</span><br><span class="line"></span><br><span class="line">        floats.add(<span class="number">213132.21312F</span>);</span><br><span class="line">        floats.add(<span class="number">789993132.21312F</span>);</span><br><span class="line">        floats.add(<span class="number">213134652.211312F</span>);</span><br><span class="line">        floats.add(<span class="number">3.15926535F</span>);</span><br><span class="line">        floats.add(<span class="number">76542.98789F</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>测试结果如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Benchmark                    Mode  Cnt      Score      Error  Units</span><br><span class="line">SerializeBenchmark.hessian  thrpt   20  15251.806 ±  757.440  ops/s</span><br><span class="line">SerializeBenchmark.jackson  thrpt   20  84019.107 ± 4498.575  ops/s</span><br><span class="line">SerializeBenchmark.kryo     thrpt   20  83959.289 ± 4803.940  ops/s</span><br></pre></td></tr></table></figure>
+<p>这里看到，<code>jackson</code>和<code>kryo</code>已经不相上下，<code>hessian</code>依然很差，但是这里我们发现一个有意思的地方，比较之下，<code>jackson</code>和<code>kryo</code>在对象复杂度增加的情况下，吞吐量几乎折半，但是<code>hessian</code>依然非常稳定。</p>
+<h4 id="复杂类"><a href="#复杂类" class="headerlink" title="复杂类"></a>复杂类</h4><p><code>meta</code>类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">City</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    City() &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    City(String name) &#123;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    String name = <span class="string">"hangzhou"</span>;</span><br><span class="line"></span><br><span class="line">    String addr = <span class="string">"中国浙江省杭州市"</span>;</span><br><span class="line"></span><br><span class="line">    Integer personNum = <span class="number">5000000</span>;</span><br><span class="line"></span><br><span class="line">    Integer youbian = <span class="number">31000</span>;</span><br><span class="line"></span><br><span class="line">    Queue&lt;Double&gt; q = <span class="keyword">new</span> LinkedBlockingDeque&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        q.add(<span class="number">3.14159</span>);</span><br><span class="line">        q.add(<span class="number">128784523.8787</span>);</span><br><span class="line">        q.add(<span class="number">899.8787</span>);</span><br><span class="line">        q.add(<span class="number">98.6892223</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Company</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = -<span class="number">6453017601947707917L</span>;</span><br><span class="line"></span><br><span class="line">    City c1 = <span class="keyword">new</span> City();</span><br><span class="line"></span><br><span class="line">    City c2 = <span class="keyword">new</span> City();</span><br><span class="line"></span><br><span class="line">    String n = <span class="string">"杭州网易云音乐"</span>;</span><br><span class="line"></span><br><span class="line">    String phone = <span class="string">"62804567"</span>;</span><br><span class="line"></span><br><span class="line">    Integer colleage = <span class="number">25000</span>;</span><br><span class="line"></span><br><span class="line">    Map&lt;String, Integer&gt; mm = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        mm.put(<span class="string">"liujia"</span>, <span class="number">28</span>);</span><br><span class="line">        mm.put(<span class="string">"taoge"</span>, <span class="number">30</span>);</span><br><span class="line">        mm.put(<span class="string">"qiandahua"</span>, <span class="number">27</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@State</span>(Scope.Thread)</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Person</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = -<span class="number">6378930680486048168L</span>;</span><br><span class="line"></span><br><span class="line">    Company company = <span class="keyword">new</span> Company();</span><br><span class="line"></span><br><span class="line">    String name = <span class="string">"ziyuan"</span>;</span><br><span class="line"></span><br><span class="line">    String address = <span class="string">"网商路599号网易大厦"</span>;</span><br><span class="line"></span><br><span class="line">    Integer age = <span class="number">25</span>;</span><br><span class="line"></span><br><span class="line">    List&lt;Integer&gt; phoneNumber = Arrays.asList(<span class="number">1</span>, <span class="number">8</span>, <span class="number">6</span>, <span class="number">5</span>, <span class="number">8</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">7</span>, <span class="number">3</span>, <span class="number">8</span>, <span class="number">4</span>);</span><br><span class="line"></span><br><span class="line">    Boolean marry = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    Map&lt;String, String&gt; colleague = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    Map&lt;String, City&gt; cities = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    Long[] gone = <span class="keyword">new</span> Long[]&#123;<span class="number">100L</span>, <span class="number">998456L</span>, Long.MAX_VALUE, (<span class="keyword">long</span>) Integer.MAX_VALUE&#125;;</span><br><span class="line"></span><br><span class="line">    Set&lt;Float&gt; floats = <span class="keyword">new</span> ConcurrentHashSet&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    Map&lt;Float, City&gt; cityMap = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        colleague.put(<span class="string">"1"</span>, <span class="string">"jiangxignabc"</span>);</span><br><span class="line">        colleague.put(<span class="string">"2"</span>, <span class="string">"yuanhuaabc"</span>);</span><br><span class="line">        colleague.put(<span class="string">"3"</span>, <span class="string">"dezhiabc"</span>);</span><br><span class="line">        colleague.put(<span class="string">"4"</span>, <span class="string">"niaanjieabc"</span>);</span><br><span class="line"></span><br><span class="line">        floats.add(<span class="number">213132.21312F</span>);</span><br><span class="line">        floats.add(<span class="number">789993132.21312F</span>);</span><br><span class="line">        floats.add(<span class="number">213134652.211312F</span>);</span><br><span class="line">        floats.add(<span class="number">3.15926535F</span>);</span><br><span class="line">        floats.add(<span class="number">76542.98789F</span>);</span><br><span class="line"></span><br><span class="line">        cities.put(<span class="string">"hangzhou"</span>, <span class="keyword">new</span> City());</span><br><span class="line">        cities.put(<span class="string">"shanghai"</span>, <span class="keyword">new</span> City());</span><br><span class="line">        cities.put(<span class="string">"beijing"</span>, <span class="keyword">new</span> City());</span><br><span class="line"></span><br><span class="line">        cityMap.put(<span class="number">23567.1234F</span>, <span class="keyword">new</span> City(<span class="string">"heilongjiang"</span>));</span><br><span class="line">        cityMap.put(<span class="number">2.31415926535F</span>, <span class="keyword">new</span> City(<span class="string">"yantai"</span>));</span><br><span class="line">        cityMap.put(<span class="number">128.132134F</span>, <span class="keyword">new</span> City(<span class="string">"heibeilangfang"</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>测试结果如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Benchmark                    Mode  Cnt      Score      Error  Units</span><br><span class="line">SerializeBenchmark.hessian  thrpt   20  11704.161 ±  587.963  ops/s</span><br><span class="line">SerializeBenchmark.jackson  thrpt   20  24553.787 ± 1291.997  ops/s</span><br><span class="line">SerializeBenchmark.kryo     thrpt   20  34815.832 ± 1958.810  ops/s</span><br></pre></td></tr></table></figure>
+<p>这里可以看到，<code>jackson</code>和<code>kryo</code>还在继续跳楼式下跌。<code>hessian</code>则依然坚挺，吞吐量下降比例很低。</p>
+<h4 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h4><p>按照这个趋势继续发展下去，我们可以得出一个简单的结论：</p>
+<ul>
+<li><code>jackson</code>：作为文本序列化方式，在小对象的时候性能表现不错，随着对象越来越复杂，吞吐量下降非常明显。</li>
+<li><code>kryo</code>：表现不错，但是依然不够稳定。</li>
+<li><code>hessian</code>：吞吐量最稳定，但是整体吞吐量不高。</li>
+</ul>
+<p>注意这里我们并不能断言一定使用<code>hessian</code>或者<code>kryo</code>，序列化除了考虑序列化/反序列化的效率，还需要考虑序列化后数据的大小，这个会影响传输效率。但是至少从序列化/反序列化的表现来看，<code>hessian</code>还是一个非常不错的选择。</p>
+<p>另外，这里并没有针对某种序列化方式做特定优化，比如<code>kryo</code>可以用<code>registry class</code>的方式来提升序列化效率，但是本质上<code>registry class</code>在分布式场景下会出现bug，这里不展开说了。所以这里给出的<code>benchmark</code>是比较纯粹的结果。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/kryo/" rel="tag"># kryo</a>
+          
+            <a href="/tags/jackson/" rel="tag"># jackson</a>
+          
+            <a href="/tags/hessian/" rel="tag"># hessian</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Dubbo源码解析——注册中心的容错策略.html" rel="next" title="Dubbo源码解析——注册中心的容错策略">
+                <i class="fa fa-chevron-left"></i> Dubbo源码解析——注册中心的容错策略
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">84</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">80</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#序列化benchmark——Kryo、Hessian和jackson"><span class="nav-number">1.</span> <span class="nav-text">序列化benchmark——Kryo、Hessian和jackson</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#benchmark主代码"><span class="nav-number">1.2.</span> <span class="nav-text">benchmark主代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#小类"><span class="nav-number">1.3.</span> <span class="nav-text">小类</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#中等大小类"><span class="nav-number">1.4.</span> <span class="nav-text">中等大小类</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#复杂类"><span class="nav-number">1.5.</span> <span class="nav-text">复杂类</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#结论"><span class="nav-number">1.6.</span> <span class="nav-text">结论</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

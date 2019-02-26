@@ -262,6 +262,156 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/RocketMQ源码解读——消息发送之TOPIC路由信息获取.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/RocketMQ源码解读——消息发送之TOPIC路由信息获取.html" itemprop="url">RocketMQ源码解读——消息发送之TOPIC路由信息获取</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-21T21:08:17+08:00">
+                2017-12-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/rocketmq源码/" itemprop="url" rel="index">
+                    <span itemprop="name">rocketmq源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+          RocketMQ源码解读——消息发送之TOPIC路由信息获取具体的发送demo我就不贴了，直接到里面去看实现了。
+看到DefaultMQProducerImpl的sendDefaultImpl方法，这个方法非常的长，中间涉及到多个过程，比如拉取topic路由信息等，我们一部分一部分来看，先看开头部分：
+123456789this.makeSureStateOK(); //mq状态Validators.checkMessage(msg, this.defaultMQProducer); //校验msg是否合法final long invokeID = random.nextLong(); //调
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/RocketMQ源码解读——消息发送之TOPIC路由信息获取.html#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/JAVA线程池源码解析.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1623,155 +1773,6 @@ take：删除队列头部元素，如果队列为空，一直阻塞到队列有�
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Electrons使用文档.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="时无两">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="一时无两">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Electrons使用文档.html" itemprop="url">Electrons使用指南</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-03-21T10:33:53+08:00">
-                2017-03-21
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java插件/" itemprop="url" rel="index">
-                    <span itemprop="name">java插件</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-          Electrons使用指南前言Electrons是一个异步事件分发器，也是一个通道，结合了生产者消费者模型和SUB/PUB模式。传统的SUB/PUB模型，在publish事件的时候是直接同步执行所有的监听器，是同步阻塞的。现在结合RINGBUFFER的无锁的急速体验，设计了Electrons，意味电路，事件就相当于跑在电路中的电子，电子在电路中的传递速度非常之快，这也是这个插件的寓意。publish的事件会放到容器中等待消费者消费，消费者就是SUB方的listener，这里有个设计上的小缺陷，由于种种愿意，listener的注册是通过注解 + 接口的方式实现，后面会提到。下面进入主题
-使用废话
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/Electrons使用文档.html#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1826,7 +1827,7 @@ take：删除队列头部元素，如果队列为空，一直阻塞到队列有�
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">83</span>
+                  <span class="site-state-item-count">84</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1837,7 +1838,7 @@ take：删除队列头部元素，如果队列为空，一直阻塞到队列有�
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-count">22</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -1848,7 +1849,7 @@ take：删除队列头部元素，如果队列为空，一直阻塞到队列有�
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">78</span>
+                  <span class="site-state-item-count">80</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
