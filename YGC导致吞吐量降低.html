@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="ygc," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="YGC导致吞吐量降低背景MUSIC-RPC（网易云音乐内部使用的rpc）进行了大版本升级，在升级之后的压测过程中发现吞吐量相较于旧版本下降了百分之20左右（3w tps -&amp;gt; 2.2w tps），注意这个3w tps是我们在为保证功能正确的情况下，使用非常大的对象（入参、出参）压测出的结果。 具体表现和各个指标具体表现是吞吐量下降（100个并发），rt增高。性能QA反应，观察到YGC的次数和">
+<meta name="keywords" content="ygc">
+<meta property="og:type" content="article">
+<meta property="og:title" content="YGC导致吞吐量降低">
+<meta property="og:url" content="http://wyj.shiwuliang.com/YGC导致吞吐量降低.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="YGC导致吞吐量降低背景MUSIC-RPC（网易云音乐内部使用的rpc）进行了大版本升级，在升级之后的压测过程中发现吞吐量相较于旧版本下降了百分之20左右（3w tps -&amp;gt; 2.2w tps），注意这个3w tps是我们在为保证功能正确的情况下，使用非常大的对象（入参、出参）压测出的结果。 具体表现和各个指标具体表现是吞吐量下降（100个并发），rt增高。性能QA反应，观察到YGC的次数和">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15576497567566.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15576500441921.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15576511909038.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15576512026740.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15576515503317.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15576530027042.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15576535267734.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15576538590035.jpg">
+<meta property="og:updated_time" content="2019-05-12T10:23:38.377Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="YGC导致吞吐量降低">
+<meta name="twitter:description" content="YGC导致吞吐量降低背景MUSIC-RPC（网易云音乐内部使用的rpc）进行了大版本升级，在升级之后的压测过程中发现吞吐量相较于旧版本下降了百分之20左右（3w tps -&amp;gt; 2.2w tps），注意这个3w tps是我们在为保证功能正确的情况下，使用非常大的对象（入参、出参）压测出的结果。 具体表现和各个指标具体表现是吞吐量下降（100个并发），rt增高。性能QA反应，观察到YGC的次数和">
+<meta name="twitter:image" content="http://wyj.shiwuliang.com/images/15576497567566.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/YGC导致吞吐量降低.html"/>
+
+
+
+
+
+  <title>YGC导致吞吐量降低 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description"></h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/YGC导致吞吐量降低.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">YGC导致吞吐量降低</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-12T18:20:26+08:00">
+                2019-05-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/线上问题排查/" itemprop="url" rel="index">
+                    <span itemprop="name">线上问题排查</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="YGC导致吞吐量降低"><a href="#YGC导致吞吐量降低" class="headerlink" title="YGC导致吞吐量降低"></a>YGC导致吞吐量降低</h3><h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h4><p>MUSIC-RPC（网易云音乐内部使用的rpc）进行了大版本升级，在升级之后的压测过程中发现吞吐量相较于旧版本下降了百分之20左右（3w tps -&gt; 2.2w tps），注意这个3w tps是我们在为保证功能正确的情况下，使用非常大的对象（入参、出参）压测出的结果。</p>
+<h4 id="具体表现和各个指标"><a href="#具体表现和各个指标" class="headerlink" title="具体表现和各个指标"></a>具体表现和各个指标</h4><p>具体表现是吞吐量下降（100个并发），rt增高。性能QA反应，观察到YGC的次数和频率都远超旧版本，从哨兵系统上看到表现如下：</p>
+<p>新版本：</p>
+<p><img src="/images/15576497567566.jpg" alt=""></p>
+<p>老版本：</p>
+<p><img src="/images/15576500441921.jpg" alt=""></p>
+<p>另外我们发现，新老版本的服务端的响应时间、YGC情况等均没有很大差别。另外，新老版本的网卡均没有瓶颈。</p>
+<p>所以上述种种现象表现来看，瓶颈出现在客户端。</p>
+<h4 id="基本排查"><a href="#基本排查" class="headerlink" title="基本排查"></a>基本排查</h4><p>可以看到，不管是YGC的次数还是YGC的时间都有非常大的上涨。由于只是进行了YGC，而且压测情况下由于YGC过于频繁，所以dump堆的作用比较小，但是还是尝试性的去进行了一些dump（新老版本各dump两次），dump出的堆果然并没有发现什么问题，没有过大的对象。</p>
+<p>dump堆虽然没能直接找出问题，却有额外的收获：<code>hashedwheeltimer</code>的task非常多，可以复用。由于新老版本都存在这个问题，所以这个问题并不是导致两个版本吞吐量差异的主要问题。</p>
+<p>dump堆无果的情况下，看下gc日志（线上是g1收集器）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">2019-05-07T22:04:29.977+0800: 729.479: [GC pause (G1 Evacuation Pause) (young), 0.1900627 secs]</span><br><span class="line">   [Parallel Time: 187.2 ms, GC Workers: 8]</span><br><span class="line">      [GC Worker Start (ms): Min: 729479.8, Avg: 729484.7, Max: 729490.6, Diff: 10.8]</span><br><span class="line">      [Ext Root Scanning (ms): Min: 0.0, Avg: 0.8, Max: 3.4, Diff: 3.4, Sum: 6.6]</span><br><span class="line">      [Update RS (ms): Min: 14.0, Avg: 20.6, Max: 34.4, Diff: 20.4, Sum: 165.0]</span><br><span class="line">         [Processed Buffers: Min: 44, Avg: 87.2, Max: 114, Diff: 70, Sum: 698]</span><br><span class="line">      [Scan RS (ms): Min: 0.1, Avg: 0.2, Max: 0.2, Diff: 0.1, Sum: 1.2]</span><br><span class="line">      [Code Root Scanning (ms): Min: 0.0, Avg: 0.0, Max: 0.0, Diff: 0.0, Sum: 0.1]</span><br><span class="line">      [Object Copy (ms): Min: 148.9, Avg: 160.4, Max: 162.5, Diff: 13.5, Sum: 1283.5]</span><br><span class="line">      [Termination (ms): Min: 0.0, Avg: 0.0, Max: 0.0, Diff: 0.0, Sum: 0.0]</span><br><span class="line">         [Termination Attempts: Min: 1, Avg: 5.8, Max: 10, Diff: 9, Sum: 46]</span><br><span class="line">      [GC Worker Other (ms): Min: 0.0, Avg: 0.1, Max: 0.1, Diff: 0.1, Sum: 0.6]</span><br><span class="line">      [GC Worker Total (ms): Min: 176.2, Avg: 182.1, Max: 187.0, Diff: 10.8, Sum: 1457.0]</span><br><span class="line">      [GC Worker End (ms): Min: 729666.8, Avg: 729666.8, Max: 729666.9, Diff: 0.1]</span><br><span class="line">   [Code Root Fixup: 0.2 ms]</span><br><span class="line">   [Code Root Purge: 0.0 ms]</span><br><span class="line">   [Clear CT: 0.4 ms]</span><br><span class="line">   [Other: 2.3 ms]</span><br><span class="line">      [Choose CSet: 0.0 ms]</span><br><span class="line">      [Ref Proc: 0.3 ms]</span><br><span class="line">      [Ref Enq: 0.0 ms]</span><br><span class="line">      [Redirty Cards: 0.4 ms]</span><br><span class="line">      [Humongous Register: 0.1 ms]</span><br><span class="line">      [Humongous Reclaim: 0.0 ms]</span><br><span class="line">      [Free CSet: 0.9 ms]</span><br><span class="line">   [Eden: 2796.0M(2796.0M)-&gt;0.0B(1992.0M) Survivors: 208.0M-&gt;376.0M Heap: 5632.0M(8192.0M)-&gt;3238.0M(8192.0M)]</span><br><span class="line"> [Times: user=1.40 sys=0.00, real=0.19 secs]</span><br></pre></td></tr></table></figure>
+<p>发现有两个阶段，花费了非常久的时间：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[Update RS (ms): Min: 14.0, Avg: 20.6, Max: 34.4, Diff: 20.4, Sum: 165.0]</span><br><span class="line">         [Processed Buffers: Min: 44, Avg: 87.2, Max: 114, Diff: 70, Sum: 698]</span><br><span class="line">[Object Copy (ms): Min: 148.9, Avg: 160.4, Max: 162.5, Diff: 13.5, Sum: 1283.5]</span><br></pre></td></tr></table></figure>
+<p>其中<code>object copy</code>花费了非常多的时间。另外一个现象：<code>[Eden: 2796.0M(2796.0M)-&gt;0.0B(1992.0M) Survivors: 208.0M-&gt;376.0M Heap: 5632.0M(8192.0M)-&gt;3238.0M(8192.0M)]</code>，每次YGC的时候，对象都会被完全回收，也就是说不存在无法被回收的对象。加上我们上面发现对象copy花费很久，我们判定：<strong>新版本YGC的问题，就是由于对象频繁分配导致的</strong>。</p>
+<p>继续跟组内网关的负责人聊了一下，他建议关注一下YGC的<strong>吞吐率</strong>这个指标，如果吞吐率一样，那么说明CPU花费在GC上的时间一直，说明导致RPC框架吞吐量下降的原因不是GC。听到这里我重新看了一下吞吐率指标：</p>
+<p>新版本：</p>
+<p><img src="/images/15576511909038.jpg" alt=""></p>
+<p>老版本：</p>
+<p><img src="/images/15576512026740.jpg" alt=""></p>
+<p>可以看到，吞吐率相差百分之十五，而且新版本的吞吐率只有百分之八十一，非常低的一个数字。而且我们使用arthas同样抓了一波新老版本rpc主要方法执行的耗时，同样没有发现差别。</p>
+<h4 id="代码排查"><a href="#代码排查" class="headerlink" title="代码排查"></a>代码排查</h4><p>由于新版本rpc的代码变动非常非常大，基本不可能通过还原代码来进行问题排查，这里对一些可能的点进行了还原和验证。</p>
+<p>排查过程中，发现新老协议有一个区别，老协议编解码中，对一段数据进行了缓存，新版本没有缓存，每次都编解码，怀疑是这个问题，修复之后继续观察指标：</p>
+<p><img src="/images/15576515503317.jpg" alt=""></p>
+<p>可以看到，YGC的次数确实降低了，但是YGC的时间变化不大，吞吐量上升了一点点。但是压测发现，总体TPS还下降了2k。说明老版本的协议虽然在GC表现上不错，但是在性能上不好，耗时更长。</p>
+<p>说明协议层的变化也不是问题的根本原因。</p>
+<h4 id="有趣的现象"><a href="#有趣的现象" class="headerlink" title="有趣的现象"></a>有趣的现象</h4><p>排查过程中，同事提议：应该调整小入参和出参。在入参和出参非常大的情况下，可能会混淆我们的视听，因为从各个监控软件上发现，基本上所有的耗时都集中在序列化和反序列化。如果我们降低入参和出参，会让其他地方的耗时或者内存分配体现的更明显一些。</p>
+<p>把出参和入参删除了一些属性，重新压测。压完发现一个很有意思的现象：新版本的吞吐量本身相较于老版本低20%，入参和返回值对象内容变少之后，吞吐量相比于老版本只低10%了。</p>
+<p>这时候我们还不能知道为什么会出现这种现象，关于这个现象只能得出结论：出参和入参越小，新版本的RPC和老版本的RPC性能约接近。仅此而已。</p>
+<h4 id="监控和对比"><a href="#监控和对比" class="headerlink" title="监控和对比"></a>监控和对比</h4><p>至此我们进入了一个困局，由于dump堆的成本比较大，需要dump，然后压缩（不压缩太大，有的超过5G），然后再把它下载到跳板机，再从跳板机上下载下来再分析等等。我们需要一些实时的监控，这时候我们的性能测试建议使用<code>jprofile</code>进行远程监控。</p>
+<p><code>jprofile</code>远程监控需要一个<code>agent</code>，具体的配置和使用不说了。我和同事一个人链接新版本，一个人链接老版本，然后实时监控对比两个堆的活跃对象以及变化。</p>
+<p>到这里看到一个非常可以的问题，就是我们的User对象（User对象是RPC调用的参数）在两个堆中的表现：</p>
+<p>新版本：</p>
+<p><img src="/images/15576530027042.jpg" alt=""></p>
+<p>可以看到，有84w个。</p>
+<p>老版本：</p>
+<p><img src="/images/15576535267734.jpg" alt=""></p>
+<p>可以看到只有5w多个。</p>
+<p>另外一个现象，就是新版本中，User可以被GC回收，但是回收完一般还会剩余10w+个，而老版本可能会回收到0！</p>
+<p>但是新版本没有产生Full GC，这里说明：新版本中，User的生命周期比老版本的长！</p>
+<p>看看引用的路径：</p>
+<p><img src="/images/15576538590035.jpg" alt=""></p>
+<p>这里music-rpc也使用<code>HashedWheelTimer</code>做超时检测，<code>TimeoutCheckTask</code>的声明周期就是RPC接口的超时时间，这里我们是3s。我们从上图引用关系发现，User被绑定到了<code>Response</code>上，<code>Response</code>又绑定到了<code>MusicFuture</code>上，最终被绑定到了<code>TimeoutCheckTask</code>上。</p>
+<p>新版本中，我确实在<code>Response</code>中增加了一个<code>private Object result</code>的引用。那么新版本中，<code>TimeoutCheckTask</code>不被回收的话，我们的返回值User也没法被回收。在老版本中，由于没有这个引用关系，所以User能够被更快的回收。</p>
+<p>在请求级别上看，一个请求花费在10ms以内，如果User对象被绑定到<code>TimeoutCheckTask</code>上，则生命周期延长到3s。那么这里结案了，最终原因并不是新版本中分配的临时对象比老版本多了，而是临时对象的生命周期被拉长了。</p>
+<h4 id="修改之后"><a href="#修改之后" class="headerlink" title="修改之后"></a>修改之后</h4><p>修改方式很简单，只要去除<code>Response</code>中的引用即可。修改之后看看各个指标：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">2019-05-09T19:56:25.044+0800: 7622.384: [GC pause (G1 Evacuation Pause) (young), 0.0750529 secs]</span><br><span class="line">   [Parallel Time: 69.0 ms, GC Workers: 8]</span><br><span class="line">      [GC Worker Start (ms): Min: 7622384.1, Avg: 7622396.1, Max: 7622414.8, Diff: 30.8]</span><br><span class="line">      [Ext Root Scanning (ms): Min: 0.0, Avg: 1.1, Max: 5.7, Diff: 5.6, Sum: 9.1]</span><br><span class="line">      [Update RS (ms): Min: 0.0, Avg: 1.3, Max: 5.0, Diff: 5.0, Sum: 10.4]</span><br><span class="line">         [Processed Buffers: Min: 0, Avg: 30.8, Max: 129, Diff: 129, Sum: 246]</span><br><span class="line">      [Scan RS (ms): Min: 0.1, Avg: 0.2, Max: 0.4, Diff: 0.3, Sum: 1.5]</span><br><span class="line">      [Code Root Scanning (ms): Min: 0.0, Avg: 0.0, Max: 0.0, Diff: 0.0, Sum: 0.1]</span><br><span class="line">      [Object Copy (ms): Min: 37.7, Avg: 54.1, Max: 60.0, Diff: 22.3, Sum: 432.7]</span><br><span class="line">      [Termination (ms): Min: 0.0, Avg: 0.0, Max: 0.0, Diff: 0.0, Sum: 0.0]</span><br><span class="line">         [Termination Attempts: Min: 1, Avg: 1.0, Max: 1, Diff: 0, Sum: 8]</span><br><span class="line">      [GC Worker Other (ms): Min: 0.0, Avg: 0.1, Max: 0.1, Diff: 0.1, Sum: 0.6]</span><br><span class="line">      [GC Worker Total (ms): Min: 38.0, Avg: 56.8, Max: 68.8, Diff: 30.8, Sum: 454.4]</span><br><span class="line">      [GC Worker End (ms): Min: 7622452.8, Avg: 7622452.9, Max: 7622452.9, Diff: 0.1]</span><br><span class="line">   [Code Root Fixup: 0.3 ms]</span><br><span class="line">   [Code Root Purge: 0.0 ms]</span><br><span class="line">   [Clear CT: 0.9 ms]</span><br><span class="line">   [Other: 4.9 ms]</span><br><span class="line">      [Choose CSet: 0.0 ms]</span><br><span class="line">      [Ref Proc: 2.5 ms]</span><br><span class="line">      [Ref Enq: 0.0 ms]</span><br><span class="line">      [Redirty Cards: 0.1 ms]</span><br><span class="line">      [Humongous Register: 0.1 ms]</span><br><span class="line">      [Humongous Reclaim: 0.0 ms]</span><br><span class="line">      [Free CSet: 1.4 ms]</span><br><span class="line">   [Eden: 4532.0M(4532.0M)-&gt;0.0B(4560.0M) Survivors: 380.0M-&gt;352.0M Heap: 6049.2M(8192.0M)-&gt;1489.3M(8192.0M)]</span><br><span class="line"> [Times: user=0.42 sys=0.00, real=0.22 secs]</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[Update RS (ms): Min: 0.0, Avg: 1.3, Max: 5.0, Diff: 5.0, Sum: 10.4]</span><br><span class="line">         [Processed Buffers: Min: 0, Avg: 30.8, Max: 129, Diff: 129, Sum: 246]</span><br><span class="line">[Object Copy (ms): Min: 37.7, Avg: 54.1, Max: 60.0, Diff: 22.3, Sum: 432.7]</span><br></pre></td></tr></table></figure>
+<p>效果非常明显。我们的吞吐量修改之后超过了老版本，达到3.2w tps。从gc日志也可以看到<code>Object copy</code>的耗时下降非常多。</p>
+<p>这里可以解释两个现象：</p>
+<ol>
+<li>为什么<code>Object copy</code>的耗时短了。</li>
+<li>为什么入参出参小的情况下，新老版本rpc的吞吐量差距小了。</li>
+</ol>
+<p>这两个现象的原因都是由于上述问题导致的。</p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>沉淀一个解决YGC问题的方法论：可以通过<code>Jprofile</code>等工具，远程attach之后观察堆中对象的数量变化来定位问题。尤其是那些数量多但是GC之后数量暴跌的类。</p>
+<h4 id="意外惊喜"><a href="#意外惊喜" class="headerlink" title="意外惊喜"></a>意外惊喜</h4><p>解决这个问题的过程中，我也收获了一些意外惊喜。</p>
+<p><strong>jackson序列化</strong></p>
+<p>之前我做过一次各种序列化的<code>benchmark</code>，<code>hessian</code>在对象越大的情况下，表现很稳定。我们如果使用<code>jackson</code>在这种大对象的情况下，TPS直接跌倒2w。更加说明了之前的结论。</p>
+<p><strong>TimeoutCheckTask的生命周期</strong></p>
+<p>排查问题过程中，有同事提出<code>TimeoutCheckTask</code>的生命周期太长了。上面也说了，<code>TimeoutCheckTask</code>的生命周期就是rpc接口的超时时间（上文是3s），非常不合理。如果3s的超时时间，rpc接口平均响应时间只有几ms，那么我们应该尽快让<code>TimeoutCheckTask</code>能够被GC。</p>
+<p>关于这个问题我也做了后续修改。<code>HashedWheelTimer</code>支持<code>cancel</code>操作，可以提前结束<code>TimeoutCheckTask</code>。这里也贴一下修改的效果（基于YGC问题修复之后的新版本）：</p>
+<p><code>TimeoutCheckTask</code>优化以后的GC日志：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">2019-05-10T11:59:28.390+0800: 238.610: [GC pause (G1 Evacuation Pause) (young), 0.0161575 secs]</span><br><span class="line">   [Parallel Time: 10.4 ms, GC Workers: 8]</span><br><span class="line">      [GC Worker Start (ms): Min: 238610.8, Avg: 238618.0, Max: 238620.9, Diff: 10.1]</span><br><span class="line">      [Ext Root Scanning (ms): Min: 0.0, Avg: 1.3, Max: 8.4, Diff: 8.4, Sum: 10.2]</span><br><span class="line">      [Update RS (ms): Min: 0.0, Avg: 0.3, Max: 1.2, Diff: 1.2, Sum: 2.4]</span><br><span class="line">         [Processed Buffers: Min: 0, Avg: 29.9, Max: 138, Diff: 138, Sum: 239]</span><br><span class="line">      [Scan RS (ms): Min: 0.1, Avg: 0.2, Max: 0.5, Diff: 0.4, Sum: 1.4]</span><br><span class="line">      [Code Root Scanning (ms): Min: 0.0, Avg: 0.0, Max: 0.1, Diff: 0.1, Sum: 0.2]</span><br><span class="line">      [Object Copy (ms): Min: 0.0, Avg: 0.4, Max: 1.5, Diff: 1.5, Sum: 3.5]</span><br><span class="line">      [Termination (ms): Min: 0.0, Avg: 0.8, Max: 1.2, Diff: 1.2, Sum: 6.6]</span><br><span class="line">         [Termination Attempts: Min: 1, Avg: 1.5, Max: 3, Diff: 2, Sum: 12]</span><br><span class="line">      [GC Worker Other (ms): Min: 0.0, Avg: 0.0, Max: 0.1, Diff: 0.1, Sum: 0.3]</span><br><span class="line">      [GC Worker Total (ms): Min: 0.2, Avg: 3.1, Max: 10.3, Diff: 10.1, Sum: 24.6]</span><br><span class="line">      [GC Worker End (ms): Min: 238621.1, Avg: 238621.1, Max: 238621.1, Diff: 0.1]</span><br><span class="line">   [Code Root Fixup: 0.3 ms]</span><br><span class="line">   [Code Root Purge: 0.0 ms]</span><br><span class="line">   [Clear CT: 0.8 ms]</span><br><span class="line">   [Other: 4.7 ms]</span><br><span class="line">      [Choose CSet: 0.0 ms]</span><br><span class="line">      [Ref Proc: 2.9 ms]</span><br><span class="line">      [Ref Enq: 0.0 ms]</span><br><span class="line">      [Redirty Cards: 0.1 ms]</span><br><span class="line">      [Humongous Register: 0.1 ms]</span><br><span class="line">      [Humongous Reclaim: 0.0 ms]</span><br><span class="line">      [Free CSet: 1.1 ms]</span><br><span class="line">   [Eden: 4908.0M(4908.0M)-&gt;0.0B(4908.0M) Survivors: 4096.0K-&gt;4096.0K Heap: 5263.2M(8192.0M)-&gt;355.3M(8192.0M)]</span><br><span class="line"> [Times: user=0.02 sys=0.01, real=0.02 secs]</span><br></pre></td></tr></table></figure>
+<p>可以看到，GC效果已经非常好了。但是需要注意的是，修改之后的吞吐量并没有提升，说明修改前后，GC 吞吐量指标应该基本没变化，这也给我们一个提示，GC的一个重要指标是吞吐率，如果吞吐率变化不大，说明GC对于吞吐量的影响不大。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/ygc/" rel="tag"># ygc</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/序列化benchmark——Kryo、Hessian和jackson.html" rel="next" title="序列化benchmark——Kryo、Hessian和jackson">
+                <i class="fa fa-chevron-left"></i> 序列化benchmark——Kryo、Hessian和jackson
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">85</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">81</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#YGC导致吞吐量降低"><span class="nav-number">1.</span> <span class="nav-text">YGC导致吞吐量降低</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#背景"><span class="nav-number">1.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#具体表现和各个指标"><span class="nav-number">1.2.</span> <span class="nav-text">具体表现和各个指标</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#基本排查"><span class="nav-number">1.3.</span> <span class="nav-text">基本排查</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#代码排查"><span class="nav-number">1.4.</span> <span class="nav-text">代码排查</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#有趣的现象"><span class="nav-number">1.5.</span> <span class="nav-text">有趣的现象</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#监控和对比"><span class="nav-number">1.6.</span> <span class="nav-text">监控和对比</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#修改之后"><span class="nav-number">1.7.</span> <span class="nav-text">修改之后</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#总结"><span class="nav-number">1.8.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#意外惊喜"><span class="nav-number">1.9.</span> <span class="nav-text">意外惊喜</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
