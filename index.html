@@ -262,6 +262,155 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Arthas 偶现 ByteBuf LEAK.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Arthas 偶现 ByteBuf LEAK.html" itemprop="url">Arthas 偶现 ByteBuf LEAK</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-14T15:13:23+08:00">
+                2019-05-14
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/线上问题排查/" itemprop="url" rel="index">
+                    <span itemprop="name">线上问题排查</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+          Arthas 偶现 ByteBuf LEAK背景上一篇文章中，我们遇到了YGC的问题，排查过程中使用了阿里的arthas，排查过程中我们在arthas的日志中偶然发现了一些有意思的日志：
+1234567891011121314151601 2019-05-10 11:21:00.968 ERROR [nioEventLoopGroup-2-2:i.n.u.ResourceLeakDetector] LEAK: ByteBuf.release() was not called before it&apos;s garbage-collected. See http://netty.io/wiki
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/Arthas 偶现 ByteBuf LEAK.html#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/YGC导致吞吐量降低.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1609,159 +1758,6 @@ ByteBuf的作用主要是为了平衡CPU处理速度和网络传输速度。一�
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Netty源码分析——伙伴分配算法.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="时无两">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="一时无两">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Netty源码分析——伙伴分配算法.html" itemprop="url">Netty源码分析——伙伴分配算法</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-10-30T20:54:18+08:00">
-                2018-10-30
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Netty源码分析/" itemprop="url" rel="index">
-                    <span itemprop="name">Netty源码分析</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-          Netty源码分析——伙伴分配算法前言今天跟大家一起来看一下伙伴分配算法。这个算法在Netty中用于在PoolChunk中分配内存。而这个算法的有点主要是可以使分配的内存尽可能的连续，不会产生内存碎片。今天来看下这个算法的实现。
-基本概念我研究伙伴分配算法的时候，在网上也看了一些文章，普遍都存在一个问题就是把算法和内存直接挂钩，看上去都是多少多少字节，多少多少KB，很容易把人搞晕。分析算法主要还是让人能看懂，所以我们就分苹果好了，图中用A替代。
-首先我们要明确一下伙伴分配算法的基本概念，或者说基本玩法：
-
-伙伴分配算法只能管理2的指数个苹果的分配，比如2、4、8、16等等。
-索要内存也必须是2
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/Netty源码分析——伙伴分配算法.html#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1816,7 +1812,7 @@ ByteBuf的作用主要是为了平衡CPU处理速度和网络传输速度。一�
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">85</span>
+                  <span class="site-state-item-count">86</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1838,7 +1834,7 @@ ByteBuf的作用主要是为了平衡CPU处理速度和网络传输速度。一�
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">81</span>
+                  <span class="site-state-item-count">82</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
