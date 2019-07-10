@@ -4,26 +4,6 @@
 
     
   <url>
-    <loc>http://wyj.shiwuliang.com/%E4%BA%91%E9%9F%B3%E4%B9%90rpc%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E4%B9%8B%E6%97%85.html</loc>
-    <lastmod>2019-06-04T03:50:18.010Z</lastmod>
-    <data>
-        <display>
-        <title>云音乐rpc性能调优之旅</title>
-        <pubTime>2019-06-04T03:50:50.000Z</pubTime>
-        
-        <tag>perf</tag>
-         
-         
-           
-             
-              <breadCrumb title="perf" url="http://wyj.shiwuliang.com/categories/perf/"/>
-          
-        </display>
-    </data>
-    </url>
-
-    
-  <url>
     <loc>http://wyj.shiwuliang.com/Arthas%20%E5%81%B6%E7%8E%B0%20ByteBuf%20LEAK.html</loc>
     <lastmod>2019-05-14T07:14:13.094Z</lastmod>
     <data>
