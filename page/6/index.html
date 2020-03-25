@@ -262,6 +262,157 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Tomcat异步Servlet实现分析——异步结束.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Tomcat异步Servlet实现分析——异步结束.html" itemprop="url">Tomcat异步Servlet实现分析——异步结束</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-08T20:04:13+08:00">
+                2018-03-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tomcat源码解析/" itemprop="url" rel="index">
+                    <span itemprop="name">tomcat源码解析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+          Tomcat异步Servlet实现分析——异步结束上篇我们说了tomcat如何开启异步上下文，这篇我们看tomcat如何结束异步。
+源码tomcat结束可以使用两种方式：complete和dispatch。complete用来告诉tomcat，异步结束了。
+先看这种方式：
+1234567case ASYNC_COMPLETE: &#123;    clearDispatches();    if (asyncStateMachine.asyncComplete()) &#123;        processSocketEvent(SocketEvent.OPEN_READ, true);  
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/Tomcat异步Servlet实现分析——异步结束.html#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Tomcat异步Servlet实现分析——开启异步上下文.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1618,159 +1769,6 @@ dubbo拆/粘包入口入口是Dubbo中的NettyCodecAdapter，这里包含了enco
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/RocketMQ源码解读——Broker消息存储.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="时无两">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="一时无两">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/RocketMQ源码解读——Broker消息存储.html" itemprop="url">RocketMQ源码解读——Broker消息存储</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-01-02T21:47:17+08:00">
-                2018-01-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/rocketmq源码/" itemprop="url" rel="index">
-                    <span itemprop="name">rocketmq源码</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-          RocketMQ源码解读——Broker消息存储
-我们这一篇来看broker的消息存储过程。
-broker启动时会启动一个NettyRemotingServer，我们之前说过，rocketmq通过netty做信息传递，这个NettyRemotingServer初始化时，会把NettyServerHandler加到Pipeline里，这个方法最终会执行processMessageReceived方法，根据消息的种类来分类处理消息。
-我们关注的是请求，关注一下processRequestCommand这个方法：
-
-先获取一个pair（rocketmq封装的类似键值对的对象），第一个值是proces
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/RocketMQ源码解读——Broker消息存储.html#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1825,7 +1823,7 @@ broker启动时会启动一个NettyRemotingServer，我们之前说过，rocketm
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">86</span>
+                  <span class="site-state-item-count">87</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1836,7 +1834,7 @@ broker启动时会启动一个NettyRemotingServer，我们之前说过，rocketm
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-count">23</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -1847,7 +1845,7 @@ broker启动时会启动一个NettyRemotingServer，我们之前说过，rocketm
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">82</span>
+                  <span class="site-state-item-count">83</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
@@ -1900,7 +1898,7 @@ broker启动时会启动一个NettyRemotingServer，我们之前说过，rocketm
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
   <span class="with-love">
     <i class="fa fa-时无两丶"></i>
   </span>

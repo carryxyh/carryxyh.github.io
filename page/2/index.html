@@ -262,6 +262,157 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Netty源码分析——ByteBuf开篇.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/Netty源码分析——ByteBuf开篇.html" itemprop="url">Netty源码分析——ByteBuf开篇</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-01T20:45:23+08:00">
+                2018-11-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty源码分析/" itemprop="url" rel="index">
+                    <span itemprop="name">Netty源码分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+          Netty源码分析——ByteBuf开篇前言这是ByteBuf开篇，主要介绍ByteBuf的结构，继承关系等，为我们后面的学习打一下铺垫。
+ByteBuf的作用主要是为了平衡CPU处理速度和网络传输速度。一般情况下，CPU处理速度都远大于网络传输速度，如果我们直接把数据写入网络，那么就会导致写入请求大量的被阻塞（都在争抢套接字）。为此我们引入缓冲区的概念，积累一定的数据再往网络中写。
+基本概念ByteBuf维护了两个索引，分别是读索引和写索引。图示：
++——————–+——————+—————-+| discardable bytes | readable bytes | writable b
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/Netty源码分析——ByteBuf开篇.html#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Netty源码分析——伙伴分配算法.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1610,155 +1761,6 @@ CPU敏感。默认启动的线程数是（CPU数量+3）/4，如果只有两个�
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Dubbo源码分析——负载均衡.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="时无两">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="一时无两">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/Dubbo源码分析——负载均衡.html" itemprop="url">Dubbo源码分析——负载均衡</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-03T21:48:53+08:00">
-                2018-08-03
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dubbo源码/" itemprop="url" rel="index">
-                    <span itemprop="name">dubbo源码</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-          Dubbo源码分析——负载均衡简介目前dubbo中支持了四种负载均衡，分别是：最小活跃（LeastActive）、随机（Random）、加权平均（RoundRobin）和一致性哈希（ConsistentHash）。废话不多说直接上源码。
-Random123456789101112131415161718192021222324252627int length = invokers.size();int totalWeight = 0;// 总共的权重boolean sameWeight = true;for (int i = 0; i &lt; length; i++) &#123;    i
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/Dubbo源码分析——负载均衡.html#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1813,7 +1815,7 @@ Random123456789101112131415161718192021222324252627int length = invokers.size();
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">86</span>
+                  <span class="site-state-item-count">87</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1824,7 +1826,7 @@ Random123456789101112131415161718192021222324252627int length = invokers.size();
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-count">23</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -1835,7 +1837,7 @@ Random123456789101112131415161718192021222324252627int length = invokers.size();
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">82</span>
+                  <span class="site-state-item-count">83</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
@@ -1888,7 +1890,7 @@ Random123456789101112131415161718192021222324252627int length = invokers.size();
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
   <span class="with-love">
     <i class="fa fa-时无两丶"></i>
   </span>

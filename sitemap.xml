@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://wyj.shiwuliang.com/Http2.html</loc>
+    
+    <lastmod>2020-03-25T02:37:05.681Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://wyj.shiwuliang.com/Arthas%20%E5%81%B6%E7%8E%B0%20ByteBuf%20LEAK.html</loc>
     
     <lastmod>2019-05-14T07:14:13.094Z</lastmod>

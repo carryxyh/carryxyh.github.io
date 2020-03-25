@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="http2," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Http2基本语义：数据流、消息和帧新的二进制分帧机制改变了客户端与服务器之间交换数据的方式。为了说明这个过程，我们需要了解 HTTP/2 的三个概念：  数据流：已建立的连接内的双向字节流，可以承载一条或多条消息。 消息：与逻辑请求或响应消息对应的完整的一系列帧。 帧：HTTP/2通信的最小单位，每个帧都包含帧头，至少也会标识出当前帧所属的数据流。  这些概念的关系总结如下：  所有通信都在一个">
+<meta name="keywords" content="http2">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Http2">
+<meta property="og:url" content="http://wyj.shiwuliang.com/Http2.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="Http2基本语义：数据流、消息和帧新的二进制分帧机制改变了客户端与服务器之间交换数据的方式。为了说明这个过程，我们需要了解 HTTP/2 的三个概念：  数据流：已建立的连接内的双向字节流，可以承载一条或多条消息。 消息：与逻辑请求或响应消息对应的完整的一系列帧。 帧：HTTP/2通信的最小单位，每个帧都包含帧头，至少也会标识出当前帧所属的数据流。  这些概念的关系总结如下：  所有通信都在一个">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15850529757349.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15850523770533.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15850525121365.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15850530665689.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15850533093478.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15850532130915.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15850541999210.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15850549246419.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15850549641847.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15850556285900.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15850567114518.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15850567301207.jpg">
+<meta property="og:updated_time" content="2020-03-25T02:37:05.681Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Http2">
+<meta name="twitter:description" content="Http2基本语义：数据流、消息和帧新的二进制分帧机制改变了客户端与服务器之间交换数据的方式。为了说明这个过程，我们需要了解 HTTP/2 的三个概念：  数据流：已建立的连接内的双向字节流，可以承载一条或多条消息。 消息：与逻辑请求或响应消息对应的完整的一系列帧。 帧：HTTP/2通信的最小单位，每个帧都包含帧头，至少也会标识出当前帧所属的数据流。  这些概念的关系总结如下：  所有通信都在一个">
+<meta name="twitter:image" content="http://wyj.shiwuliang.com/images/15850529757349.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/Http2.html"/>
+
+
+
+
+
+  <title>Http2 | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description"></h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/Http2.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Http2</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-03-24T22:13:36+08:00">
+                2020-03-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/http2/" itemprop="url" rel="index">
+                    <span itemprop="name">http2</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Http2"><a href="#Http2" class="headerlink" title="Http2"></a>Http2</h2><h3 id="基本语义：数据流、消息和帧"><a href="#基本语义：数据流、消息和帧" class="headerlink" title="基本语义：数据流、消息和帧"></a>基本语义：数据流、消息和帧</h3><p>新的二进制分帧机制改变了客户端与服务器之间交换数据的方式。为了说明这个过程，我们需要了解 HTTP/2 的三个概念：</p>
+<ul>
+<li><strong>数据流</strong>：已建立的连接内的双向字节流，可以承载一条或多条消息。</li>
+<li><strong>消息</strong>：与逻辑请求或响应消息对应的完整的一系列帧。</li>
+<li><strong>帧</strong>：HTTP/2通信的最小单位，每个帧都包含帧头，至少也会标识出当前帧所属的数据流。</li>
+</ul>
+<p>这些概念的关系总结如下：</p>
+<ul>
+<li>所有通信都在<em>一个TCP连接</em>上完成，此连接可以承载任意数量的双向数据流。</li>
+<li>每个数据流都有一个<em>唯一的标识符</em>和<em>可选的优先级信息</em>，用于承载双向消息。</li>
+<li>每条消息都是一条逻辑HTTP消息（例如请求或响应），包含一个或多个帧。</li>
+<li><em>帧是最小的通信单位</em>，承载着特定类型的数据，例如HTTP标头、消息负载等等。来自不同数据流的帧可以交错发送，然后再根据每个帧头的数据流标识符重新组装。</li>
+</ul>
+<p><img src="/images/15850529757349.jpg" alt=""></p>
+<h3 id="二进制分帧"><a href="#二进制分帧" class="headerlink" title="二进制分帧"></a>二进制分帧</h3><p>HTTP2所有性能增强的核心在于新的二进制分帧层，它定义了如何封装HTTP消息并在客户端与服务器之间传输。</p>
+<p><img src="/images/15850523770533.jpg" alt=""></p>
+<p>这里所谓的“层”，指的是位于套接字接口与应用可见的高级HTTP API之间一个经过优化的新编码机制：HTTP的语义（包括各种动词、方法、标头）都不受影响，不同的是传输期间对它们的编码方式变了。HTTP/1.x协议以换行符作为纯文本的分隔符，而HTTP/2将所有传输的信息分割为更小的消息和帧，并采用二进制格式对它们编码。</p>
+<h3 id="二进制帧详解"><a href="#二进制帧详解" class="headerlink" title="二进制帧详解"></a>二进制帧详解</h3><p>所有HTTP/2改进的核心是新的、长度固定的二进制帧层。与换行符分隔的纯文本HTTP 1.x协议相比，二进制成帧提供了更紧凑的表示形式，不仅处理效率更高，而且更易于正确实现。</p>
+<p>建立HTTP/2连接后，客户端和服务器就通过交换帧进行通信，这些帧是协议中最小的通信单元。所有帧使用一个公共的9字节报头，其中包含帧的长度，其类型，标志的位字段以及31位的流标识符。</p>
+<p>具体内容：</p>
+<ul>
+<li><code>24位</code>长度字段允许单个帧携带最多字节数据。</li>
+<li><code>8位</code>类型字段确定帧的格式和语义。</li>
+<li><code>8位</code>标志字段传达特定于帧类型的布尔标志。</li>
+<li><code>1位</code>保留字段始终设置为0。</li>
+<li><code>31位</code>流标识符唯一标识HTTP/2流。</li>
+</ul>
+<p><img src="/images/15850525121365.jpg" alt=""></p>
+<p><strong>如何保证帧的正确性？</strong></p>
+<p>对于TCP来说，HTTP/2也是跑上面的私有协议，而TCP有一个特点就是TCP是稳定的。所以TCP协议会保证另外一端收到的消息是完整的。换言之，如果将一条HTTP消息拆成三个帧，则TCP协议将保证我们一定可以在HTTP2层拿到完整的三个帧，不会存在缺少某一帧的情况。</p>
+<p><strong>HTTP2帧类型：</strong></p>
+<ul>
+<li>DATA：用于传输HTTP消息正文。</li>
+<li>HEADERS：用于传达流的Header字段。</li>
+<li>PRIORITY：用于传达流的发送者建议的优先级。</li>
+<li>RST_STREAM：用于信号流终止。</li>
+<li>SETTINGS：用于传达连接的配置参数。</li>
+<li>PUSH_PROMISE：用于表示承诺提供引用资源。</li>
+<li>PING：用于测量往返时间并执行“活性”检查。</li>
+<li>GOAWAY：用于通知对端停止为当前连接创建流。</li>
+<li>WINDOW_UPDATE：用于实现流和连接流控制。</li>
+<li>CONTINUATION：用于继续一系列Header块片段。</li>
+</ul>
+<h3 id="多路复用"><a href="#多路复用" class="headerlink" title="多路复用"></a>多路复用</h3><p>在HTTP/1.x中，如果客户端要想发起多个并行请求以提升性能，则必须使用多个TCP连接。这是HTTP/1.x交付模型的直接结果，该模型可以保证每个连接每次只交付一个响应（响应排队）。更糟糕的是，这种模型也会导致队首阻塞，从而造成底层TCP连接的效率低下。</p>
+<p>HTTP/2中新的二进制分帧层突破了这些限制，实现了完整的请求和响应复用：客户端和服务器可以将 HTTP 消息分解为互不依赖的帧，然后交错发送，最后再在另一端把它们重新组装起来。</p>
+<p><img src="/images/15850530665689.jpg" alt=""></p>
+<p>上图展示了同一个连接内并行的多个数据流。客户端正在向服务器传输一个DATA帧（<code>数据流5</code>），与此同时，服务器正向客户端交错发送<code>数据流1</code>和<code>数据流3</code>的一系列帧。因此，一个连接上同时有三个并行数据流。</p>
+<h3 id="数据流优先级"><a href="#数据流优先级" class="headerlink" title="数据流优先级"></a>数据流优先级</h3><p>将HTTP消息分解为很多独立的帧之后，我们就可以复用多个数据流中的帧，客户端和服务器交错发送和传输这些帧的顺序就成为关键的性能决定因素。为了做到这一点，HTTP/2标准允许每个数据流都有一个关联的权重和依赖关系：</p>
+<ul>
+<li>可以向每个数据流分配一个介于 1 至 256 之间的整数。</li>
+<li>每个数据流与其他数据流之间可以存在显式依赖关系。</li>
+</ul>
+<p>数据流依赖关系和权重的组合让客户端可以构建和传递“优先级树”，表明它倾向于如何接收响应。反过来，服务器可以使用此信息通过控制CPU、内存和其他资源的分配设定数据流处理的优先级，在资源数据可用之后，带宽分配可以确保将高优先级响应以最优方式传输至客户端。</p>
+<p><img src="/images/15850533093478.jpg" alt=""></p>
+<p>HTTP/2内的数据流依赖关系通过将另一个数据流的唯一标识符作为父项引用进行声明；如果忽略标识符，相应数据流将依赖于“根数据流”。声明数据流依赖关系指出，应尽可能先向父数据流分配资源，然后再向其依赖项分配资源。换句话说，“请先处理和传输<code>响应D</code>，然后再处理和传输<code>响应C</code>”。</p>
+<p>共享相同父项的数据流（即，同级数据流）应按其权重比例分配资源。例如，如果<code>数据流A</code>的权重为<code>12</code>，其同级<code>数据流B</code>的权重为<code>4</code>，那么要确定每个数据流应接收的资源比例，请执行以下操作：</p>
+<ul>
+<li>将所有权重求和：4 + 12 = 16</li>
+<li>将每个数据流权重除以总权重：A = 12/16, B = 4/16</li>
+</ul>
+<h3 id="头压缩"><a href="#头压缩" class="headerlink" title="头压缩"></a>头压缩</h3><p>每个HTTP传输都带有一组头，这些头描述了所传输的资源及其属性。在HTTP/1.x中，此元数据始终以纯文本形式发送，每次传输会增加<code>500-800字节</code>的开销，如果使用HTTP cookie，则有时会增加数千字节。为了减少这种开销并提高性能，HTTP/2使用<code>HPACK</code>压缩格式压缩请求和响应头元数据，该格式使用两种简单但功能强大的技术：</p>
+<ol>
+<li>它允许通过静态霍夫曼码对发送的标头字段进行编码，从而减小了它们各自的传输大小。</li>
+<li>它要求客户端和服务器都维护和更新以前看到的标头字段的索引列表（即，建立共享的压缩上下文），然后将该列表用作有效编码先前传输的值的参考。</li>
+</ol>
+<p>霍夫曼编码允许在传输时压缩各个值，而先前传输的值的索引列表使我们可以通过传输索引值来编码重复值（下图），该索引值可用于有效地查找和重建完整的标头键和值。</p>
+<p><img src="/images/15850532130915.jpg" alt=""></p>
+<p>头压缩有两张表，分别是动态表和静态表，截取一部分<code>HPACK STATIC TABLE</code>如下：</p>
+<p><img src="/images/15850541999210.jpg" alt=""></p>
+<p>与动态表一起组成了索引表：</p>
+<p><img src="/images/15850549246419.jpg" alt=""></p>
+<p>以常用的<code>User-Agent</code>为例，它在静态表中的索引值是<code>58</code>，它的值是不存在表中的，因为它的值是多变的。第一次请求的时候它的<code>key</code>用<code>58</code>表示，表示这是一个<code>User-Agent</code>，它的值部分会进行霍夫曼编码（如果编码后的字符串变更长了，则不采用霍夫曼编码）。</p>
+<p>服务端收到请求后，会将这个<code>User-Agent</code>添加到动态表中（<code>Dynamic Table</code>）缓存起来，分配一个新的索引值。客户端下一次请求时，假设上次请求<code>User-Agent</code>的在表中的索引位置是<code>62</code>，此时只需要发送<code>0xBE</code>（高位置1，表示这个字节是一个完全索引值，即key和value都在索引中），便可以代表具体的值比如：<code>User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.146 Safari/537.36</code>。</p>
+<p><img src="/images/15850549641847.jpg" alt=""></p>
+<h3 id="服务端推送"><a href="#服务端推送" class="headerlink" title="服务端推送"></a>服务端推送</h3><p>HTTP/2的另一个强大新功能是服务器能够为单个客户端请求发送多个响应。也就是说，除了对原始请求的响应外，服务器还可以将 其他资源推送到客户端，而客户端不必显式地请求每个资源。</p>
+<p><img src="/images/15850556285900.jpg" alt=""></p>
+<p>所有服务器推送流均通过<code>PUSH_PROMISE帧</code>启动，这表明服务器打算将所描述的资源推送到客户端，并且需要在请求推送资源的响应数据之前进行传递。此交付顺序至关重要：客户端需要知道服务器打算推送哪些资源，以避免对这些资源创建自己的和重复的请求。满足此要求的最简单策略是<code>PUSH_PROMISE</code>在父级响应（即DATA帧）之前发送所有仅包含承诺资源的HTTP标头的帧。</p>
+<p>客户端一旦接收到<code>PUSH_PROMISE帧</code>，就可以选择是否拒绝流（通过<code>RST_STREAM帧</code>）（例如，资源已经在缓存中），这是对HTTP/1.x的重要改进。相比之下，对HTTP/1.x而言，资源内联的使用是一种流行的“优化”，等效于“强制推送”：客户端无法选择退出，取消它或单独处理内联的资源。</p>
+<p>使用HTTP/2，客户端可以完全控制服务器推送的使用方式。客户端可以限制并发推送的流的数量；调整初始流控制窗口，以控制首次打开流时推送多少数据；完全禁用服务器推送。这些首选项通过<code>SETTINGS</code>帧在HTTP/2连接开始时进行通信，并且可以随时更新。</p>
+<p>为了消除客户端启动的流和服务器启动的流之间的流ID冲突，计数器要偏移：客户端启动的流具有奇数的流ID，而服务器启动的流具有偶数的流ID。</p>
+<h3 id="流量控制"><a href="#流量控制" class="headerlink" title="流量控制"></a>流量控制</h3><p><strong>为什么不依赖于TCP的流控？</strong></p>
+<p>由于HTTP/2流是在单个TCP连接中多路复用的，因此TCP流控制既不够精细，又没有提供必要的应用程序级API来调节各个流的传递。</p>
+<p><strong>解决：</strong></p>
+<p>HTTP/2提供了一组简单的构建块，它们允许客户端和服务器实现自己的流级和连接级流控制：</p>
+<ul>
+<li>流量控制是定向的。每个接收方都可以选择设置每个流和整个连接所需的任何窗口大小。</li>
+<li>流量控制是基于信用的。每个接收方都通告其初始连接和流控制窗口（以字节为单位），每当发送方发出一个DATA帧时，该窗口就会减小。发送方通过发送<code>WINDOW_UPDATE帧</code>来告诉对方增加该窗口。</li>
+<li>流量控制无法禁用。建立HTTP/2连接后，客户端和服务器交换<code>SETTINGS帧</code>，这将在两个方向上设置流​​控制窗口的大小，流控制窗口的默认值设置为<code>65535</code>字节。但是接收方可以设置较大的最大窗口大小（2的31次方 - 1 字节），并且当它收到数据时，通过回复<code>WINDOW_UPDATE帧</code>来维护窗口大小。</li>
+<li>流控制是逐跳的，不是端到端的。也就是说，中介可以使用它来控制资源使用并根据自己的标准和启发式方法实施资源分配机制。</li>
+</ul>
+<p>HTTP/2没有指定用于实现流控制的任何特定算法。取而代之的是，它提供了简单的构建块，并将实现放到到客户端和服务器，可以使用它来实施自定义策略来规范资源使用和分配，以及实现可以帮助改善实际性能和感知性能的新功能。</p>
+<p>例如，应用程序层流控制允许浏览器仅获取特定资源的一部分，通过将流流控制窗口减小到零来暂停获取，然后稍后再恢复。</p>
+<p><strong>具体算法：</strong></p>
+<ul>
+<li>发送端保有一个流量控制窗口（window）初始值。初始值的设定请参考<code>SETTING帧</code>的 <code>SETTINGS_INITIAL_WINDOW_SIZE</code>。</li>
+<li>发送端每发送一个DATA帧，就把window递减，递减量为这个帧的大小。如果当前window小于帧大小，那么这个帧就必须被拆分到不大于window，如果window等于0，就不能发送任何帧。</li>
+<li>接收端可以发送<code>WINDOW_UPDATE帧</code>给发送端，发送端以帧内指定的<code>Window Size Increment</code>作为增量，加到window上。</li>
+</ul>
+<p><strong>流量控制只适用于数据帧</strong>。</p>
+<h3 id="启动新流"><a href="#启动新流" class="headerlink" title="启动新流"></a>启动新流</h3><p>HEADERS帧用于声明和传达有关新请求的元数据。应用程序有效负载在DATA帧内独立传递。</p>
+<p>把HEADER帧和DATA帧分开允许协议将“控制流量”的处理与应用数据的传递分离开。例如，流控制仅应用于DATA帧，而非DATA帧始终以高优先级进行处理。</p>
+<p><img src="/images/15850567114518.jpg" alt=""></p>
+<h3 id="发送数据"><a href="#发送数据" class="headerlink" title="发送数据"></a>发送数据</h3><p>创建了新的流，并发送了HTTP头，则使用DATA帧发送应用程序有效负载。有效负载可以在多个DATA帧之间分配，最后一个帧通过切换帧头中的<code>END_STREAM</code>标志来指示消息的结尾。</p>
+<p><img src="/images/15850567301207.jpg" alt=""></p>
+<p><code>End Stream</code>标志被设置为<code>false</code>，表示客户端尚未完成应用程序有效载荷的发送；更多的DATA帧即将到来。</p>
+<h3 id="引用文章"><a href="#引用文章" class="headerlink" title="引用文章"></a>引用文章</h3><p>[1] <a href="https://hpbn.co/http2/#http2-frame-header" target="_blank" rel="noopener">https://hpbn.co/http2/#http2-frame-header</a><br>[2] <a href="https://juejin.im/entry/5dba82c3e51d452a17370818#comment" target="_blank" rel="noopener">https://juejin.im/entry/5dba82c3e51d452a17370818#comment</a><br>[3] <a href="http://http2.github.io/http2-spec/compression.html" target="_blank" rel="noopener">http://http2.github.io/http2-spec/compression.html</a><br>[4] <a href="https://blog.csdn.net/u010129119/article/details/79361949#1-%E7%AE%80%E4%BB%8B" target="_blank" rel="noopener">https://blog.csdn.net/u010129119/article/details/79361949#1-%E7%AE%80%E4%BB%8B</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/http2/" rel="tag"># http2</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Arthas 偶现 ByteBuf LEAK.html" rel="next" title="Arthas 偶现 ByteBuf LEAK">
+                <i class="fa fa-chevron-left"></i> Arthas 偶现 ByteBuf LEAK
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">87</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">23</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">83</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Http2"><span class="nav-number">1.</span> <span class="nav-text">Http2</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#基本语义：数据流、消息和帧"><span class="nav-number">1.1.</span> <span class="nav-text">基本语义：数据流、消息和帧</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#二进制分帧"><span class="nav-number">1.2.</span> <span class="nav-text">二进制分帧</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#二进制帧详解"><span class="nav-number">1.3.</span> <span class="nav-text">二进制帧详解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多路复用"><span class="nav-number">1.4.</span> <span class="nav-text">多路复用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据流优先级"><span class="nav-number">1.5.</span> <span class="nav-text">数据流优先级</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#头压缩"><span class="nav-number">1.6.</span> <span class="nav-text">头压缩</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#服务端推送"><span class="nav-number">1.7.</span> <span class="nav-text">服务端推送</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#流量控制"><span class="nav-number">1.8.</span> <span class="nav-text">流量控制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#启动新流"><span class="nav-number">1.9.</span> <span class="nav-text">启动新流</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#发送数据"><span class="nav-number">1.10.</span> <span class="nav-text">发送数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#引用文章"><span class="nav-number">1.11.</span> <span class="nav-text">引用文章</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
