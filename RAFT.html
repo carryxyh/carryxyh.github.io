@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="raft," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="RAFT写在前面RAFT是比PAXOS更容易理解的一致性算法，即使容易理解，依然细节很多。建议有英语基础的初学者还是要看论文。本篇文章主要列举RAFT中的异常场景，对比论文看可以达到更好的学习效果。 选举选举阶段，主要解决两个问题：  每个节点都把票投给了自己。 leader宕机。  每个节点都把选票投给自己解决方案是随机的election timeout。election timeout用来控制">
+<meta name="keywords" content="raft">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAFT">
+<meta property="og:url" content="http://wyj.shiwuliang.com/RAFT.html">
+<meta property="og:site_name" content="一时无两">
+<meta property="og:description" content="RAFT写在前面RAFT是比PAXOS更容易理解的一致性算法，即使容易理解，依然细节很多。建议有英语基础的初学者还是要看论文。本篇文章主要列举RAFT中的异常场景，对比论文看可以达到更好的学习效果。 选举选举阶段，主要解决两个问题：  每个节点都把票投给了自己。 leader宕机。  每个节点都把选票投给自己解决方案是随机的election timeout。election timeout用来控制">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935184849339.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935185587974.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935186449092.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935187830380.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935188668214.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935202668444.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935217045868.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935221025531.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935248145077.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935241403793.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935241594575.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935241942762.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935269805706.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935270053502.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15935270714443.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936036764473.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936055463294.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/%E6%AF%8F%E6%AC%A1%E5%8F%AA%E5%A2%9E%E5%88%A0%E4%B8%80%E4%B8%AA%E8%8A%82%E7%82%B9.png">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936082038829.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936082762411.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936739754136.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936907133214.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936905637859.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936820222524.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936820519175.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936820336250.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936792644544.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936820850694.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936091334120.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936096553089.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936586192248.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/15936603172953.jpg">
+<meta property="og:image" content="http://wyj.shiwuliang.com/images/%E5%8F%AA%E6%9C%89leaderlease.png">
+<meta property="og:updated_time" content="2020-07-02T12:57:18.078Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RAFT">
+<meta name="twitter:description" content="RAFT写在前面RAFT是比PAXOS更容易理解的一致性算法，即使容易理解，依然细节很多。建议有英语基础的初学者还是要看论文。本篇文章主要列举RAFT中的异常场景，对比论文看可以达到更好的学习效果。 选举选举阶段，主要解决两个问题：  每个节点都把票投给了自己。 leader宕机。  每个节点都把选票投给自己解决方案是随机的election timeout。election timeout用来控制">
+<meta name="twitter:image" content="http://wyj.shiwuliang.com/images/15935184849339.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wyj.shiwuliang.com/RAFT.html"/>
+
+
+
+
+
+  <title>RAFT | 一时无两</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">一时无两</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description"></h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://wyj.shiwuliang.com/RAFT.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="时无两">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="一时无两">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">RAFT</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-07-02T20:53:36+08:00">
+                2020-07-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/raft/" itemprop="url" rel="index">
+                    <span itemprop="name">raft</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="RAFT"><a href="#RAFT" class="headerlink" title="RAFT"></a>RAFT</h1><h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>RAFT是比PAXOS更容易理解的一致性算法，即使容易理解，依然细节很多。建议有英语基础的初学者还是要看<a href="https://raft.github.io/raft.pdf" target="_blank" rel="noopener">论文</a>。本篇文章主要列举RAFT中的异常场景，对比论文看可以达到更好的学习效果。</p>
+<h2 id="选举"><a href="#选举" class="headerlink" title="选举"></a>选举</h2><p>选举阶段，主要解决两个问题：</p>
+<ol>
+<li>每个节点都把票投给了自己。</li>
+<li>leader宕机。</li>
+</ol>
+<h4 id="每个节点都把选票投给自己"><a href="#每个节点都把选票投给自己" class="headerlink" title="每个节点都把选票投给自己"></a>每个节点都把选票投给自己</h4><p>解决方案是随机的election timeout。election timeout用来控制一个follower合适变成candidate。假定三个节点的情况：</p>
+<p><img src="./images/15935184849339.jpg" alt=""></p>
+<p>由于随机election timeout是随机值，假定A先成为candidate：</p>
+<p><img src="./images/15935185587974.jpg" alt=""></p>
+<p>此时A开始发起term 1的投票，此时A成为leader：</p>
+<p><img src="./images/15935186449092.jpg" alt=""></p>
+<p>平分投票的情况，此时节点C和D同时成为candidate并发起投票：</p>
+<p><img src="./images/15935187830380.jpg" alt=""></p>
+<p>此时A和B分别投票给D和C。</p>
+<p><img src="./images/15935188668214.jpg" alt=""></p>
+<p>产生了平分选票的情况。即此term没有leader产生，此时candidtate会等待下一个election timeout周期，然后开始继续投票。</p>
+<p>注意，当follower收到选票后或者leader的append log消息时，需要重置自己的election timeout。这个机制让我们可以更快的选出一个leader。</p>
+<h4 id="leader宕机"><a href="#leader宕机" class="headerlink" title="leader宕机"></a>leader宕机</h4><p>leader宕机时，由于没有append log消息来重置follower的election timeout，所以follower会成为candidate，并且开始新一轮选举。具体过程与第一个问题一致，不多赘述。</p>
+<h2 id="日志复制"><a href="#日志复制" class="headerlink" title="日志复制"></a>日志复制</h2><p>这个过程会存在多种异常情况：</p>
+<ol>
+<li>follower存在leader不存在的日志。</li>
+<li>follower缺失了leader的日志。</li>
+<li>提交之前任期内的日志条目。</li>
+<li>脑裂，出现多主问题。</li>
+</ol>
+<p>下文我们以<code>[index, term]</code>的方式表示一条log。</p>
+<p>具体的follower接受到append log的逻辑如下，详细的可以看论文：</p>
+<ol>
+<li>如果<code>term &lt; currentTerm</code>就返回<code>false</code>。</li>
+<li>如果日志在<code>prevLogIndex</code>位置处的日志条目的任期号和<code>prevLogTerm</code>不匹配，则返回<code>false</code>。</li>
+<li>如果已经存在的日志条目和新的产生冲突（索引值相同但是任期号不同），删除这一条和之后所有的附加日志中尚未存在的任何新条目。</li>
+<li>如果<code>leaderCommit &gt; commitIndex</code>，令<code>commitIndex</code>等于<code>leaderCommit</code>和<code>新日志条目索引值中较小的一个</code>。</li>
+</ol>
+<h4 id="follower存在leader不存在的日志"><a href="#follower存在leader不存在的日志" class="headerlink" title="follower存在leader不存在的日志"></a>follower存在leader不存在的日志</h4><p>此时集群的状态如下：</p>
+<p><img src="./images/15935202668444.jpg" alt=""></p>
+<p>此时leader的最新一条为<code>[10, 6]</code>。我们挑选follower e和follower f看看RAFT如何处理这种情况。</p>
+<p>对于follower e，log <code>[6, 4]</code>和<code>[7, 4]</code>与leader的日志不匹配。<br>对于follower f，log <code>[4, 2]</code>之后的日志全都不匹配。</p>
+<p>RAFT会记录每个follower的位点，这个位点用来记录<code>需要发送给他的下一个日志条目的索引值</code>，初始化为leader的最后索引值+1，这个例子中，leader最新的位点为10，则follower的复制位点被初始化为11。</p>
+<p><strong>follower e：</strong></p>
+<p>RAFT开始向follower e发送消息，RAFT复制方式是从后向前复制，此时复制<code>[10, 6]</code>（以每次复制一条看更容易理解）给follower e，由于follower在index=10位置不存在消息，返回false。此时leader会继续向前尝试，知道找到匹配的日志。当leader尝试将<code>[7, 5]</code>发送给follower e的时候，e会发现index=7位置的term与leader不符合，此时删除index=7和之后所有的日志。</p>
+<p>按照这个规则，follower e会删除<code>[6, 4]</code>和<code>[7, 4]</code>两条日志，当leader继续发送<code>[5, 4]</code>的时候，follower e返回true。此时leader记录follower e的复制位点为index=6，后续将<code>[6, 5]</code>和之后的log一条条复制给e。</p>
+<p>了解了follower e的思路之后，可以对照论文的规则即可推断出follower f的复制逻辑。</p>
+<h4 id="follower缺失了leader的日志"><a href="#follower缺失了leader的日志" class="headerlink" title="follower缺失了leader的日志"></a>follower缺失了leader的日志</h4><p><img src="./images/15935217045868.jpg" alt=""></p>
+<p>选取follower b，follower b此时缺失了<code>[5, 4]</code>和之后所有的日志。此时leader会按照上述的逻辑找到index=5，并尝试把之后所有的日志复制给follower b。</p>
+<h4 id="提交之前任期内的日志条目"><a href="#提交之前任期内的日志条目" class="headerlink" title="提交之前任期内的日志条目"></a>提交之前任期内的日志条目</h4><p>RAFT规定，不能删除已经提交到状态机的条目，但是按照我们之前的逻辑不能规避这个问题，所以RAFT规定，<code>leader只能提交当前任期内的log到状态机</code>。具体看看：</p>
+<p><img src="./images/15935221025531.jpg" alt=""></p>
+<ul>
+<li>图(a)中，S1是leader，部分的复制了index=2的日志条目，此时<code>[2, 2]</code>未被commit。</li>
+<li>图(b)中，S1宕机，然后S5在任期3里通过S3、S4和自己的选票赢得选举，然后从客户端接收了一条不一样的日志条目放在了索引2处。</li>
+<li>图(c)中，S5又崩溃了，S1重新启动，选举成功，开始复制日志。在这时，来自任期2的那条日志已经被复制到了集群中的大多数机器上。按照之前的规则，2已经被leader commit（满足大多数）。</li>
+<li>图(d)中，S1又宕机了，此时S5可以成为leader，因为S5满足成为主的条件，term=3 &gt; 2，且最新的日志index=2，比大多数节点（如S2/S3/S4）的日志都新。此时，按照复制规则，S5会把自己的<code>[2, 3]</code>覆盖到其他机器，并且删除已经commit的<code>[2, 2]</code>这条log。这是致命的错误。</li>
+</ul>
+<p>解决方式就是我们说过的，leader只能提交任期内的日志条目。</p>
+<p>继续以上述的场景为例，假定此时整个集群的状态进行到图(c)。由于我们规定leader只能提交任期内的日志条目，此时term=4，所以即使<code>[2, 2]</code>已经被复制到大多数的follower上，但是当前term=4，所以leader不能提交index=2的这条log，此时commitIndex仍然等于1。</p>
+<p>此时存在两个情况，第一种就是S1挂掉，第二种就是S1并没有挂掉。</p>
+<ol>
+<li>S1并没有挂掉，则S1会继续给其他follower复制log，当走到图(e)时，<code>[3, 4]</code>这条日志被大多数收到，且term=4符合<code>leader只能提交任期内的日志条目</code>这个要求，此时commitIndex=3，提交index=3的这条log到状态机。那么如果提交完了S1挂了呢？此时S5不会成为主，由于S5最多只能收到S4和自己的投票，不满足大多数。新的leader只会在S2和S3中产生。</li>
+<li>S1挂掉，假定S5成为leader，此时假定S5一直存活，那么整个集群的状态会继续来到图(d)，注意！由于此时<code>[2, 2]</code>未被交道状态机，所以即使S5的<code>[2, 3]</code>这条log覆盖到S1、S2和S3的<code>[2, 2]</code>，也不会产生任何问题，因为<code>[2, 2]</code>的log未被提交。</li>
+</ol>
+<p>考虑更极端的情况，假定整个集群状态在在图(e)，S1刚刚提交了<code>[3, 4]</code>（当然<code>[2, 2]</code>也被一起提交了），但是还没来得及通知S2和S3提交<code>[3, 4]</code>就挂了，此时仍然不会导致删除已经提交的log。因为即使S1挂了，S5和S4也不会成为主，由于S2和S3的日志都比他们新，新的leader只会出现在S2和S3中。</p>
+<h4 id="脑裂，出现多主问题"><a href="#脑裂，出现多主问题" class="headerlink" title="脑裂，出现多主问题"></a>脑裂，出现多主问题</h4><p>RAFT保证即使出现了网络隔离，依然能够保证数据强一致性。</p>
+<p>假定此时集群状态如下：</p>
+<p><img src="./images/15935248145077.jpg" alt=""></p>
+<p>此时节点B和A被隔离，B仍然是主：</p>
+<p><img src="./images/15935241403793.jpg" alt=""></p>
+<p>C、D和E由于超时没有收到leader的心跳，重新选主，此时假定C成为主，term+1后为2（这里仍然保证了每个term只有1个leader）：</p>
+<p><img src="./images/15935241594575.jpg" alt=""></p>
+<p>client分别发送SET 8和SET 3到两个leader上。由于B和A独立的分区不满足大多数，所以不能提交。而SET 8落到了上半区中，此时上半区满足大多数，可以提交：</p>
+<p><img src="./images/15935241942762.jpg" alt=""></p>
+<p>后续当A和B的隔离被解除时，C的term=2高于B和A的1，此时B和A直接退化成follower，并且会把SET 8复制到自己的日志中，保证整个集群的状态一致。</p>
+<h2 id="集群拓扑变化"><a href="#集群拓扑变化" class="headerlink" title="集群拓扑变化"></a>集群拓扑变化</h2><p>我们用<code>CO</code>表示旧集群配置，新集群配置用<code>CN</code>表示。CO和CN共存我们用<code>CO并CN</code>表示。具体集群变更流程如下：</p>
+<ol>
+<li>当集群成员配置改变时，leader收到重配置命令从CO切成CN。</li>
+<li>leader在本地生成一条新的log，其内容是CO并CN，代表当前时刻新旧拓扑配置共存，写入本地日志，同时将该log推送至其他follower。</li>
+<li>follower收到log后更新本地日志，并且此时就以该配置作为自己了解的全局拓扑结构。</li>
+<li>多数follower确认了C0并CN这条日志的时候，leader就commit这条log。</li>
+<li>接下来leader生成一条新的log，其内容是全新的配置CN，同样将该log写入本地，同时推送到follower。</li>
+<li>follower收到新的配置CN后，将其写入日志，并且从此刻起，就以新的配置作为系统拓扑，并且如果发现自己不在Cnew这个配置中会自动退出。</li>
+<li>leader收到多数follower的确认消息以后，向客户端发起命令执行成功的消息。</li>
+</ol>
+<p>异常分析：</p>
+<ol>
+<li>如果leader的CO并CN尚未推送到follower，leader就挂了，此时选出的新的leader并不包含这条日志，此时新的leader依然使用CO作为全局拓扑配置。</li>
+<li>如果leader的CO并CN推送到大部分的follower后就挂了，此时选出的新的leader可能是CO也可能是CN中的某个follower。</li>
+<li>如果leader在推送CN配置的过程中挂了，那么和2一样，新选出来的leader可能是CO也可能是CN中的某一个，那么此时客户端继续执行一次改变配置的命令即可。</li>
+<li>如果大多数的follower确认了CN这个消息后，那么接下来即使leader挂了，新选出来的leader也肯定是位于CN这个配置中的。</li>
+</ol>
+<p>另外，为什么不能直接从CO切换成CN呢？因为可能产生多主。</p>
+<p>解决方案RAFT论文中也提到了，有两种，比较推荐第一种：</p>
+<ol>
+<li>每次只允许增加或移除一个节点。</li>
+<li>join consensus。（两阶段提交）</li>
+</ol>
+<p>除了成员变更的实现，成员变更还带来一系列问题：</p>
+<ol>
+<li>新节点如何追赶。</li>
+<li>删除的节点是当前leader。</li>
+<li>为什么要有PRE-VOTE。</li>
+<li>被移除的节点破坏当前集群的选举。</li>
+</ol>
+<h4 id="多主"><a href="#多主" class="headerlink" title="多主"></a>多主</h4><p>假设拓扑关系如下，S1为leader：</p>
+<p><img src="./images/15935269805706.jpg" alt=""></p>
+<p>此时变更了系统配置，将集群范围扩大为5个，新增了S4和S5两个节点，这个消息被分别推送至S1、S2和S3，但是假如只有S3收到了消息并处理，S1和S2尚未得到该消息：</p>
+<p><img src="./images/15935270053502.jpg" alt=""></p>
+<p>这时在S1和S2的眼里，拓扑依然是<code>[S1, S2, S3]</code>，而在S3的眼里拓扑则变成了<code>[S1, S2, S3, S4, S5]</code>。假如此时由于某种原因触发了一次新的选主，S2和S3分别发起选主的请求：</p>
+<p><img src="./images/15935270714443.jpg" alt=""></p>
+<p>最终，候选者S2获得了S1和S2自己的投票，那么在它眼里，它就变成了leader。而S3获得了S4、S5和S3自己的投票，在它眼里自己也变成了leader。</p>
+<p><img src="./images/15936036764473.jpg" alt=""></p>
+<p>这张图很好的说明了问题的关键，即在红色箭头所示的时间点，出现了两个多数派：</p>
+<ol>
+<li>Server1、2组成的，以CO为拓扑关系的多数派，此时Server1和Server2可以根据CO的配置选择出来一个leader。</li>
+<li>Server3、4、5组成的，以CN为拓扑关系的多数派，此时Server3、4、5可以根据CN的配置选择出来一个leader。</li>
+</ol>
+<h4 id="每次只允许增加或移除一个节点"><a href="#每次只允许增加或移除一个节点" class="headerlink" title="每次只允许增加或移除一个节点"></a>每次只允许增加或移除一个节点</h4><p>具体步骤：</p>
+<ol>
+<li>由于每次增减一个节点方式无论如何CO和CN都会相交，所以RAFT采用了直接提交一个特殊的replicated LogEntry的方式来进行集群关系变更。</li>
+<li>跟普通的LogEntry提交的不同点，该LogEntry不需要commit就生效，只需要append到log中即可。(“The New configuration takes effect on each server as soon as it is added to the server’s log”)。</li>
+<li>后一轮MemberShip Change的开始必须在前一轮MemberShip Change Commit之后进行，以避免出现多个leader的问题。</li>
+</ol>
+<p>这个解决方案是最常用的，实现简单。解决方案的核心为<code>增删一个节点的时候，新旧配置中的大多数必定有部分重叠</code>：</p>
+<p><img src="./images/15936055463294.jpg" alt=""></p>
+<p><img src="./images/%E6%AF%8F%E6%AC%A1%E5%8F%AA%E5%A2%9E%E5%88%A0%E4%B8%80%E4%B8%AA%E8%8A%82%E7%82%B9.png" alt="每次只增删一个节点"></p>
+<p>我们以三个节点变化到四个节点为例。</p>
+<ul>
+<li>图(a)中，三个节点分别是S1、S2和S3，此时S1为主。</li>
+<li>图(b)中，新增节点S4，S4由于是新节点，所以S4是知道集群拓扑全貌的。作为leader的S1收到请求，准备开始推送，此时按照上述规则，S1的该条config log还未被commit，但是也已经知道集群拓扑全貌了。</li>
+<li>图(c)中，S1宕机，此时S4仍然以S1、S2、S3和S4作为集群拓扑全貌，但是S2和S3依然是旧配置。此时，S2、S3和S4都可能成为leader。其中S2和S3由于不知道S4的存在，S2只要收到自己和S3的投票，就会成为leader。S4主动发起投票的情况下，会收到S2、S3和自己的投票，所以也可能成为主。</li>
+<li>图(d)中，此时假定S2成为主，S1恢复，此时S2不知道S4的存在，所以不会给他发送心跳，此时S4被孤立。并且此时，这次membership变更会被认为失败，因为只有当大多数commit了config log，leader才会响应客户端，而当前的场景中，append S4这条config log最终会被S2上的日志给删除掉，此时集群恢复图(a)的旧配置的情况（仅仅相当于leader变成了S2）。</li>
+<li>假定图(b)中，S1没有宕机，并且把消息赋值给了S2，此时就满足了集群中大多数已经收到消息，可以commit并且返回给client表示此次membership变更成功。但是提交之后S1宕机，来到图(e)。</li>
+<li>图(e)中，S3不会成为leader，因为S2和S4有比S2更新的日志（append S4这条config log也是一条log，但是S3没有这条log，所以S3的index一定小于S2和S4），此时leader只可能在S2和S4中选出。</li>
+<li>假定S4选举成为新leader，来到图(f)。后面S4会把append S4这条config log复制给S3，此时所有集群的拓扑关系均为最新的配置。</li>
+</ul>
+<p>这里引入另外一个问题，即图(d)中，S4被孤立，此时S2还不知道S4的存在，当然也不会给S4发送心跳，此时S4会超时并且成为candidate开始发起新一轮投票，此时如何处理这种情况？这个我们后面会继续讨论。先看可能出现的问题。</p>
+<p><strong>为什么后一轮membership change必须在前一轮membership change完成之后（完成即commit之后）进行</strong>：</p>
+<p><img src="./images/15936082038829.jpg" alt=""></p>
+<p>这个图很好的说明了这个问题，如果这样操作此时可能出现多主问题。</p>
+<p><strong>为什么Single MemberShip Change LogEntry只需要append持久化到log（而不需要 commit）就可以应用</strong>：</p>
+<p><img src="./images/15936082762411.jpg" alt=""></p>
+<p>如图所示：leader S1接收到集群变更请求将集群状态从<code>[S1、S2、S3、S4]</code>变更为<code>[S2、S3、S4]</code>，提交到所有节点之后commit之后，返回客户端集群状态变更完成（如图a），S1退出（如图b）；S1 退出之后，S1、S2、S3由于没有接收到leader S1的心跳，导致进行选举，但是不幸的是S4故障退出。假设这个时候S2、S3由于Single MemberShip Change LogEntry没有commit还是以<code>[S1、S2、S3、S4]</code>作为集群状态，那么集群没法继续工作。但是实质上在图（b）中S1返回客户端集群状态变更请求完成之后，实质上是认为可独立进入正常状态。</p>
+<h4 id="join-consensus"><a href="#join-consensus" class="headerlink" title="join consensus"></a>join consensus</h4><p>这是一种类似两阶段提交的思想：</p>
+<p><img src="./images/15936739754136.jpg" alt=""></p>
+<p>这种实现比较复杂，我们需要保证我们的CO并CN被提交到了CO中的大部分和CN中的大部分。温习一下脑裂现象并阐述一下join consensus如何解决这个问题。这里假定我们的新旧配置如下图所示：</p>
+<p><img src="./images/15936907133214.jpg" alt=""></p>
+<p><img src="./images/15936905637859.jpg" alt=""></p>
+<p>注意这个场景中，我们就配置是X2、Y1和Z2，而新配置是X1、Y1和Z2，与我们之前提到的单纯的新增节点不同，我们这里的场景是变更节点（X2替换为X1）。</p>
+<p>看看为什么会产生脑裂现象，第一张图为初始状态，C1表示旧配置<code>[X2, Y1, Z2]</code>，C2表示新配置<code>[X1, Y1, Z2]</code>：</p>
+<p><img src="./images/15936820222524.jpg" alt=""></p>
+<p>推送C2到leader：</p>
+<p><img src="./images/15936820519175.jpg" alt=""></p>
+<p>Y1立刻切换到了C2配置，此时认为集群中存在<code>[X1, Y1, Z2]</code>，Y1将这条日志推送给X1，所以X1也更新配置为最新（图中的C1和C2表示两条配置变更日志）：</p>
+<p><img src="./images/15936820336250.jpg" alt=""></p>
+<p>此时就形成了两个多数派，分别是X1、Y1组成的新配置下的多数派和X2、Z2组成的旧配置下的多数派，此时两个多数派可以同时开始工作（图中的x表示X1和Y1组成的多数派收到了一条log，而y表示X2和Z2组成的多数派收到了另外一条log）：</p>
+<p><img src="./images/15936792644544.jpg" alt=""></p>
+<p>如何解决这个问题，上面也已经说过了，我们需要先推送CO并CN的配置（CO=C1，CN=C2）到新集群中的多数派和旧集群的多数派，而CO并CN的配置如下所示：</p>
+<p><img src="./images/15936820850694.jpg" alt=""></p>
+<p>拥有CO并CN的机器做任何决定，需要CO和CN下的大多数都同意才可以，比如提交。按照这个规定，Y1和X1就不能成为大多数，当然就不能commit log。</p>
+<p>我们继续推演下去：</p>
+<p>此时如果产生了分区，即Y1和X1单独一个分区，X2和Z2单独一个分区（这样分区导致CO并CN永远无法推送到X2和Y2上面，对于客户端来说，这次membership变更会被认为失败，需要再次进行成员变更）。此时X2和Z2的分区可以独立做决定（比如选主和commit log）。而X1和Y1形成的分区，再假定两种情况：</p>
+<ol>
+<li>如果Y1这个leader宕机，重新启动后，由于持有CO并CN这个配置，所以Y1和X1都无法通过竞选成为leader（无法得到CO的大多数同意）。而X2和Z2可以，此时X2和Z2由于进行了一次竞选，所以term一定大于Y1的term，当网络恢复的时候，Y1会自动成为follower。</li>
+<li>如果Y1这个leader不宕机，也没什么问题，因为Y1虽然是leader，但是不能commit log。同样的，当网络恢复后，由于X2和Z2成为leader后的term一定大于Y1，所以Y1和新的X1在网络恢复后都会成为follower。</li>
+</ol>
+<p>而一旦CO并CN的配置被推送到了CO的大多数和CN的大多数的时候，就可以给客户端返回membership变更成功了，此时不管怎么分区，我们都可以保证整个集群正常运行，具体的逻辑这里不再进行推演。</p>
+<h4 id="新节点如何追赶"><a href="#新节点如何追赶" class="headerlink" title="新节点如何追赶"></a>新节点如何追赶</h4><p><img src="./images/15936091334120.jpg" alt=""></p>
+<p>这两张图展示了为什么追赶会引发可用性问题。</p>
+<ul>
+<li>图(a)中，新增S4已经成功，但是S3宕机。此时任何一条消息需要大多数（3个）节点收到消息才可以commit，由于S4的日志是空的，追赶需要很长时间，此时整个集群出在不可用状态，因为所有的新日志的commit都会等待非常久。</li>
+<li>图(b)中，新增S4-S6三个节点，同样的，由于一条消息需要大多数（4个）节点收到消息才可以commit，由于达到大多数一定包含S4-S6中的一台，所以会出现与图(a)一样的问题。</li>
+</ul>
+<p>解决问题的方式这里以ETCD为例，ETCD引入了learner角色，新加入的节点设置为learner状态，该状态的节点不计在<code>majority</code>，也就不参与投票和<code>commit</code>，当<code>learner</code>追上集群的进度时，提升为正常的节点，完成<code>config change</code>。</p>
+<p>RAFT论文中也提到了多轮复制的方案：</p>
+<p><img src="./images/15936096553089.jpg" alt=""></p>
+<p>这里不具体展开，可以阅读论文获取更多细节。</p>
+<h4 id="删除的节点是当前leader"><a href="#删除的节点是当前leader" class="headerlink" title="删除的节点是当前leader"></a>删除的节点是当前leader</h4><p>有可能需要移除的节点是leader，按照RAFT论文的做法会比较奇怪，leader需要管理不包含自己的集群，直到提交之后再退出。论文中提到可以通过<code>leadership transfer</code>将leadership转移到其他节点，然后再移除原先的leader。<code>leadership transfer</code>还有其他的用途，比如leader所在机器的负载比较高，要转移到低负载机器上；leader要改变机房实现就近等，同时还能降低选举的影响。</p>
+<p><strong>leadership transfer的流程</strong>：</p>
+<ol>
+<li>leader 停止接收新的请求。</li>
+<li>通过log replication使leader和transferee的log相同，确保transferee能够赢得选举。</li>
+<li>leader发送消息给transferee，让transferee立即发起选举。leader收到transferee的消息会退出。</li>
+</ol>
+<p>仍有几个问题需要处理：</p>
+<ol>
+<li>transferee挂了: 当<code>leadership transfer</code>在<code>election timeout</code>时间内未完成，则终止并恢复接收客户端请求。</li>
+<li>transferee有大概率成为下一个leader，若失败，再次发起leader transfer即可。</li>
+<li>check quorum会使节点忽略RequestVote，需要强制投票。</li>
+</ol>
+<h4 id="为什么要有PRE-VOTE"><a href="#为什么要有PRE-VOTE" class="headerlink" title="为什么要有PRE-VOTE"></a>为什么要有PRE-VOTE</h4><p>假定此时节点S1、S2和S3，S2是leader，S1被隔绝。此时S1由于收不到心跳，会不断成为candidate，增加term并且发起投票。虽然不能成为主（网络隔绝，只能收到自己的一票），但是加入term增大到一定程度的时候（比S2更大），网络恢复，那么S1就会赢得选举。</p>
+<p><strong>PRE-VOTE</strong>：</p>
+<p>partitioned节点的log一般会落后于其他节点，不会收到majority的投票，基于此，增加了PRE-VOTE阶段：</p>
+<ul>
+<li>只有收到majority的投票，才会增加term进行正常的选举过程。</li>
+<li>若PRE-VOTE失败，当网络恢复后，该节点收到leader的消息重新成为follower，避免了disrupt集群。</li>
+</ul>
+<p>PRE-VOTE只解决了log落后的节点不会自增term 导致集群disrupt，但是仍有可能节点log没有落后但仍发起PRE-VOTE。下一个小节会继续讨论。</p>
+<h4 id="被移除的节点破坏当前集群的选举"><a href="#被移除的节点破坏当前集群的选举" class="headerlink" title="被移除的节点破坏当前集群的选举"></a>被移除的节点破坏当前集群的选举</h4><p>当我们移除S1的时候，S4是当前新集群的leader，此时S4会断开与S1的心跳（已经创建了CN配置），此时S1、S2和S3还没有收到新的配置，此时会导致S1自增版本号开始进行选举（可以收到S1、S2和S3的选票）。</p>
+<p><img src="./images/15936586192248.jpg" alt=""></p>
+<p>PRE-VOTE也并不能解决上述问题，同样的还有下面这个场景：</p>
+<p><img src="./images/15936603172953.jpg" alt=""></p>
+<ol>
+<li>有S1、S2、S3三个节点，S1为leader且三个节点log相同。</li>
+<li>发生网络分区，其中S1和S3互通，S2和S3互通，S1和S2不通。</li>
+<li>S2发起PRE-VOTE，收到S3投票后，进行正常election，成为新的leader。</li>
+</ol>
+<p>解决方式是通过Leader lease。核心思想是：节点不应该在集群正常工作的情况下给其他节点投票。</p>
+<p><code>当节点在最小election timeout时间内接收到了leader的消息，就不会改变自己的term，也不会给其他节点投票</code>。（“if a server receives a RequestVote request within the minimum election timeout of hearing from a current leader, it does not update its term or grant its vote.”）</p>
+<p>论文中也提到了，这个改变与<code>leadership transfer</code>存在冲突，因为<code>leadership transfer</code>的第三步是：</p>
+<p><code>leader发送消息给transferee，让transferee立即发起选举。leader收到transferee的消息会退出。</code>，需要注意的是，此时leader仍然存在，如果leader lease机制存在，会导致transferee发出的投票被其他follower拒绝掉，此时我们需要增加一个标志位，表示这次发起的投票可以强制移除leader。</p>
+<p>leader lease是从follower视角确保leader是合法的。</p>
+<p>这里又出现了一个新的问题，leader如何确保自己合法？这需要另外一个机制，即check quorum机制。看看如果只有leader lease会出现什么问题：</p>
+<p><img src="./images/%E5%8F%AA%E6%9C%89leaderlease.png" alt="只有leaderlease"></p>
+<ul>
+<li>图(a)其中共五个节点，S1位leader，S1与S2通，S2、S3和S3互相通，S5被隔离，此时S1是leader。</li>
+<li>图(b)中，由于S3和S4都收不到leader的心跳，两者会成为candidate并且开始投票，假定此时S4成为candidate。它只能收到自己喝S3的投票，因为S2与S1互通，一直有来自leader的消息，所以触发leader lease机制，S2会认为现在leader是正常的而拒绝掉S4的投票。此时S3和S4永远无法达到大多数，导致这两个节点认为整个集群是不可用的。</li>
+</ul>
+<p>这个情况并不合理，S2、S3和S4都是互通的，其实我们的集群中是有一个大多数的，并且我们认为其实是可以进行服务的，只要leader在S2、S3和S4之间选出来就可以了。这里我们引入一个新的机制，即CHECK-QUORUM。</p>
+<p><code>leader每隔election timeout检查其他节点的活跃情况，若少于majority活跃，则自动step down为 follower</code>。</p>
+<p>即leader隔一段时间就去检查自己是不是属于大多数中，如果不是，就自动退出成为follower。在我们上面的图中，由于S1只与S2相连，不满足集群中的大多数，所以S1自动退化成为follower。然后当进行到图(b)中时，S4成为candidate，就可以收到S2（S1已经退化成follower了，leader lease对于S2不再生效）、S3和自己的投票成为leader，整个集群又可以正确的工作了。</p>
+<h2 id="写在后面"><a href="#写在后面" class="headerlink" title="写在后面"></a>写在后面</h2><p>RAFT的论文被熟知的是<a href="https://raft.github.io/raft.pdf" target="_blank" rel="noopener">这一篇</a>，但是RAFT的作者的<a href="https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf" target="_blank" rel="noopener">博士毕业论文</a>对RAFT做了更详细的阐述。要在分布式场景下达到强一致性是非常困难的，即使是相对容易理解的RAFT依然有一定的门槛。</p>
+<p>本文更多的笔墨都花在成员变更这个模块，这个模块也许是RAFT中最复杂的模块，后面还有关于快照和日志压缩的相关部分，这里就不再阐述了。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/raft/" rel="tag"># raft</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/Http2.html" rel="next" title="Http2">
+                <i class="fa fa-chevron-left"></i> Http2
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="http://c1.cdn.goumin.com/cms/petschool/day_141201/20141201_de5c50d.png"
+                alt="时无两" />
+            
+              <p class="site-author-name" itemprop="name">时无两</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">88</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">84</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/carryxyh" target="_blank" title="GitHub">
+                    
+                      <i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="mailto:carryxyh@gmail.com" target="_blank" title="E-Mail">
+                    
+                      <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#RAFT"><span class="nav-number">1.</span> <span class="nav-text">RAFT</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#写在前面"><span class="nav-number">1.1.</span> <span class="nav-text">写在前面</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#选举"><span class="nav-number">1.2.</span> <span class="nav-text">选举</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#每个节点都把选票投给自己"><span class="nav-number">1.2.0.1.</span> <span class="nav-text">每个节点都把选票投给自己</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#leader宕机"><span class="nav-number">1.2.0.2.</span> <span class="nav-text">leader宕机</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#日志复制"><span class="nav-number">1.3.</span> <span class="nav-text">日志复制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#follower存在leader不存在的日志"><span class="nav-number">1.3.0.1.</span> <span class="nav-text">follower存在leader不存在的日志</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#follower缺失了leader的日志"><span class="nav-number">1.3.0.2.</span> <span class="nav-text">follower缺失了leader的日志</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#提交之前任期内的日志条目"><span class="nav-number">1.3.0.3.</span> <span class="nav-text">提交之前任期内的日志条目</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#脑裂，出现多主问题"><span class="nav-number">1.3.0.4.</span> <span class="nav-text">脑裂，出现多主问题</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#集群拓扑变化"><span class="nav-number">1.4.</span> <span class="nav-text">集群拓扑变化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#多主"><span class="nav-number">1.4.0.1.</span> <span class="nav-text">多主</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#每次只允许增加或移除一个节点"><span class="nav-number">1.4.0.2.</span> <span class="nav-text">每次只允许增加或移除一个节点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#join-consensus"><span class="nav-number">1.4.0.3.</span> <span class="nav-text">join consensus</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#新节点如何追赶"><span class="nav-number">1.4.0.4.</span> <span class="nav-text">新节点如何追赶</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除的节点是当前leader"><span class="nav-number">1.4.0.5.</span> <span class="nav-text">删除的节点是当前leader</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么要有PRE-VOTE"><span class="nav-number">1.4.0.6.</span> <span class="nav-text">为什么要有PRE-VOTE</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#被移除的节点破坏当前集群的选举"><span class="nav-number">1.4.0.7.</span> <span class="nav-text">被移除的节点破坏当前集群的选举</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#写在后面"><span class="nav-number">1.5.</span> <span class="nav-text">写在后面</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-时无两丶"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">时无两</span>
+
+  
+</div>
+
+
+
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.3"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
